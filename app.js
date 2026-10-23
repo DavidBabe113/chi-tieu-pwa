@@ -158,20 +158,11 @@ function showQr() {
   const box = $('#qrBox');
   const code = cur.raw && cur.amount ? withAmount(cur.raw, cur.amount) : null;
   if (!code || typeof qrcode !== 'function') { box.hidden = true; return; }
-  cur.qrCode = code;
   const q = qrcode(0, 'M'); q.addData(code); q.make();
   $('#qrImg').src = q.createDataURL(8, 16);
   $('#qrInfo2').textContent = `${cur.payee || 'QR'} · ${fmt(cur.amount)}`;
   box.hidden = false;
 }
-// Phím tắt "ChiTieuQR" (tạo 1 lần trong app Phím tắt): nhận chuỗi QR, tạo mã, lưu vào Ảnh, mở app ngân hàng.
-$('#qrShortcut').onclick = async () => {
-  cur.bank = cur.bank || 'QR'; cur.status = 'pending';
-  await stash(); await putRec(cur);
-  stack.length = 0; stack.push('home'); show('home', false);
-  location.href = 'shortcuts://run-shortcut?name=' + encodeURIComponent('ChiTieuQR') +
-    '&input=text&text=' + encodeURIComponent(cur.qrCode);
-};
 $('#qrSave').onclick = async () => {
   const blob = await (await fetch($('#qrImg').src)).blob();
   const f = new File([blob], `qr_${cur.id}.png`, { type: 'image/png' });
