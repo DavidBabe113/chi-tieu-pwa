@@ -132,52 +132,13 @@ function parseVietQR(raw) {
   return r;
 }
 
-// Dựng lại chuỗi VietQR gốc với số tiền mới: giữ nguyên tài khoản/nội dung, chỉ thay tag 54 (và tag 01 = 12), tính lại CRC.
-function crc16(s) {
-  let c = 0xFFFF;
-  for (let i = 0; i < s.length; i++) {
-    c ^= s.charCodeAt(i) << 8;
-    for (let j = 0; j < 8; j++) c = c & 0x8000 ? ((c << 1) ^ 0x1021) & 0xFFFF : (c << 1) & 0xFFFF;
-  }
-  return c.toString(16).toUpperCase().padStart(4, '0');
-}
-function withAmount(raw, amount) {
-  const items = []; let i = 0;
-  while (i + 4 <= raw.length) {
-    const tag = raw.substr(i, 2), len = parseInt(raw.substr(i + 2, 2), 10);
-    if (isNaN(len)) return null;
-    items.push([tag, raw.substr(i + 4, len)]); i += 4 + len;
-  }
-  const out = items.filter(([t]) => t !== '63' && t !== '54').map(([t, v]) => [t, t === '01' ? '12' : v]);
-  const at = out.findIndex(([t]) => Number(t) > 54);
-  out.splice(at < 0 ? out.length : at, 0, ['54', String(amount)]);
-  const body = out.map(([t, v]) => t + String(v.length).padStart(2, '0') + v).join('') + '6304';
-  return body + crc16(body);
-}
-function showQr() {
-  const box = $('#qrBox');
-  const code = cur.raw && cur.amount ? withAmount(cur.raw, cur.amount) : null;
-  if (!code || typeof qrcode !== 'function') { box.hidden = true; return; }
-  const q = qrcode(0, 'M'); q.addData(code); q.make();
-  $('#qrImg').src = q.createDataURL(8, 16);
-  $('#qrInfo2').textContent = `${cur.payee || 'QR'} · ${fmt(cur.amount)}`;
-  box.hidden = false;
-}
-$('#qrSave').onclick = async () => {
-  const blob = await (await fetch($('#qrImg').src)).blob();
-  const f = new File([blob], `qr_${cur.id}.png`, { type: 'image/png' });
-  if (navigator.canShare && navigator.canShare({ files: [f] })) {
-    try { await navigator.share({ files: [f] }); } catch {}
-  } else toast('Giữ lâu vào ảnh QR rồi chọn Lưu vào Ảnh');
-};
-
 function onQr(raw) {
   stopScan();
   cur = newRec();
   const q = parseVietQR(raw);
   if (q) {
     cur.amount = q.amount || ''; cur.payee = q.payee || ''; cur.note = q.note || '';
-    cur.acc = q.acc || ''; cur.bin = q.bin || ''; cur.raw = raw;
+    cur.acc = q.acc || ''; cur.bin = q.bin || '';
     $('#qrInfo').hidden = false;
     $('#qrInfo').textContent = `Người nhận: ${q.payee || '—'}${q.acc ? ' · ' + q.acc : ''}${q.amount ? ' · ' + fmt(q.amount) : ''}`;
   } else {
@@ -251,7 +212,7 @@ $('#saveOnly').onclick = async () => {
   cur.status = 'done'; await putRec(cur); sync();
   toast('Đã lưu'); show('home');
 };
-$('#toBank').onclick = () => { if (collectDetail()) { renderBanks(); showQr(); show('bank'); } };
+$('#toBank').onclick = () => { if (collectDetail()) { renderBanks(); show('bank'); } };
 
 // ---------- chọn ngân hàng ----------
 function renderBanks() {

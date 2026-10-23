@@ -12,5 +12,5 @@ Quét QR → chọn danh mục → nhập số tiền / chụp ảnh → chọn 
 3. Mở app > ⚙ > dán link `/exec` > Gửi thử.
 
 ## Lưu ý
-- Trên iOS app chỉ mở được app ngân hàng (URL scheme lấy từ VietQR), KHÔNG điền sẵn được số tiền qua link. Để app ngân hàng điền sẵn: app dựng lại mã VietQR với số tiền đã nhập (màn hình chọn ngân hàng), bạn Lưu ảnh QR rồi quét từ ảnh trong app ngân hàng.
+- Trên iOS app chỉ mở được app ngân hàng (URL scheme lấy từ VietQR), KHÔNG điền sẵn được số tiền/tài khoản; bạn quét/nhập lại trong app ngân hàng. Đã kiểm chứng: trang dl.vietqr.io trên iOS chỉ mở scheme trơn, bỏ qua tham số ba/am/tn.
 - Link `/exec` chỉ lưu trên máy bạn, không nằm trong repo.
