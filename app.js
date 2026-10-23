@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '1.5.0';
+const VERSION = '1.5.1';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -874,10 +874,10 @@ $('#faceOnBtn').onclick = async () => {
   renderSettings();
 };
 $('#faceOffBtn').onclick = () => { cfg.del('faceId'); renderSettings(); };
-// Khoá lại khi quay về app sau hơn 1 phút (đủ để chuyển sang app ngân hàng rồi về)
+// Khoá ngay lập tức khi rời app (cả lúc chuyển sang app ngân hàng); nội dung cũng bị che trong màn hình chuyển app
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden) hiddenAt = Date.now();
-  else if (hasPin() && $('#lock').hidden && hiddenAt && Date.now() - hiddenAt > 60000) openLock('verify');
+  if (document.hidden) { if (hasPin() && $('#lock').hidden) openLock('verify'); }
+  else if (!$('#lock').hidden && lockMode === 'verify' && faceOn()) tryFace(true);   // quay lại thì thử Face ID
 });
 
 // ---------- khởi động ----------
