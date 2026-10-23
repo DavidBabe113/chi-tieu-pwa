@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Expenses">
-<meta name="theme-color" content="#0f766e">
+<meta name="theme-color" content="#1e3a8a">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="stylesheet" href="style.css">
@@ -18,7 +18,20 @@
   <h1 id="title">Expenses</h1>
   <button id="openSettings" class="icon" aria-label="Settings">⚙</button>
 </header>
+<nav id="tabs" class="tabs">
+  <button data-tab="home" class="on">Overview</button>
+  <button data-tab="stats">Statistics</button>
+  <button data-tab="jars">6 Jars</button>
+</nav>
 <main>
+
+  <section id="v-jars" hidden>
+    <div id="jarsBody"></div>
+  </section>
+
+  <section id="v-stats" hidden>
+    <div id="statsBody"></div>
+  </section>
 
   <section id="v-home">
     <div id="pending"></div>
@@ -73,6 +86,10 @@
     <h2>Categories</h2>
     <textarea id="catsText" rows="6"></textarea>
     <p class="hint">One category per line: icon then name (e.g. ⛽ Fuel)</p>
+    <h2>6 Jars</h2>
+    <label>Monthly income (₫)<input id="income" inputmode="numeric" placeholder="0"></label>
+    <textarea id="jarsText" rows="7"></textarea>
+    <p class="hint">One jar per line: Name | percent | categories (comma separated). Percentages should add up to 100.</p>
     <h2>Banks</h2>
     <textarea id="banksText" rows="10"></textarea>
     <p class="hint">One per line: Name | app link (e.g. MB Bank | mbbank://). Edit if an app does not open.</p>

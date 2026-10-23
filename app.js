@@ -7,11 +7,19 @@ const DEF_CATS = '⛽ Fuel\n☕ Food & Coffee\n🛍 Shopping\n🏠 Home bills\n�
 // URL scheme mở thẳng app ngân hàng trên iOS (lấy từ trang chuyển tiếp của dl.vietqr.io). Chỉ mở app,
 // không truyền được số tiền / tài khoản (iOS không có link điền sẵn đã kiểm chứng).
 const DEF_BANKS = [
-  'Vietcombank | vietcombankmobile://', 'MB Bank | mbbank://', 'Techcombank | tcb://',
-  'VPBank | vpbankneo://', 'ACB | acbone://', 'BIDV | bidv.smartbanking.partner://',
-  'TPBank | hydro://', 'VietinBank | vietinbankipay://', 'Agribank | agribankmobile://',
-  'OCB | newomni-app://',
+  'Bank for Foreign Trade of Vietnam (Vietcombank) | vietcombankmobile://',
+  'Military Commercial Joint Stock Bank (MB Bank) | mbbank://',
+  'Vietnam Technological and Commercial Joint Stock Bank (Techcombank) | tcb://',
+  'Vietnam Prosperity Joint Stock Commercial Bank (VPBank) | vpbankneo://',
+  'Asia Commercial Joint Stock Bank (ACB) | acbone://',
+  'Bank for Investment and Development of Vietnam (BIDV) | bidv.smartbanking.partner://',
+  'Tien Phong Commercial Joint Stock Bank (TPBank) | hydro://',
+  'Vietnam Joint Stock Commercial Bank for Industry and Trade (VietinBank) | vietinbankipay://',
+  'Vietnam Bank for Agriculture and Rural Development (Agribank) | agribankmobile://',
+  'Orient Commercial Joint Stock Bank (OCB) | newomni-app://',
 ].join('\n');
+// Danh sách mặc định cũ (tên viết tắt) chưa chỉnh tay thì đổi sang tên đầy đủ
+const OLD_BANKS = 'Vietcombank | vietcombankmobile://\nMB Bank | mbbank://\nTechcombank | tcb://\nVPBank | vpbankneo://\nACB | acbone://\nBIDV | bidv.smartbanking.partner://\nTPBank | hydro://\nVietinBank | vietinbankipay://\nAgribank | agribankmobile://\nOCB | newomni-app://';
 
 // ---------- lưu trữ ----------
 const cfg = {
@@ -21,7 +29,7 @@ const cfg = {
 };
 // Cài đặt cũ (tiếng Việt / link cũ) chưa chỉnh tay thì tự đổi sang mặc định mới
 if (cfg.get('cats', '').startsWith('⛽ Tiền xăng')) cfg.del('cats');
-if (/vcbdigibank|dl\.vietqr\.io|techcombank:\/\//.test(cfg.get('banks', ''))) cfg.del('banks');
+if (/vcbdigibank|dl\.vietqr\.io|techcombank:\/\//.test(cfg.get('banks', '')) || cfg.get('banks', '') === OLD_BANKS) cfg.del('banks');
 
 let dbp;
 function db() {
@@ -67,15 +75,21 @@ function toast(msg, ms = 2600) {
 }
 
 // ---------- điều hướng ----------
-const TITLES = { home: 'Expenses', scan: 'Scan QR', cat: 'Choose category', detail: 'Details', bank: 'Choose bank', gallery: 'Photo library', settings: 'Settings' };
+const TITLES = { home: 'Expenses', stats: 'Statistics', jars: '6 Jars', scan: 'Scan QR', cat: 'Choose category', detail: 'Details', bank: 'Choose bank', gallery: 'Photo library', settings: 'Settings' };
 function show(v, push = true) {
   if (v !== 'scan') stopScan();
   if (push) stack.push(v);
   document.querySelectorAll('main > section').forEach(s => s.hidden = s.id !== 'v-' + v);
   $('#title').textContent = TITLES[v];
-  $('#back').hidden = v === 'home';
+  const top = v === 'home' || v === 'stats' || v === 'jars';
+  $('#back').hidden = top;
+  $('#tabs').hidden = !top;
+  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === v));
   if (v === 'home') { stack.length = 0; renderHome(); }
+  if (v === 'stats') { stack.length = 0; renderStats(); }
+  if (v === 'jars') { stack.length = 0; renderJars(); }
 }
+document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => show(b.dataset.tab, false));
 $('#back').onclick = () => { stack.pop(); show(stack.pop() || 'home'); };
 $('#openSettings').onclick = openSettings;
 
@@ -245,7 +259,8 @@ function renderBanks() {
   $('#banks').innerHTML = '';
   banks().forEach(b => {
     const el = document.createElement('button');
-    el.textContent = b.name;
+    const m = b.name.match(/^(.*?)\s*\((.+)\)$/);   // "Tên đầy đủ (Thương hiệu)" → tên đầy đủ + dòng nhỏ thương hiệu
+    el.innerHTML = m ? `<span class="bn">${esc(m[1])}</span><small>${esc(m[2])}</small>` : esc(b.name);
     el.onclick = () => openBank(b);
     $('#banks').append(el);
   });
@@ -334,6 +349,151 @@ $('#stats').onclick = e => {
   if (b && !b.disabled) { shiftMonth(Number(b.dataset.m)); renderHome(); }
 };
 
+// ---------- thống kê trực quan (SVG/CSS thuần, không cần thư viện) ----------
+const PAL = ['#3b82f6', '#14b8a6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16', '#ec4899'];
+const short = n => n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 0 : 1).replace(/\.0$/, '') + 'M' : n >= 1e3 ? Math.round(n / 1e3) + 'k' : String(Math.round(n));
+const addMonths = (ym, n) => { const [y, m] = ym.split('-').map(Number); return ymOf(new Date(y, m - 1 + n, 1).toISOString()); };
+const monthLabel = ym => { const [y, m] = ym.split('-').map(Number); return new Date(y, m - 1, 1).toLocaleString('en-US', { month: 'long', year: 'numeric' }); };
+const monthShort = ym => { const [y, m] = ym.split('-').map(Number); return new Date(y, m - 1, 1).toLocaleString('en-US', { month: 'short' }); };
+const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+function sumBy(arr, f) { const o = {}; arr.forEach(r => { const k = f(r); o[k] = (o[k] || 0) + Number(r.amount); }); return o; }
+
+async function renderStats() {
+  const recs = (await allRecs()).filter(r => r.status === 'done');
+  recs.forEach(r => recById[r.id] = r);
+  const inM = ym => recs.filter(r => ymOf(r.time) === ym);
+  const tot = a => a.reduce((s, r) => s + Number(r.amount), 0);
+  const m = inM(viewYm), total = tot(m);
+  const [y, mo] = viewYm.split('-').map(Number);
+  const dim = new Date(y, mo, 0).getDate();
+  const isCur = viewYm === nowYm();
+  const elapsed = isCur ? new Date().getDate() : dim;
+  const prevYm = addMonths(viewYm, -1), pTotal = tot(inM(prevYm));
+  let h = `<div class="mnav light"><button data-m="-1" aria-label="Previous month">‹</button><span>${monthLabel(viewYm)}</span>` +
+    `<button data-m="1" aria-label="Next month" ${isCur || viewYm > nowYm() ? 'disabled' : ''}>›</button></div>`;
+  if (!m.length) { $('#statsBody').innerHTML = h + '<div class="card empty">No transactions in this month yet.</div>'; return; }
+
+  const avgDay = total / Math.max(1, elapsed);
+  const biggest = m.reduce((a, b) => Number(b.amount) > Number(a.amount) ? b : a);
+  const pct = pTotal ? (total - pTotal) / pTotal * 100 : null;
+  const delta = pct === null ? '<span class="delta">No previous month</span>'
+    : `<span class="delta ${pct > 0 ? 'up' : 'down'}">${pct > 0 ? '▲' : '▼'} ${Math.abs(pct).toFixed(0)}% vs ${monthShort(prevYm)}</span>`;
+
+  // KPI
+  h += `<div class="kpis">
+    <div class="kpi wide"><div class="l">Total spent</div><div class="v">${fmt(total)}</div>${delta}</div>
+    <div class="kpi"><div class="l">Daily average</div><div class="v sm">${fmt(avgDay)}</div></div>
+    <div class="kpi"><div class="l">Transactions</div><div class="v sm">${m.length}</div></div>
+    <div class="kpi wide"><div class="l">Largest expense</div><div class="v sm">${fmt(biggest.amount)}</div><div class="sub2">${esc(biggest.category)}${biggest.note ? ' · ' + esc(biggest.note) : ''}</div></div>
+  </div>`;
+
+  // Donut theo danh mục
+  const byCat = Object.entries(sumBy(m, r => r.category)).sort((a, b) => b[1] - a[1]);
+  const slices = byCat.slice(0, 7); const rest = byCat.slice(7).reduce((s, [, v]) => s + v, 0); if (rest) slices.push(['Others', rest]);
+  let off = 0;
+  const arcs = slices.map(([, v], i) => {
+    const p = v / total * 100;
+    const s = `<circle r="15.9155" cx="21" cy="21" fill="none" stroke="${PAL[i % PAL.length]}" stroke-width="6" stroke-dasharray="${p} ${100 - p}" stroke-dashoffset="${-off}" transform="rotate(-90 21 21)"/>`;
+    off += p; return s;
+  }).join('');
+  h += `<h2>By category</h2><div class="card donut">
+    <svg viewBox="0 0 42 42" class="dsvg" role="img" aria-label="Spending by category">${arcs}<text x="21" y="22.5" text-anchor="middle" class="dtxt">${short(total)}</text></svg>
+    <div class="legend">${slices.map(([k, v], i) => `<div class="lg"><i style="background:${PAL[i % PAL.length]}"></i><span>${esc(k)}</span><b>${Math.round(v / total * 100)}%</b></div>`).join('')}</div>
+  </div>`;
+
+  // Cột 6 tháng gần nhất
+  const months = [-5, -4, -3, -2, -1, 0].map(n => addMonths(viewYm, n));
+  const mt = months.map(ym => tot(inM(ym))), mmax = Math.max(1, ...mt);
+  h += `<h2>Last 6 months</h2><div class="card"><div class="cols">${months.map((ym, i) =>
+    `<div class="col"><span class="cv">${mt[i] ? short(mt[i]) : ''}</span><div class="cbar ${ym === viewYm ? 'sel' : ''}" style="height:${Math.max(mt[i] ? 4 : 0, mt[i] / mmax * 100)}%"></div><span class="cl">${monthShort(ym)}</span></div>`).join('')}</div></div>`;
+
+  // Chi theo ngày trong tháng
+  const days = Array(dim).fill(0); m.forEach(r => days[new Date(r.time).getDate() - 1] += Number(r.amount));
+  const dmax = Math.max(1, ...days);
+  h += `<h2>Daily spending</h2><div class="card"><div class="dcols">${days.map((v, i) =>
+    `<div class="dc"><div class="dbar ${v === dmax && v ? 'peak' : ''}" style="height:${v ? Math.max(4, v / dmax * 100) : 0}%"></div></div>`).join('')}</div>
+    <div class="dax"><span>1</span><span>${Math.ceil(dim / 2)}</span><span>${dim}</span></div></div>`;
+
+  // Theo ngân hàng
+  const byBank = Object.entries(sumBy(m, r => r.bank || 'Cash / no bank')).sort((a, b) => b[1] - a[1]);
+  const bmax = byBank[0][1];
+  h += `<h2>By bank</h2><div class="card">${byBank.map(([k, v]) =>
+    `<div class="hbar"><span>${esc(k)}</span><div class="ht"><i style="width:${Math.round(v / bmax * 100)}%"></i></div><b>${fmt(v)}</b></div>`).join('')}</div>`;
+
+  // Top 5 chi tiêu lớn nhất
+  h += `<h2>Top expenses</h2><div class="card list">${[...m].sort((a, b) => Number(b.amount) - Number(a.amount)).slice(0, 5).map((r, i) =>
+    `<div class="item" data-id="${r.id}"><div class="rank">${i + 1}</div><div class="t">${esc(r.category)}<small>${new Date(r.time).toLocaleDateString('en-GB')}${r.note ? ' · ' + esc(r.note) : ''}</small></div><div class="amt">${fmt(r.amount)}</div></div>`).join('')}</div>`;
+
+  // Đánh giá bằng lời
+  const prevs = [-1, -2, -3].map(n => tot(inM(addMonths(viewYm, n)))).filter(v => v > 0);
+  const avg3 = prevs.length ? prevs.reduce((a, b) => a + b, 0) / prevs.length : 0;
+  let rating = ['neutral', 'Not enough history yet'];
+  if (avg3) { const r = total / avg3; rating = r > 1.15 ? ['high', 'Above your recent average'] : r < 0.85 ? ['low', 'Below your recent average'] : ['mid', 'In line with your recent average']; }
+  const wd = Array(7).fill(0); m.forEach(r => wd[new Date(r.time).getDay()] += Number(r.amount));
+  const wdTop = wd.indexOf(Math.max(...wd));
+  const tips = [];
+  if (pct !== null) tips.push(`Spending is <b>${Math.abs(pct).toFixed(0)}% ${pct > 0 ? 'higher' : 'lower'}</b> than ${monthLabel(prevYm)} (${fmt(pTotal)}).`);
+  tips.push(`<b>${esc(byCat[0][0])}</b> is your biggest category: ${Math.round(byCat[0][1] / total * 100)}% of the month (${fmt(byCat[0][1])}).`);
+  if (byCat.length > 1) tips.push(`The top 2 categories together make up ${Math.round((byCat[0][1] + byCat[1][1]) / total * 100)}% of spending.`);
+  tips.push(`You spend about <b>${fmt(avgDay)}</b> per day.` + (isCur && elapsed < dim ? ` At this pace the month would end near <b>${fmt(avgDay * dim)}</b>.` : ''));
+  tips.push(`Spending peaks on <b>${WEEKDAYS[wdTop]}s</b> (${fmt(wd[wdTop])}).`);
+  tips.push(`Largest single expense: <b>${fmt(biggest.amount)}</b> (${esc(biggest.category)}) on ${new Date(biggest.time).toLocaleDateString('en-GB')}.`);
+  h += `<h2>Assessment</h2><div class="card"><div class="rate ${rating[0]}">${rating[1]}${avg3 ? ` <small>(3-month avg ${fmt(avg3)})</small>` : ''}</div><ul class="tips">${tips.map(t => `<li>${t}</li>`).join('')}</ul></div>`;
+
+  $('#statsBody').innerHTML = h;
+}
+$('#statsBody').onclick = e => {
+  const b = e.target.closest('[data-m]');
+  if (b && !b.disabled) { shiftMonth(Number(b.dataset.m)); renderStats(); return; }
+  const it = e.target.closest('.item');
+  if (it && recById[it.dataset.id]) openSheet(recById[it.dataset.id]);
+};
+
+// ---------- quy tắc 6 hũ (55/10/10/10/10/5) ----------
+const DEF_JARS = 'Necessities | 55 | Fuel, Home bills, Health, Other\nLong-term savings | 10 |\nEducation | 10 |\nPlay | 10 | Food & Coffee, Shopping, Entertainment\nFinancial freedom | 10 |\nGive | 5 |';
+const JAR_ICONS = ['🏠', '🏦', '📚', '🎉', '🌱', '🎁'];
+const jarCfg = () => cfg.get('jars', DEF_JARS).split('\n').map(l => l.split('|').map(s => s.trim())).filter(a => a[0])
+  .map(a => ({ name: a[0], pct: Number(a[1]) || 0, cats: (a[2] || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean) }));
+const income = () => Number(cfg.get('income', '0')) || 0;
+const catName = c => (c.split(' ').slice(1).join(' ') || c).toLowerCase();
+
+async function renderJars() {
+  const recs = (await allRecs()).filter(r => r.status === 'done' && ymOf(r.time) === viewYm);
+  const jars = jarCfg(), inc = income();
+  const isCur = viewYm >= nowYm();
+  let h = `<div class="mnav light"><button data-m="-1" aria-label="Previous month">‹</button><span>${monthLabel(viewYm)}</span>` +
+    `<button data-m="1" aria-label="Next month" ${isCur ? 'disabled' : ''}>›</button></div>`;
+  if (!inc) {
+    $('#jarsBody').innerHTML = h + `<div class="card empty">Set your monthly income to split it into jars.<br><button id="jarsGo" class="big" style="margin-top:14px">Open Settings</button></div>`;
+    return;
+  }
+  const spentOf = j => recs.filter(r => j.cats.includes(catName(r.category))).reduce((s, r) => s + Number(r.amount), 0);
+  const mapped = new Set(jars.flatMap(j => j.cats));
+  const unassigned = recs.filter(r => !mapped.has(catName(r.category))).reduce((s, r) => s + Number(r.amount), 0);
+  const totalSpent = recs.reduce((s, r) => s + Number(r.amount), 0);
+  const sumPct = jars.reduce((s, j) => s + j.pct, 0);
+  h += `<div class="kpis"><div class="kpi wide"><div class="l">Monthly income</div><div class="v">${fmt(inc)}</div>` +
+    `<div class="sub2">Spent ${fmt(totalSpent)} · ${Math.round(totalSpent / inc * 100)}% of income</div></div></div>`;
+  if (sumPct !== 100) h += `<div class="card warnbox">Your jar percentages add up to ${sumPct}%, not 100%. Fix them in Settings.</div>`;
+  h += '<h2>Your jars</h2>';
+  jars.forEach((j, i) => {
+    const alloc = inc * j.pct / 100, spent = spentOf(j), left = alloc - spent;
+    const track = j.cats.length > 0;
+    const used = alloc ? Math.min(100, spent / alloc * 100) : 0;
+    h += `<div class="card jar"><div class="jtop"><span class="jic">${JAR_ICONS[i % JAR_ICONS.length]}</span><div class="jn">${esc(j.name)}<small>${j.pct}% · ${fmt(alloc)}</small></div>` +
+      (track ? `<div class="jr ${left < 0 ? 'over' : ''}">${left < 0 ? 'Over by ' + fmt(-left) : fmt(left) + ' left'}</div>` : `<div class="jr">Set aside</div>`) + '</div>' +
+      (track ? `<div class="jbar"><i class="${left < 0 ? 'over' : used > 85 ? 'warn' : ''}" style="width:${used}%"></i></div><div class="jsub">Spent ${fmt(spent)} of ${fmt(alloc)}</div>`
+        : `<div class="jsub">Transfer ${fmt(alloc)} to this jar each month. Nothing is tracked here.</div>`) + '</div>';
+  });
+  if (unassigned > 0) h += `<div class="card jsub">Not in any jar: <b>${fmt(unassigned)}</b>. Add those categories to a jar in Settings.</div>`;
+  $('#jarsBody').innerHTML = h;
+  const go = $('#jarsGo'); if (go) go.onclick = openSettings;
+}
+$('#jarsBody').onclick = e => {
+  const b = e.target.closest('[data-m]');
+  if (b && !b.disabled) { shiftMonth(Number(b.dataset.m)); renderJars(); }
+};
+
 // ---------- phóng to chi tiết giao dịch ----------
 $('#recent').onclick = e => {
   const it = e.target.closest('.item');
@@ -388,12 +548,20 @@ function openSettings() {
   $('#sheetUrl').value = cfg.get('sheetUrl', '');
   $('#catsText').value = cfg.get('cats', DEF_CATS);
   $('#banksText').value = cfg.get('banks', DEF_BANKS);
+  $('#jarsText').value = cfg.get('jars', DEF_JARS);
+  $('#income').value = income() ? income().toLocaleString('en-US') : '';
   show('settings');
 }
+$('#income').oninput = e => {
+  const d = e.target.value.replace(/\D/g, '');
+  e.target.value = d ? Number(d).toLocaleString('en-US') : '';
+};
 $('#saveSettings').onclick = () => {
   cfg.set('sheetUrl', $('#sheetUrl').value.trim());
   cfg.set('cats', $('#catsText').value);
   cfg.set('banks', $('#banksText').value);
+  cfg.set('jars', $('#jarsText').value);
+  cfg.set('income', $('#income').value.replace(/\D/g, ''));
   sync(); show('home');
 };
 $('#testSheet').onclick = async () => {
