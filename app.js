@@ -3,13 +3,18 @@ const $ = s => document.querySelector(s);
 const fmt = n => (Number(n) || 0).toLocaleString('vi-VN') + '₫';
 
 const DEF_CATS = '⛽ Tiền xăng\n☕ Ăn / cà phê\n🛍 Shopping\n🏠 Hoá đơn nhà\n🏥 Sức khoẻ\n🎬 Giải trí\n📦 Khác';
-// Link mở app ngân hàng trên iOS CHƯA kiểm chứng, sửa trong Cài đặt nếu app không mở được.
+// Link chuẩn của VietQR (api.vietqr.io/v2/ios-app-deeplinks). Chỉ các app trong AUTOFILL mới tự điền
+// số tài khoản / số tiền / nội dung; các app còn lại chỉ được mở lên.
 const DEF_BANKS = [
-  'Vietcombank | vcbdigibank://', 'MB Bank | mbbank://', 'Techcombank | techcombank://',
-  'VPBank | vpbankneo://', 'ACB | acbone://', 'BIDV | bidvsmartbanking://',
-  'TPBank | tpbank://', 'VietinBank | vietinbankipay://', 'Sacombank | sacombankpay://',
-  'Agribank | agribankplus://',
+  'Vietcombank | https://dl.vietqr.io/pay?app=vcb', 'MB Bank | https://dl.vietqr.io/pay?app=mb',
+  'Techcombank | https://dl.vietqr.io/pay?app=tcb', 'VPBank | https://dl.vietqr.io/pay?app=vpb',
+  'ACB | https://dl.vietqr.io/pay?app=acb', 'BIDV | https://dl.vietqr.io/pay?app=bidv',
+  'TPBank | https://dl.vietqr.io/pay?app=tpb', 'VietinBank | https://dl.vietqr.io/pay?app=icb',
+  'Agribank | https://dl.vietqr.io/pay?app=vba', 'OCB | https://dl.vietqr.io/pay?app=ocb',
 ].join('\n');
+const AUTOFILL = new Set(['mb', 'icb', 'bidv', 'ocb', 'acb']);
+// BIN trong mã QR -> mã ngân hàng của người nhận (tham số ba của link VietQR)
+const BIN2CODE = { 970436: 'vcb', 970416: 'acb', 970422: 'mb', 970407: 'tcb', 970432: 'vpb', 970418: 'bidv', 970423: 'tpb', 970415: 'icb', 970403: 'stb', 970405: 'vba', 970448: 'ocb', 970437: 'hdb', 970441: 'vib', 970443: 'shb', 970426: 'msb' };
 
 // ---------- lưu trữ ----------
 const cfg = {
@@ -79,7 +84,7 @@ $('#btnManual').onclick = () => { cur = newRec(); renderCats(); show('cat'); };
 $('#btnGallery').onclick = openGallery;
 
 function newRec() {
-  return { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), time: new Date().toISOString(), category: '', amount: '', note: '', payee: '', bank: '', photo: '', status: 'draft', synced: false };
+  return { acc: '', bin: '', id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), time: new Date().toISOString(), category: '', amount: '', note: '', payee: '', bank: '', photo: '', status: 'draft', synced: false };
 }
 
 async function startScan() {
@@ -127,7 +132,7 @@ function parseVietQR(raw) {
   if (t['54']) r.amount = t['54'].split('.')[0];
   if (t['59']) r.payee = t['59'];
   if (t['62']) { const a = tlv(t['62']); if (a['08']) r.note = a['08']; }
-  if (t['38']) { const a = tlv(t['38']); if (a['01']) { const b = tlv(a['01']); r.acc = b['01']; } }
+  if (t['38']) { const a = tlv(t['38']); if (a['01']) { const b = tlv(a['01']); r.acc = b['01']; r.bin = b['00']; } }
   return r;
 }
 
@@ -137,6 +142,7 @@ function onQr(raw) {
   const q = parseVietQR(raw);
   if (q) {
     cur.amount = q.amount || ''; cur.payee = q.payee || ''; cur.note = q.note || '';
+    cur.acc = q.acc || ''; cur.bin = q.bin || '';
     $('#qrInfo').hidden = false;
     $('#qrInfo').textContent = `Người nhận: ${q.payee || '—'}${q.acc ? ' · ' + q.acc : ''}${q.amount ? ' · ' + fmt(q.amount) : ''}`;
   } else {
@@ -217,7 +223,8 @@ function renderBanks() {
   $('#banks').innerHTML = '';
   banks().forEach(b => {
     const el = document.createElement('button');
-    el.textContent = b.name;
+    const id = (b.url.match(/app=([\w-]+)/) || [])[1];
+    el.textContent = b.name + (AUTOFILL.has(id) && cur.acc ? ' ✓' : '');
     el.onclick = () => openBank(b);
     $('#banks').append(el);
   });
@@ -229,7 +236,12 @@ async function openBank(b) {
   stack.length = 0; stack.push('home');
   if (!b.url) { toast('Chưa có link app cho ngân hàng này, sửa trong Cài đặt'); show('home'); return; }
   show('home', false);
-  location.href = b.url;
+  let url = b.url;
+  const code = BIN2CODE[cur.bin];
+  if (/dl\.vietqr\.io\/pay/.test(url) && cur.acc && code) {
+    url += `&ba=${encodeURIComponent(cur.acc + '@' + code)}&am=${cur.amount}` + (cur.note ? `&tn=${encodeURIComponent(cur.note)}` : '');
+  }
+  location.href = url;
   setTimeout(() => { if (!document.hidden) toast('Không mở được app. Kiểm tra link trong Cài đặt.', 4000); }, 1800);
 }
 
