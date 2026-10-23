@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.0.0';
+const VERSION = '2.1.0';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -21,7 +21,7 @@ const VI = {
   'Scan QR': 'Quét QR', 'Choose category': 'Chọn danh mục', 'Details': 'Chi tiết', 'Choose bank': 'Chọn ngân hàng',
   'Photo library': 'Thư viện ảnh', 'Settings': 'Cài đặt', 'Back': 'Quay lại', 'Close': 'Đóng', 'Add manually': 'Nhập tay',
   // tổng quan
-  'Spent this month': 'Đã chi tháng này', 'Transactions': 'Giao dịch', 'Previous month': 'Tháng trước', 'Next month': 'Tháng sau',
+  'Spent this month': 'Đã chi tháng này', 'Dashboard': 'Bảng tổng hợp', 'Transactions': 'Giao dịch', 'Previous month': 'Tháng trước', 'Next month': 'Tháng sau',
   'Today': 'Hôm nay', 'Yesterday': 'Hôm qua', 'No transactions in this month.': 'Chưa có giao dịch trong tháng này.',
   '⏳ pending': '⏳ chờ đồng bộ', 'Did the transfer go through?': 'Giao dịch đã thành công?', 'Cancel': 'Huỷ', 'Done': 'Xong',
   // quét & nhập
@@ -212,8 +212,8 @@ function toast(msg, ms = 2600) {
 }
 
 // ---------- điều hướng (dùng lịch sử trình duyệt để vuốt cạnh trái = quay lại) ----------
-const TITLES = { home: 'Expenses', stats: 'Statistics', jars: '6 Jars', cats: 'Categories', scan: 'Scan QR', cat: 'Choose category', detail: 'Details', bank: 'Choose bank', gallery: 'Photo library', settings: 'Settings' };
-const TOP = ['home', 'stats', 'jars', 'cats'];
+const TITLES = { home: 'Expenses', jars: '6 Jars', cats: 'Categories', scan: 'Scan QR', cat: 'Choose category', detail: 'Details', bank: 'Choose bank', settings: 'Settings' };
+const TOP = ['home', 'jars', 'cats'];
 let depth = 0, pendingTop = null, lastBack = 0, dir = 'fwd';
 try { history.replaceState({ v: 'home', d: 0 }, ''); } catch {}
 // mode: true = thêm vào lịch sử, false = không đụng lịch sử, 'replace' = thay mục hiện tại
@@ -235,7 +235,6 @@ function show(v, mode = true) {
   document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === v));
   window.scrollTo(0, 0);
   if (v === 'home') renderHome();
-  if (v === 'stats') renderStats();
   if (v === 'jars') renderJars();
   if (v === 'cats') renderCategories();
   if (v === 'settings') renderSettings();
@@ -252,7 +251,7 @@ window.addEventListener('popstate', e => {
   depth = s.d || 0;
   dir = 'back';
   let v = pendingTop || s.v; pendingTop = null;
-  if (!TOP.includes(v) && v !== 'gallery' && v !== 'settings' && !cur) v = 'home';
+  if (!TOP.includes(v) && v !== 'settings' && !cur) v = 'home';
   if (v === 'scan') v = 'home';
   show(v, false);
   dir = 'fwd';
@@ -273,7 +272,6 @@ addEventListener('touchend', e => {
 // ---------- quét QR ----------
 $('#btnScan').onclick = startScan;
 $('#btnManual').onclick = () => { cur = newRec(); renderCats(); show('cat'); };
-$('#btnGallery').onclick = openGallery;
 
 function newRec() {
   return { type: 'expense', fromQr: false, acc: '', bin: '', id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), time: new Date().toISOString(), category: '', amount: '', note: '', payee: '', bank: '', photo: '', status: 'draft', synced: false };
@@ -343,7 +341,6 @@ async function decodeQrFile(file) {
   }
   return null;
 }
-$('#btnPhotoQr').onclick = () => $('#qrFile').click();
 $('#scanPhotoBtn').onclick = () => $('#qrFile').click();
 $('#qrFile').onchange = async e => {
   const f = e.target.files[0]; e.target.value = ''; if (!f) return;
@@ -603,7 +600,7 @@ new MutationObserver(() => { if (!revealQueued) { revealQueued = true; requestAn
   .observe(document.querySelector('main'), { childList: true, subtree: true });
 addEventListener('scroll', () => $('header').classList.toggle('scrolled', scrollY > 24), { passive: true });
 
-// ---------- Tổng quan: số liệu nhanh + dòng thời gian giao dịch ----------
+// ---------- Tổng quan: đã chi tháng này + chi theo danh mục, giao dịch gần nhất, rồi Dashboard ở dưới ----------
 function dayLabel(d) {
   const t = new Date(), y = new Date(); y.setDate(t.getDate() - 1);
   if (d.toDateString() === t.toDateString()) return tr('Today');
@@ -612,15 +609,18 @@ function dayLabel(d) {
 }
 async function renderHome() {
   await renderPending();
-  const recs = (await doneRecs()).sort((a, b) => b.time.localeCompare(a.time));
+  const all = await doneRecs();
+  const recs = [...all].sort((a, b) => b.time.localeCompare(a.time));
   recs.forEach(r => recById[r.id] = r);
   const monthAll = recs.filter(r => ymOf(r.time) === viewYm);
-  const spent = sum(monthAll.filter(r => !isInc(r))), inc = sum(monthAll.filter(isInc)), net = inc - spent;
+  const exp = monthAll.filter(r => !isInc(r));
+  const spent = sum(exp);
+  const by = Object.entries(sumBy(exp, r => r.category)).sort((a, b) => b[1] - a[1]);
+  const mx = by.length ? by[0][1] : 1;
   $('#stats').innerHTML = monthNav('') +
     `<div class="hl">${tr('Spent this month')}</div><b class="total" data-key="home-spent" data-count="${spent}">${fmt(spent)}</b>` +
-    `<div class="trio"><div><span>${tr('Income')}</span><b data-key="home-inc" data-count="${inc}">${fmt(inc)}</b></div>` +
-    `<div><span>${tr('Net')}</span><b data-key="home-net" data-count="${net}">${fmt(net)}</b></div>` +
-    `<div><span>${tr('Transactions')}</span><b>${monthAll.length}</b></div></div>`;
+    (by.length ? `<div class="catlist">${by.map(([k, v]) =>
+      `<div class="crow2"><span>${esc(k)}</span><div class="trk"><i style="width:${Math.max(3, Math.round(v / mx * 100))}%"></i></div><b>${fmt(v)}</b></div>`).join('')}</div>` : '');
   runCounts($('#stats'));
   const box = $('#recent'); box.innerHTML = '';
   let grp = null, lastDay = '';
@@ -632,11 +632,12 @@ async function renderHome() {
       grp = document.createElement('div'); grp.className = 'card list'; box.append(grp);
     }
     const it = document.createElement('div'); it.className = 'item'; it.dataset.id = r.id;
-    it.innerHTML = `<div class="t">${esc(r.category)}<small>${d.toLocaleTimeString(DLOC(), { hour: '2-digit', minute: '2-digit' })}${r.note ? ' · ' + esc(r.note) : ''}${r.synced ? '' : ' · ' + tr('⏳ pending')}</small></div><div class="amt ${isInc(r) ? 'in' : ''}">${isInc(r) ? '+' : ''}${fmt(r.amount)}</div>`;
+    it.innerHTML = `<div class="t">${esc(r.category)}<small>${d.toLocaleTimeString(DLOC(), { hour: '2-digit', minute: '2-digit' })}${r.note ? ' · ' + esc(r.note) : ''}</small></div><div class="amt ${isInc(r) ? 'in' : ''}">${isInc(r) ? '+' : ''}${fmt(r.amount)}</div>`;
     if (r.photo) { const b = await getPhoto(r.id); if (b) { const i = new Image(); i.src = URL.createObjectURL(b); it.prepend(i); } }
     grp.append(it);
   }
   if (!monthAll.length) box.innerHTML = `<p class="hint">${tr('No transactions in this month.')}</p>`;
+  renderDash(all);
 }
 bindMonthNav($('#stats'), renderHome);
 $('#recent').onclick = e => {
@@ -644,32 +645,33 @@ $('#recent').onclick = e => {
   if (it && recById[it.dataset.id]) openSheet(recById[it.dataset.id]);
 };
 
-// ---------- Thống kê: phân tích bằng biểu đồ (không lặp lại phần tổng quan) ----------
-const PAL = ['#3b82f6', '#14b8a6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16', '#ec4899'];
+// ---------- Dashboard (nằm cuối tab Tổng quan): thu nhập, chênh lệch và phân tích ----------
+const PAL = ['#2f2fc4', '#14b8a6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16', '#ec4899'];
 const short = n => n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 0 : 1).replace(/\.0$/, '') + 'M' : n >= 1e3 ? Math.round(n / 1e3) + 'k' : String(Math.round(n));
 function sumBy(arr, f) { const o = {}; arr.forEach(r => { const k = f(r); o[k] = (o[k] || 0) + Number(r.amount); }); return o; }
 
-async function renderStats() {
-  const all = await doneRecs();
-  all.forEach(r => recById[r.id] = r);
+function renderDash(all) {
   const recs = all.filter(r => !isInc(r));   // biểu đồ chi tiêu chỉ tính khoản chi
   const incIn = ym => sum(all.filter(r => isInc(r) && ymOf(r.time) === ym));
   const inM = ym => recs.filter(r => ymOf(r.time) === ym);
-  const m = inM(viewYm), total = sum(m);
+  const m = inM(viewYm), total = sum(m), incNow = incIn(viewYm), net = incNow - total;
   const [y, mo] = viewYm.split('-').map(Number);
   const dim = new Date(y, mo, 0).getDate();
   const isCur = viewYm === nowYm();
   const elapsed = isCur ? new Date().getDate() : dim;
   const prevYm = addMonths(viewYm, -1), pTotal = sum(inM(prevYm));
-  let h = monthNav('light');
-  if (!m.length) { $('#statsBody').innerHTML = h + `<div class="card empty">${tr('No transactions in this month yet.')}</div>`; return; }
+
+  // Thu nhập và chênh lệch nằm ở đây (không còn trong thẻ tóm tắt)
+  let h = `<h2>${tr('Dashboard')}</h2><div class="kpis">` +
+    `<div class="kpi"><div class="l">${tr('Income')}</div><div class="v sm pos" data-key="d-inc" data-count="${incNow}">${fmt(incNow)}</div></div>` +
+    `<div class="kpi"><div class="l">${tr('Net')}</div><div class="v sm ${net < 0 ? 'neg' : ''}" data-key="d-net" data-count="${net}">${fmt(net)}</div></div></div>`;
+  if (!m.length) { $('#dash').innerHTML = h; runCounts($('#dash')); return; }
 
   const avgDay = total / Math.max(1, elapsed);
   const biggest = m.reduce((a, b) => Number(b.amount) > Number(a.amount) ? b : a);
   const pct = pTotal ? (total - pTotal) / pTotal * 100 : null;
-  const incNow = incIn(viewYm);
 
-  // Đánh giá tổng quát lên đầu
+  // Đánh giá tổng quát
   const prevs = [-1, -2, -3].map(n => sum(inM(addMonths(viewYm, n)))).filter(v => v > 0);
   const avg3 = prevs.length ? prevs.reduce((a, b) => a + b, 0) / prevs.length : 0;
   let rating = ['neutral', 'Not enough history yet'];
@@ -680,7 +682,7 @@ async function renderStats() {
   h += `<div class="kpis">
     <div class="kpi"><div class="l">${tr('Daily average')}</div><div class="v sm">${fmt(avgDay)}</div></div>
     <div class="kpi"><div class="l">${tr('Largest expense')}</div><div class="v sm">${fmt(biggest.amount)}</div><div class="sub2">${esc(biggest.category)}</div></div>
-    ${incNow ? `<div class="kpi"><div class="l">${tr('Savings rate')}</div><div class="v sm">${Math.round((incNow - total) / incNow * 100)}%</div></div>` : ''}
+    ${incNow ? `<div class="kpi"><div class="l">${tr('Savings rate')}</div><div class="v sm">${Math.round(net / incNow * 100)}%</div></div>` : ''}
     ${isCur && elapsed < dim ? `<div class="kpi"><div class="l">${tr('Month-end estimate')}</div><div class="v sm">${fmt(avgDay * dim)}</div></div>` : ''}
   </div>`;
 
@@ -697,19 +699,6 @@ async function renderStats() {
       `<div class="col"><span class="cv">${exp6[i] ? short(exp6[i]) : ''}</span><div class="cbar ${ym === viewYm ? 'sel' : ''}" style="height:${Math.max(exp6[i] ? 4 : 0, exp6[i] / mx * 100)}%"></div><span class="cl">${monthShort(ym)}</span></div>`).join('')}</div></div>`;
   }
 
-  const byCat = Object.entries(sumBy(m, r => r.category)).sort((a, b) => b[1] - a[1]);
-  const slices = byCat.slice(0, 7); const rest = byCat.slice(7).reduce((s, [, v]) => s + v, 0); if (rest) slices.push([tr('Others'), rest]);
-  let off = 0;
-  const arcs = slices.map(([, v], i) => {
-    const p = v / total * 100;
-    const s = `<circle r="15.9155" cx="21" cy="21" fill="none" stroke="${PAL[i % PAL.length]}" stroke-width="6" stroke-dasharray="${p} ${100 - p}" stroke-dashoffset="${-off}" transform="rotate(-90 21 21)"/>`;
-    off += p; return s;
-  }).join('');
-  h += `<h2>${tr('By category')}</h2><div class="card donut">
-    <svg viewBox="0 0 42 42" class="dsvg" role="img" aria-label="${tr('By category')}">${arcs}<text x="21" y="22.5" text-anchor="middle" class="dtxt">${short(total)}</text></svg>
-    <div class="legend">${slices.map(([k, v], i) => `<div class="lg"><i style="background:${PAL[i % PAL.length]}"></i><span>${esc(k)}</span><b>${Math.round(v / total * 100)}%</b></div>`).join('')}</div>
-  </div>`;
-
   const days = Array(dim).fill(0); m.forEach(r => days[new Date(r.time).getDate() - 1] += Number(r.amount));
   const dmax = Math.max(1, ...days);
   h += `<h2>${tr('Daily spending')}</h2><div class="card"><div class="dcols">${days.map(v =>
@@ -724,6 +713,7 @@ async function renderStats() {
   h += `<h2>${tr('Top expenses')}</h2><div class="card list">${[...m].sort((a, b) => Number(b.amount) - Number(a.amount)).slice(0, 5).map((r, i) =>
     `<div class="item" data-id="${r.id}"><div class="rank">${i + 1}</div><div class="t">${esc(r.category)}<small>${new Date(r.time).toLocaleDateString(DLOC())}${r.note ? ' · ' + esc(r.note) : ''}</small></div><div class="amt">${fmt(r.amount)}</div></div>`).join('')}</div>`;
 
+  const byCat = Object.entries(sumBy(m, r => r.category)).sort((a, b) => b[1] - a[1]);
   const wd = Array(7).fill(0); m.forEach(r => wd[new Date(r.time).getDay()] += Number(r.amount));
   const wdTop = wd.indexOf(Math.max(...wd));
   const tips = [];
@@ -733,11 +723,11 @@ async function renderStats() {
   tips.push(tr('You spend about <b>{0}</b> per day.', fmt(avgDay)));
   tips.push(tr('Spending peaks on <b>{0}</b> ({1}).', weekdayName(wdTop) + (lang === 'en' ? 's' : ''), fmt(wd[wdTop])));
   tips.push(tr('Largest single expense: <b>{0}</b> ({1}) on {2}.', fmt(biggest.amount), esc(biggest.category), new Date(biggest.time).toLocaleDateString(DLOC())));
-  if (incNow) tips.push(incNow >= total ? tr('You saved <b>{0}%</b> of your income this month.', Math.round((incNow - total) / incNow * 100)) : tr('Spending is higher than income by <b>{0}</b> this month.', fmt(total - incNow)));
+  if (incNow) tips.push(incNow >= total ? tr('You saved <b>{0}%</b> of your income this month.', Math.round(net / incNow * 100)) : tr('Spending is higher than income by <b>{0}</b> this month.', fmt(total - incNow)));
   h += `<h2>${tr('Assessment')}</h2><div class="card"><ul class="tips">${tips.map(t => `<li>${t}</li>`).join('')}</ul></div>`;
-  $('#statsBody').innerHTML = h;
+  $('#dash').innerHTML = h;
+  runCounts($('#dash'));
 }
-bindMonthNav($('#statsBody'), renderStats);
 
 // ---------- 6 hũ: tự cập nhật theo thu nhập (cả tháng) và chi tiêu; % mỗi tháng lưu riêng ----------
 function computeJars(ym, recs, pct) {
@@ -759,7 +749,7 @@ async function renderJars() {
   let h = monthNav('light') +
     `<div class="card incbox"><div class="hl">${tr('Income this month')}</div><b class="total" data-key="jars-inc" data-count="${c.income}">${fmt(c.income)}</b>` +
     `<div class="sub">${c.nInc === 1 ? tr('{0} income entry', 1) : tr('{0} income entries', c.nInc)} · ${tr('Jars fill automatically from your income and spending.')}</div>` +
-    `<button id="jarAddInc" class="pill">+ ${tr('Add income')}</button></div><h2>${tr('Jars')}</h2>`;
+    `</div><h2>${tr('Jars')}</h2>`;
   JAR_KEYS.forEach((k, i) => {
     h += `<div class="card jar" data-i="${i}"><div class="jtop"><span class="jic">${JAR_ICONS[i]}</span><div class="jn">${esc(jarName(i))}<small data-alloc></small></div>` +
       `<label class="pct"><input type="number" inputmode="decimal" step="0.5" min="0" max="100" data-pct="${i}" value="${draftPct[i]}"><span>%</span></label></div>` +
@@ -800,7 +790,6 @@ $('#jarsBody').addEventListener('input', e => {
 });
 $('#jarsBody').addEventListener('click', e => {
   if (monthClick(e)) { renderJars(); return; }
-  if (e.target.closest('#jarAddInc')) { cur = newRec(); cur.type = 'income'; renderCats(); show('cat'); return; }
   if (e.target.closest('#saveMonth') && !$('#saveMonth').disabled) {
     const s = pctSaved(); s[viewYm] = draftPct.slice(); cfg.set('jarpct', JSON.stringify(s));
     markJars(viewYm); sync(); paintJars();
@@ -874,7 +863,7 @@ async function openSheet(r) {
   $('#sheetBody').innerHTML =
     `<div class="d-cat">${esc(r.category)}</div><div class="d-amt ${isInc(r) ? 'in' : ''}">${isInc(r) ? '+' : ''}${fmt(r.amount)}</div>` +
     row('Type', isInc(r) ? tr('Income') : tr('Expense')) + row('Date', new Date(r.time).toLocaleString(DLOC())) + row('Bank', r.bank) + row('Payee', r.payee) +
-    row('Note', r.note) + row('Sync', r.synced ? tr('Synced') : tr('Pending')) +
+    row('Note', r.note) +
     '<div id="sheetPhoto"></div>';
   $('#sheet').hidden = false;
   document.body.classList.add('noscroll');
@@ -894,20 +883,8 @@ const closeSheet = () => { if (!$('#sheet').hidden) history.back(); };
 $('#sheetClose').onclick = closeSheet;
 $('#sheet').onclick = e => { if (e.target.id === 'sheet') closeSheet(); };
 
-// ---------- thư viện ảnh ----------
-async function openGallery() {
-  show('gallery');
-  const g = $('#gal'); g.innerHTML = '';
-  const recs = (await doneRecs()).filter(r => r.photo).sort((a, b) => b.time.localeCompare(a.time));
-  if (!recs.length) g.innerHTML = `<p class="hint">${tr('No photos yet.')}</p>`;
-  for (const r of recs) {
-    const b = await getPhoto(r.id); if (!b) continue;
-    const i = new Image(); i.src = URL.createObjectURL(b);
-    i.onclick = () => savePhoto(b, r.photo);
-    g.append(i);
-  }
-}
-// iOS không cho web tự ghi vào Photos: dùng Share Sheet > "Lưu hình ảnh"
+// ---------- lưu ảnh ra album Ảnh (từ cửa sổ chi tiết giao dịch) ----------
+// iOS không cho web tự ghi vào Photos: dùng Share Sheet// iOS không cho web tự ghi vào Photos: dùng Share Sheet > "Lưu hình ảnh"
 async function savePhoto(blob, name) {
   const f = new File([blob], name, { type: 'image/jpeg' });
   if (navigator.canShare && navigator.canShare({ files: [f] })) {
