@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Expenses">
-<meta name="theme-color" content="#1e3a8a">
+<meta name="theme-color" content="#f5f5f7">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="stylesheet" href="style.css">
@@ -18,7 +18,7 @@
   <h1 id="title">Expenses</h1>
   <button id="openSettings" class="icon" aria-label="Settings">⚙</button>
 </header>
-<nav id="tabs" class="tabs">
+<nav id="tabs" class="tabs" style="--i:0">
   <button data-tab="home" class="on">Overview</button>
   <button data-tab="stats">Statistics</button>
   <button data-tab="jars">6 Jars</button>
@@ -40,10 +40,12 @@
 
   <section id="v-home">
     <div id="pending"></div>
-    <div class="row"><h2>Summary</h2><button id="btnGallery" class="link">Photo library</button></div>
-    <div id="stats" class="card"></div>
-    <h2>Transactions</h2>
+    <div id="stats" class="card hero"></div>
+    <div class="row"><h2>Transactions</h2><button id="btnGallery" class="link">Photo library</button></div>
     <div id="recent"></div>
+    <button id="btnPhotoQr" class="fab-add left" aria-label="Scan QR from a photo">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="1.6"/><path d="M21 16l-5-5-8 9"/></svg>
+    </button>
     <button id="btnManual" class="fab-add" aria-label="Add manually">+</button>
     <button id="btnScan" class="fab-scan" aria-label="Scan QR">
       <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><rect x="8" y="8" width="3" height="3" rx=".5"/><rect x="13" y="8" width="3" height="3" rx=".5"/><rect x="8" y="13" width="3" height="3" rx=".5"/><path d="M13.5 14.5h2.5v2"/></svg>
@@ -53,6 +55,7 @@
   <section id="v-scan" hidden>
     <div class="camwrap"><video id="video" playsinline muted></video></div>
     <p id="scanMsg" class="hint">Point the camera at the QR code…</p>
+    <button id="scanPhotoBtn" class="ghost">🖼 Choose from Photos</button>
   </section>
 
   <section id="v-cat" hidden>
@@ -63,6 +66,7 @@
 
   <section id="v-detail" hidden>
     <label>Amount (₫)<input id="amount" inputmode="numeric" placeholder="0"></label>
+    <label>Date<input id="dateIn" type="date"></label>
     <label>Note<input id="note" placeholder="e.g. coffee with a client"></label>
     <div class="photo">
       <label class="btn">📸 Take a receipt photo
@@ -111,9 +115,6 @@
       <label>Google Sheet file link<input id="sheetFile" placeholder="https://docs.google.com/spreadsheets/d/…/edit"></label>
       <label>Google Apps Script link (Web App)<input id="sheetUrl" placeholder="https://script.google.com/macros/s/…/exec"></label>
       <button id="testSheet" class="ghost">Send a test row</button>
-      <label>Jar percentages</label>
-      <textarea id="jarsText" rows="7"></textarea>
-      <p class="hint">One jar per line: Name | percent | categories. Percentages should add up to 100.</p>
       <label>Banks</label>
       <textarea id="banksText" rows="10"></textarea>
       <p class="hint">One per line: Name (Brand) | app link. Edit if an app does not open.</p>
@@ -122,6 +123,8 @@
   </section>
 
 </main>
+
+<input id="qrFile" type="file" accept="image/*" hidden>
 
 <div id="sheet" class="sheet" hidden>
   <div class="sheet-card" role="dialog" aria-modal="true">

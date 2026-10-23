@@ -1,7 +1,8 @@
 'use strict';
-const VERSION = '1.5.1';
+const VERSION = '2.0.0';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
 
 // ---------- cấu hình cục bộ ----------
 const cfg = {
@@ -9,26 +10,27 @@ const cfg = {
   set: (k, v) => { try { localStorage.setItem(k, v); } catch {} },
   del: k => { try { localStorage.removeItem(k); } catch {} },
 };
+const getJSON = (k, d) => { try { return JSON.parse(cfg.get(k, '')) ?? d; } catch { return d; } };
 
 // ---------- ngôn ngữ (English / Tiếng Việt) ----------
 let lang = cfg.get('lang', 'en') === 'vi' ? 'vi' : 'en';
 const VI = {
   // tab & tiêu đề
   'Expenses': 'Chi tiêu', 'Overview': 'Tổng quan', 'Statistics': 'Thống kê', '6 Jars': '6 hũ', 'Categories': 'Danh mục',
+  'Choose from Photos': 'Chọn từ thư viện ảnh', 'No QR code found in this photo': 'Không tìm thấy mã QR trong ảnh này', 'Scan QR from a photo': 'Quét QR từ ảnh',
   'Scan QR': 'Quét QR', 'Choose category': 'Chọn danh mục', 'Details': 'Chi tiết', 'Choose bank': 'Chọn ngân hàng',
   'Photo library': 'Thư viện ảnh', 'Settings': 'Cài đặt', 'Back': 'Quay lại', 'Close': 'Đóng', 'Add manually': 'Nhập tay',
-  // trang chủ
-  'Summary': 'Tóm tắt', 'Transactions': 'Giao dịch', 'Previous month': 'Tháng trước', 'Next month': 'Tháng sau',
-  '{0} transactions': '{0} giao dịch', '{0} transaction': '{0} giao dịch', 'No transactions in this month.': 'Chưa có giao dịch trong tháng này.',
-  'Google Sheet not connected. Open Settings > Advanced and paste the link.': 'Chưa nối Google Sheet. Vào Cài đặt > Nâng cao để dán link.',
-  '⏳ not synced yet': '⏳ chưa lên Sheet', 'Did the transfer go through?': 'Giao dịch đã thành công?', 'Cancel': 'Huỷ', 'Done': 'Xong',
+  // tổng quan
+  'Spent this month': 'Đã chi tháng này', 'Transactions': 'Giao dịch', 'Previous month': 'Tháng trước', 'Next month': 'Tháng sau',
+  'Today': 'Hôm nay', 'Yesterday': 'Hôm qua', 'No transactions in this month.': 'Chưa có giao dịch trong tháng này.',
+  '⏳ pending': '⏳ chờ đồng bộ', 'Did the transfer go through?': 'Giao dịch đã thành công?', 'Cancel': 'Huỷ', 'Done': 'Xong',
   // quét & nhập
   'Point the camera at the QR code…': 'Đưa mã QR vào khung hình…',
   'Cannot open the camera. Allow camera access in iPhone Settings > Safari / this app.': 'Không mở được camera. Vào Cài đặt iPhone > Safari / ứng dụng > Camera để cấp quyền.',
-  'Payee: {0}': 'Người nhận: {0}', 'Amount (₫)': 'Số tiền (₫)', 'Note': 'Ghi chú', 'e.g. coffee with a client': 'Ví dụ: cà phê với khách',
+  'Payee: {0}': 'Người nhận: {0}', 'Amount (₫)': 'Số tiền (₫)', 'Date': 'Ngày', 'Note': 'Ghi chú', 'e.g. coffee with a client': 'Ví dụ: cà phê với khách',
   '📸 Take a receipt photo': '📸 Chụp ảnh hoá đơn', '📁 Save to the expense album': '📁 Lưu vào album chi tiêu',
   'Save manually via the share sheet': 'Lưu thủ công qua bảng chia sẻ', 'Next: choose bank': 'Tiếp: chọn ngân hàng',
-  'Save only, do not open a bank': 'Chỉ lưu, không mở ngân hàng',
+  'Save only, do not open a bank': 'Chỉ lưu, không mở ngân hàng', 'Save income': 'Lưu khoản thu',
   'Choose a bank. Its app opens and you confirm with Face ID as usual. Enter the amount there yourself.': 'Chọn ngân hàng. App ngân hàng sẽ mở, bạn xác thực khuôn mặt như bình thường và tự nhập số tiền ở đó.',
   "This is the app's own photo storage. Tap a photo and choose \"Save Image\" to put it into your iPhone Photos.": 'Đây là kho ảnh riêng của app. Chạm vào ảnh rồi chọn "Lưu hình ảnh" để đưa vào album Ảnh của iPhone.',
   'Enter an amount first': 'Hãy nhập số tiền trước', 'Could not copy the photo, try again': 'Không copy được ảnh, thử lại',
@@ -36,11 +38,11 @@ const VI = {
   'Could not open the app. Check the link in Settings.': 'Không mở được app. Kiểm tra link trong Cài đặt.',
   'No photos yet.': 'Chưa có ảnh nào.', 'Press and hold the photo to save it': 'Giữ lâu vào ảnh để lưu',
   // chi tiết giao dịch
-  'Date': 'Ngày', 'Bank': 'Ngân hàng', 'Payee': 'Người nhận', 'Google Sheet': 'Google Sheet', 'Synced': 'Đã lên Sheet', 'Not synced yet': 'Chưa lên Sheet',
+  'Bank': 'Ngân hàng', 'Payee': 'Người nhận', 'Type': 'Loại', 'Sync': 'Đồng bộ', 'Synced': 'Đã đồng bộ', 'Pending': 'Đang chờ',
   'Tap the photo to save it to your iPhone Photos.': 'Chạm vào ảnh để lưu vào album Ảnh của iPhone.',
   // thống kê
-  'No transactions in this month yet.': 'Tháng này chưa có giao dịch.', 'Total spent': 'Tổng chi', 'Daily average': 'Trung bình mỗi ngày',
-  'Largest expense': 'Khoản chi lớn nhất', 'No previous month': 'Chưa có tháng trước', 'vs {0}': 'so với {0}',
+  'No transactions in this month yet.': 'Tháng này chưa có giao dịch.', 'Daily average': 'Trung bình mỗi ngày', 'Largest expense': 'Khoản chi lớn nhất',
+  'Month-end estimate': 'Dự kiến cuối tháng', 'Savings rate': 'Tỷ lệ tiết kiệm', 'vs {0}': 'so với {0}',
   'By category': 'Theo danh mục', 'Last 6 months': '6 tháng gần nhất', 'Daily spending': 'Chi theo ngày', 'By bank': 'Theo ngân hàng',
   'Top expenses': 'Chi lớn nhất', 'Assessment': 'Đánh giá', 'Cash / no bank': 'Tiền mặt / không qua ngân hàng', 'Others': 'Khác',
   'Above your recent average': 'Cao hơn mức trung bình gần đây', 'Below your recent average': 'Thấp hơn mức trung bình gần đây',
@@ -50,42 +52,40 @@ const VI = {
   '<b>{0}</b> is your biggest category: {1}% of the month ({2}).': '<b>{0}</b> là danh mục lớn nhất: {1}% trong tháng ({2}).',
   'The top 2 categories together make up {0}% of spending.': '2 danh mục lớn nhất chiếm {0}% tổng chi.',
   'You spend about <b>{0}</b> per day.': 'Bạn chi khoảng <b>{0}</b> mỗi ngày.',
-  ' At this pace the month would end near <b>{0}</b>.': ' Với tốc độ này cả tháng sẽ khoảng <b>{0}</b>.',
   'Spending peaks on <b>{0}</b> ({1}).': 'Chi nhiều nhất vào <b>{0}</b> ({1}).',
   'Largest single expense: <b>{0}</b> ({1}) on {2}.': 'Khoản chi lớn nhất: <b>{0}</b> ({1}) ngày {2}.',
+  'You saved <b>{0}%</b> of your income this month.': 'Bạn đã tiết kiệm <b>{0}%</b> thu nhập tháng này.',
+  'Spending is higher than income by <b>{0}</b> this month.': 'Chi tiêu vượt thu nhập <b>{0}</b> trong tháng này.',
+  'Income vs spending': 'Thu nhập và chi tiêu', 'Net': 'Chênh lệch', 'Income': 'Thu nhập', 'Spending': 'Chi tiêu', 'Expense': 'Chi tiêu',
   // 6 hũ
-  'Set your monthly income to split it into jars.': 'Nhập thu nhập hàng tháng để chia vào các hũ.', 'Monthly income': 'Thu nhập hàng tháng', 'Save': 'Lưu',
-  'Spent {0} · {1}% of income': 'Đã chi {0} · {1}% thu nhập', 'Your jars': 'Các hũ của bạn', 'Over by {0}': 'Vượt {0}', '{0} left': 'Còn {0}',
-  'Set aside': 'Để dành', 'Spent {0} of {1}': 'Đã chi {0} / {1}',
-  'Your jar percentages add up to {0}%, not 100%. Fix them in Settings > Advanced.': 'Tổng tỷ lệ các hũ là {0}%, không phải 100%. Sửa trong Cài đặt > Nâng cao.',
-  'Transfer {0} to this jar each month. Nothing is tracked here.': 'Chuyển {0} vào hũ này mỗi tháng. Không theo dõi chi tiêu ở đây.',
+  'Necessities': 'Thiết yếu', 'Long-term savings': 'Tiết kiệm dài hạn', 'Education': 'Giáo dục', 'Play': 'Hưởng thụ', 'Financial freedom': 'Tự do tài chính', 'Give': 'Cho đi',
+  'Income this month': 'Thu nhập tháng này', '{0} income entries': '{0} khoản thu', '{0} income entry': '{0} khoản thu',
+  'Jars fill automatically from your income and spending.': 'Các hũ tự cập nhật theo thu nhập và chi tiêu của bạn.',
+  'Add income': 'Thêm khoản thu', 'Jars': 'Các hũ', 'Total': 'Tổng', 'Save {0}': 'Lưu {0}', 'Saved for {0}': 'Đã lưu cho {0}',
+  'Percentages must add up to 100': 'Tổng phần trăm phải bằng 100',
+  'Percentages can differ every month. Save to keep them for {0}.': 'Tỷ lệ có thể khác nhau mỗi tháng. Bấm lưu để giữ cho {0}.',
+  'Spent {0}': 'Đã chi {0}', 'Over by {0}': 'Vượt {0}', '{0} left': 'Còn {0}',
   'Not in any jar: <b>{0}</b>. Assign those categories to a jar in the Categories tab.': 'Chưa thuộc hũ nào: <b>{0}</b>. Gán các danh mục đó vào hũ ở tab Danh mục.',
   // danh mục
-  'Your categories and the jar each one belongs to. New ones show up in the expense form and in your Google Sheet as soon as you use them.': 'Danh mục của bạn và hũ tương ứng. Danh mục mới xuất hiện ở form chi tiêu và trong Google Sheet ngay khi bạn dùng.',
+  'Your categories and the jar each one belongs to. Spending in a category is deducted from its jar.': 'Danh mục của bạn và hũ tương ứng. Chi tiêu của danh mục sẽ được trừ vào hũ đó.',
   '{0} this month': '{0} trong tháng', 'No jar': 'Không thuộc hũ', 'Add a category': 'Thêm danh mục', 'Name': 'Tên', 'Icon': 'Biểu tượng', 'Add': 'Thêm',
   'e.g. Pets': 'Ví dụ: Thú cưng', 'That category already exists': 'Danh mục này đã có', 'Enter a name first': 'Hãy nhập tên trước',
   'Remove this category? Past expenses keep it.': 'Xoá danh mục này? Các khoản đã chi vẫn giữ nguyên.', 'Remove': 'Xoá',
-  // cài đặt
-  'Expense': 'Chi tiêu', 'Income': 'Thu nhập', 'Save income': 'Lưu khoản thu', 'Income categories': 'Danh mục thu nhập',
-  'Add an income category': 'Thêm danh mục thu nhập', 'e.g. Rental': 'Ví dụ: Cho thuê', 'Net': 'Chênh lệch', 'Savings rate': 'Tỷ lệ tiết kiệm',
-  'Income vs spending': 'Thu nhập và chi tiêu', 'Income this month (from your entries)': 'Thu nhập tháng này (từ các khoản bạn nhập)',
-  'Monthly income (set manually)': 'Thu nhập hàng tháng (đặt tay)', 'Type': 'Loại', 'Income {0} · Net {1}': 'Thu {0} · Còn lại {1}',
-  'You saved <b>{0}%</b> of your income this month.': 'Bạn đã tiết kiệm <b>{0}%</b> thu nhập tháng này.',
-  'Spending is higher than income by <b>{0}</b> this month.': 'Chi tiêu vượt thu nhập <b>{0}</b> trong tháng này.',
-  'Income': 'Thu nhập', 'Spending': 'Chi tiêu',
+  'Income categories': 'Danh mục thu nhập', 'Add an income category': 'Thêm danh mục thu nhập', 'e.g. Rental': 'Ví dụ: Cho thuê',
+  // cài đặt & bảo mật
+  'Language': 'Ngôn ngữ', 'Appearance': 'Giao diện', 'Light': 'Sáng', 'Dark': 'Tối', 'Auto': 'Tự động', 'About': 'Thông tin', 'Version': 'Phiên bản',
+  'Check for updates': 'Kiểm tra cập nhật', 'Advanced': 'Nâng cao',
   'Security': 'Bảo mật', 'PIN lock': 'Khoá bằng mã PIN', 'Set PIN': 'Đặt mã PIN', 'Change PIN': 'Đổi mã PIN', 'Turn off PIN': 'Tắt mã PIN',
   'On': 'Bật', 'Off': 'Tắt', 'Enter PIN': 'Nhập mã PIN', 'Create a 4-digit PIN': 'Tạo mã PIN 4 số', 'Confirm PIN': 'Nhập lại mã PIN',
   'PINs do not match': 'Hai mã PIN không khớp', 'Wrong PIN': 'Sai mã PIN', 'Too many attempts. Wait {0}s': 'Nhập sai nhiều lần. Chờ {0} giây',
   'Forgot PIN?': 'Quên mã PIN?', 'Face ID': 'Face ID', 'Turn on Face ID': 'Bật Face ID', 'Turn off Face ID': 'Tắt Face ID', 'Use Face ID': 'Dùng Face ID',
   'Face ID failed, enter your PIN': 'Face ID không thành công, hãy nhập mã PIN', 'Face ID could not be turned on on this device': 'Không bật được Face ID trên thiết bị này',
-  'To reset a forgotten PIN, delete the app icon and add it again from Safari. Data on this phone is lost; your Google Sheet keeps everything.': 'Quên mã PIN thì xoá icon app rồi thêm lại từ Safari. Dữ liệu trên máy sẽ mất, Google Sheet vẫn giữ nguyên.',
+  'To reset a forgotten PIN, delete the app icon and add it again from Safari. Data on this phone that is not synced yet is lost.': 'Quên mã PIN thì xoá icon app rồi thêm lại từ Safari. Dữ liệu trên máy chưa đồng bộ sẽ mất.',
   'Data': 'Dữ liệu', '📊 Open Google Sheet': '📊 Mở Google Sheet', 'Google Sheet file link': 'Link file Google Sheet',
-  'Language': 'Ngôn ngữ', 'Appearance': 'Giao diện', 'Light': 'Sáng', 'Dark': 'Tối', 'Auto': 'Tự động', 'About': 'Thông tin', 'Version': 'Phiên bản',
-  'Check for updates': 'Kiểm tra cập nhật', 'Advanced': 'Nâng cao', 'Google Apps Script link (Web App)': 'Link Google Apps Script (Web App)',
-  'Send a test row': 'Gửi thử 1 dòng', 'Jar percentages': 'Tỷ lệ các hũ', 'Banks': 'Ngân hàng',
-  'One jar per line: Name | percent | categories. Percentages should add up to 100.': 'Mỗi dòng một hũ: Tên | phần trăm | danh mục. Tổng phần trăm nên bằng 100.',
+  'Google Apps Script link (Web App)': 'Link Google Apps Script (Web App)', 'Send a test row': 'Gửi thử 1 dòng', 'Banks': 'Ngân hàng',
   'One per line: Name (Brand) | app link. Edit if an app does not open.': 'Mỗi dòng: Tên (Thương hiệu) | link mở app. Sửa lại nếu app không mở được.',
   'Sent. Check the ChiTieu tab in your Sheet': 'Đã gửi. Mở tab ChiTieu trong Sheet để kiểm tra', 'Send failed, check the link': 'Gửi lỗi, kiểm tra link',
+  'Save': 'Lưu',
 };
 const tr = (s, ...a) => { let r = (lang === 'vi' && VI[s]) || s; a.forEach((v, i) => r = r.replace('{' + i + '}', v)); return r; };
 const LOC = () => lang === 'vi' ? 'vi-VN' : 'en-US';
@@ -115,12 +115,13 @@ function applyTheme() {
   const t = cfg.get('theme', 'auto');
   if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme;
   const dark = t === 'dark' || (t === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
-  const m = document.querySelector('meta[name=theme-color]'); if (m) m.content = dark ? '#08122a' : '#1e3a8a';
+  const m = document.querySelector('meta[name=theme-color]'); if (m) m.content = dark ? '#000000' : '#f5f5f7';
 }
 applyTheme();
 
 // ---------- mặc định ----------
 const DEF_CATS = '⛽ Fuel\n☕ Food & Coffee\n🛍 Shopping\n🏠 Home bills\n🏥 Health\n🎬 Entertainment\n📦 Other';
+const DEF_ICATS = '💼 Salary\n🎁 Bonus\n💻 Freelance\n📈 Investment\n🧧 Gift\n💰 Other income';
 // URL scheme mở thẳng app ngân hàng trên iOS (lấy từ trang chuyển tiếp của dl.vietqr.io). Chỉ mở app,
 // không truyền được số tiền / tài khoản (iOS không có link điền sẵn đã kiểm chứng).
 const DEF_BANKS = [
@@ -136,9 +137,32 @@ const DEF_BANKS = [
   'Orient Commercial Joint Stock Bank (OCB) | newomni-app://',
 ].join('\n');
 const OLD_BANKS = 'Vietcombank | vietcombankmobile://\nMB Bank | mbbank://\nTechcombank | tcb://\nVPBank | vpbankneo://\nACB | acbone://\nBIDV | bidv.smartbanking.partner://\nTPBank | hydro://\nVietinBank | vietinbankipay://\nAgribank | agribankmobile://\nOCB | newomni-app://';
+// File Google Sheet chứa dữ liệu (chỉ mở được khi đăng nhập đúng tài khoản Google, Sheet không chia sẻ cho ai)
+const SHEET_FILE = 'https://docs.google.com/spreadsheets/d/1h6gpLCcJoevkHnPB9yo8R86ALhcuY2pb5Bjd_H8fLhw/edit';
 // Cài đặt cũ chưa chỉnh tay thì tự đổi sang mặc định mới
 if (cfg.get('cats', '').startsWith('⛽ Tiền xăng')) cfg.del('cats');
 if (/vcbdigibank|dl\.vietqr\.io|techcombank:\/\//.test(cfg.get('banks', '')) || cfg.get('banks', '') === OLD_BANKS) cfg.del('banks');
+
+// ---------- 6 hũ: dữ liệu ----------
+const JAR_KEYS = ['Necessities', 'Long-term savings', 'Education', 'Play', 'Financial freedom', 'Give'];
+const JAR_ICONS = ['🏠', '🏦', '📚', '🎉', '🌱', '🎁'];
+const DEF_PCT = [55, 10, 10, 10, 10, 5];
+const DEF_JARMAP = { 'fuel': 0, 'home bills': 0, 'health': 0, 'other': 0, 'food & coffee': 3, 'shopping': 3, 'entertainment': 3 };
+if (!cfg.get('jarmap', '')) {   // lần đầu (hoặc nâng cấp từ bản cũ dùng danh sách chữ)
+  let m = DEF_JARMAP; const old = cfg.get('jars', '');
+  if (old) { m = {}; old.split('\n').forEach((l, i) => (l.split('|')[2] || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean).forEach(c => m[c] = i)); }
+  cfg.set('jarmap', JSON.stringify(m));
+}
+const jarMap = () => getJSON('jarmap', {});
+const pctSaved = () => getJSON('jarpct', {});
+// Tỷ lệ của một tháng: đã lưu cho tháng đó; nếu chưa thì kế thừa tháng đã lưu gần nhất trước đó; không có thì mặc định 55/10/10/10/10/5
+function pctFor(ym) {
+  const s = pctSaved(); if (s[ym]) return s[ym].slice();
+  const keys = Object.keys(s).sort();
+  const before = keys.filter(k => k < ym).pop() || keys[0];
+  return before ? s[before].slice() : DEF_PCT.slice();
+}
+const jarName = i => tr(JAR_KEYS[i]);
 
 // ---------- lưu trữ ----------
 let dbp;
@@ -162,21 +186,21 @@ async function tx(store, mode, fn) {
     t.onerror = () => rej(t.error);
   });
 }
-const putRec = r => tx('records', 'readwrite', s => s.put(r));
+// Mỗi khi một giao dịch hoàn tất được lưu, tháng đó cần gửi lại bảng 6 hũ (thu nhập/chi tiêu đổi)
+const putRec = r => tx('records', 'readwrite', s => s.put(r)).then(x => { if (r.status === 'done') markJars(ymOf(r.time)); return x; });
 const delRec = id => tx('records', 'readwrite', s => s.delete(id));
 const allRecs = () => tx('records', 'readonly', s => s.getAll());
 const putPhoto = (id, blob) => tx('photos', 'readwrite', s => s.put({ id, blob }));
 const getPhoto = id => tx('photos', 'readonly', s => s.get(id)).then(x => x && x.blob);
 const delPhoto = id => tx('photos', 'readwrite', s => s.delete(id));
+const doneRecs = async () => (await allRecs()).filter(r => r.status === 'done');
 
 // ---------- trạng thái ----------
 let cur = null;          // bản ghi đang soạn
 let curPhoto = null;     // blob ảnh đang soạn
 let stream = null, scanning = false, curView = 'home';
-const stack = [];        // lịch sử màn hình để nút quay lại
 
 const cats = () => cfg.get('cats', DEF_CATS).split('\n').map(s => s.trim()).filter(Boolean);
-const DEF_ICATS = '💼 Salary\n🎁 Bonus\n💻 Freelance\n📈 Investment\n🧧 Gift\n💰 Other income';
 const icats = () => cfg.get('icats', DEF_ICATS).split('\n').map(s => s.trim()).filter(Boolean);
 const isInc = r => r.type === 'income';       // bản ghi cũ không có type = chi tiêu
 const banks = () => cfg.get('banks', DEF_BANKS).split('\n').map(l => l.split('|').map(s => s.trim()))
@@ -187,29 +211,64 @@ function toast(msg, ms = 2600) {
   clearTimeout(toast.t); toast.t = setTimeout(() => t.hidden = true, ms);
 }
 
-// ---------- điều hướng ----------
+// ---------- điều hướng (dùng lịch sử trình duyệt để vuốt cạnh trái = quay lại) ----------
 const TITLES = { home: 'Expenses', stats: 'Statistics', jars: '6 Jars', cats: 'Categories', scan: 'Scan QR', cat: 'Choose category', detail: 'Details', bank: 'Choose bank', gallery: 'Photo library', settings: 'Settings' };
 const TOP = ['home', 'stats', 'jars', 'cats'];
-function show(v, push = true) {
+let depth = 0, pendingTop = null, lastBack = 0, dir = 'fwd';
+try { history.replaceState({ v: 'home', d: 0 }, ''); } catch {}
+// mode: true = thêm vào lịch sử, false = không đụng lịch sử, 'replace' = thay mục hiện tại
+function show(v, mode = true) {
   if (v !== 'scan') stopScan();
-  if (push) stack.push(v);
+  const inner = !TOP.includes(v);
+  try {
+    if (inner && mode === true) { depth++; history.pushState({ v, d: depth }, ''); }
+    else if (inner && mode === 'replace') history.replaceState({ v, d: depth }, '');
+    else if (!inner && mode === true && depth === 0) history.replaceState({ v, d: 0 }, '');
+  } catch {}
   curView = v;
+  document.body.dataset.dir = dir;
   document.querySelectorAll('main > section').forEach(s => s.hidden = s.id !== 'v-' + v);
   $('#title').textContent = tr(TITLES[v]);
-  const top = TOP.includes(v);
-  $('#back').hidden = top;
-  $('#tabs').hidden = !top;
+  $('#back').hidden = !inner;
+  $('#tabs').hidden = inner;
+  if (!inner) $('#tabs').style.setProperty('--i', TOP.indexOf(v));
   document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === v));
-  if (top) stack.length = 0;
+  window.scrollTo(0, 0);
   if (v === 'home') renderHome();
   if (v === 'stats') renderStats();
   if (v === 'jars') renderJars();
   if (v === 'cats') renderCategories();
   if (v === 'settings') renderSettings();
 }
-document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => show(b.dataset.tab, false));
-$('#back').onclick = () => { stack.pop(); show(stack.pop() || 'home'); };
+// Về màn hình chính của một tab và dọn lịch sử các màn con
+function goTop(v = 'home') {
+  if (depth > 0) { pendingTop = v; try { history.go(-depth); } catch { depth = 0; show(v, false); } }
+  else show(v, false);
+}
+window.addEventListener('popstate', e => {
+  lastBack = Date.now();
+  if (!$('#sheet').hidden) { hideSheet(); return; }
+  const s = e.state || { v: 'home', d: 0 };
+  depth = s.d || 0;
+  dir = 'back';
+  let v = pendingTop || s.v; pendingTop = null;
+  if (!TOP.includes(v) && v !== 'gallery' && v !== 'settings' && !cur) v = 'home';
+  if (v === 'scan') v = 'home';
+  show(v, false);
+  dir = 'fwd';
+});
+const goBack = () => { if (depth > 0) history.back(); else show('home', false); };
+document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => show(b.dataset.tab, true));
+$('#back').onclick = goBack;
 $('#openSettings').onclick = () => show('settings');
+// Vuốt từ mép trái sang phải để quay lại (trình duyệt tự làm trong chế độ app; đây là dự phòng, có chống gọi hai lần)
+let tx0 = 0, ty0 = 0, tracking = false;
+addEventListener('touchstart', e => { const t = e.touches[0]; tracking = t.clientX < 28 && (depth > 0 || !$('#sheet').hidden) && $('#lock').hidden; tx0 = t.clientX; ty0 = t.clientY; }, { passive: true });
+addEventListener('touchend', e => {
+  if (!tracking) return; tracking = false;
+  const t = e.changedTouches[0];
+  if (t.clientX - tx0 > 70 && Math.abs(t.clientY - ty0) < 60 && Date.now() - lastBack > 700) { lastBack = Date.now(); history.back(); }
+}, { passive: true });
 
 // ---------- quét QR ----------
 $('#btnScan').onclick = startScan;
@@ -269,7 +328,32 @@ function parseVietQR(raw) {
   return r;
 }
 
-function onQr(raw) {
+// Quét QR từ ảnh trong thư viện: thu nhỏ ảnh lớn, thử nhiều kích thước và cả mã đảo màu
+async function decodeQrFile(file) {
+  let bmp;
+  try { bmp = await createImageBitmap(file); }
+  catch { bmp = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = URL.createObjectURL(file); }); }
+  const w0 = bmp.width, h0 = bmp.height;
+  for (const maxSide of [1600, 1000, 2400, 600]) {
+    const k = Math.min(1, maxSide / Math.max(w0, h0)), w = Math.round(w0 * k), h = Math.round(h0 * k);
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(bmp, 0, 0, w, h);
+    const code = jsQR(x.getImageData(0, 0, w, h).data, w, h, { inversionAttempts: 'attemptBoth' });
+    if (code && code.data) return code.data;
+  }
+  return null;
+}
+$('#btnPhotoQr').onclick = () => $('#qrFile').click();
+$('#scanPhotoBtn').onclick = () => $('#qrFile').click();
+$('#qrFile').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  let data = null;
+  try { data = await decodeQrFile(f); } catch {}
+  if (data) onQr(data, curView === 'scan' ? 'replace' : true);
+  else toast(tr('No QR code found in this photo'));
+};
+
+function onQr(raw, mode = 'replace') {
   stopScan();
   cur = newRec(); cur.fromQr = true;
   const q = parseVietQR(raw);
@@ -284,11 +368,10 @@ function onQr(raw) {
     $('#qrInfo').textContent = 'QR: ' + cur.payee;
   }
   if (navigator.vibrate) navigator.vibrate(60);
-  stack.pop();   // bỏ màn quét khỏi lịch sử, quay lại sẽ về trang chủ
-  renderCats(); show('cat');
+  renderCats(); show('cat', mode);   // từ camera: thay màn quét để vuốt quay lại về trang chủ; từ ảnh ở trang chủ: thêm mới
 }
 
-// ---------- danh mục (màn chọn khi ghi chi tiêu) / chi tiết ----------
+// ---------- chọn danh mục / chi tiết ----------
 document.querySelectorAll('#segType button').forEach(b => b.onclick = () => { cur.type = b.dataset.v; renderCats(); });
 function renderCats() {
   if (!cur.payee) $('#qrInfo').hidden = true;
@@ -303,9 +386,11 @@ function renderCats() {
     $('#cats').append(b);
   });
 }
+const ymd = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 function openDetail() {
   $('#amount').value = cur.amount ? Number(cur.amount).toLocaleString(LOC()) : '';
   $('#note').value = cur.note;
+  $('#dateIn').value = ymd(new Date(cur.time));
   $('#preview').hidden = true; $('#photoSave').hidden = true; $('#photoAlbum').hidden = true; curPhoto = null;
   const inc = cur.type === 'income';   // khoản thu: không ảnh, không ngân hàng
   $('.photo').hidden = inc; $('#toBank').hidden = inc; $('#saveOnly').hidden = inc; $('#saveIncome').hidden = !inc;
@@ -359,6 +444,8 @@ function collectDetail() {
   cur.amount = $('#amount').value.replace(/\D/g, '');
   cur.note = $('#note').value.trim();
   if (!cur.amount) { toast(tr('Enter an amount first')); return false; }
+  const dv = $('#dateIn').value;   // ngày giao dịch (mặc định hôm nay); giữ giờ hiện tại
+  if (dv) { const [y, m, d] = dv.split('-').map(Number), n = new Date(); cur.time = new Date(y, m - 1, d, n.getHours(), n.getMinutes(), n.getSeconds()).toISOString(); }
   return true;
 }
 async function stash() {
@@ -368,17 +455,17 @@ async function stash() {
   }
 }
 
-// "Save only" = chi tiền mặt, không qua ngân hàng → ghi Sheet luôn, không báo gì
+// "Save only" = chi tiền mặt, không qua ngân hàng → lưu luôn, không báo gì
 $('#saveOnly').onclick = async () => {
   if (!collectDetail()) return;
   await stash();
   cur.status = 'done'; await putRec(cur); sync();
-  show('home');
+  goTop('home');
 };
 $('#saveIncome').onclick = async () => {
   if (!collectDetail()) return;
   cur.type = 'income'; cur.status = 'done'; await putRec(cur); sync();
-  show('home');
+  goTop('home');
 };
 $('#toBank').onclick = () => { if (collectDetail()) { renderBanks(); show('bank'); } };
 
@@ -398,14 +485,15 @@ async function openBank(b) {
   cur.bank = b.name; cur.status = 'done';   // đã nhập số tiền + chọn ngân hàng = lưu luôn
   await putRec(cur);
   sync();
-  stack.length = 0; stack.push('home');
-  if (!b.url) { toast(tr('No app link for this bank. Set one in Settings')); show('home'); return; }
-  show('home', false);
-  location.href = b.url;
-  setTimeout(() => { if (!document.hidden) toast(tr('Could not open the app. Check the link in Settings.'), 4000); }, 1800);
+  goTop('home');
+  if (!b.url) { toast(tr('No app link for this bank. Set one in Settings')); return; }
+  setTimeout(() => {
+    location.href = b.url;
+    setTimeout(() => { if (!document.hidden) toast(tr('Could not open the app. Check the link in Settings.'), 4000); }, 1800);
+  }, 80);
 }
 
-// ---------- thẻ xác nhận cũ (giao dịch pending từ bản trước) & đồng bộ ----------
+// ---------- thẻ xác nhận cũ (giao dịch pending từ bản trước) ----------
 async function renderPending() {
   const recs = (await allRecs()).filter(r => r.status === 'pending');
   const box = $('#pending'); box.innerHTML = '';
@@ -420,6 +508,7 @@ async function renderPending() {
 }
 document.addEventListener('visibilitychange', () => { if (!document.hidden && curView === 'home') renderHome(); });
 
+// ---------- đồng bộ ----------
 async function post(r) {
   const url = cfg.get('sheetUrl', '');
   if (!url) return false;
@@ -428,11 +517,36 @@ async function post(r) {
     return true;
   } catch { return false; }
 }
+function markJars(ym) {
+  const d = getJSON('jarsDirty', []); if (!d.includes(ym)) { d.push(ym); cfg.set('jarsDirty', JSON.stringify(d)); }
+}
+async function markAllJars() {   // đổi gán danh mục → hũ ảnh hưởng mọi tháng đã có giao dịch
+  (await doneRecs()).forEach(r => markJars(ymOf(r.time)));
+  markJars(viewYm);
+}
+// Bảng 6 hũ của một tháng gửi lên Sheet: tỷ lệ, thu nhập, phân bổ, đã chi, còn lại (đồng nhất với số trong app)
+function jarSnapshot(ym, recs) {
+  const c = computeJars(ym, recs, pctFor(ym));
+  return { type: 'jars', month: ym, income: Math.round(c.income), unassigned: Math.round(c.unassigned),
+    jars: c.jars.map(j => ({ name: j.key, pct: j.pct, allocated: Math.round(j.allocated), spent: Math.round(j.spent), remaining: Math.round(j.remaining) })) };
+}
+async function flushJars() {
+  const dirty = getJSON('jarsDirty', []);
+  if (!dirty.length || !cfg.get('sheetUrl', '')) return;
+  const recs = await doneRecs(), left = [];
+  for (const ym of dirty) { if (!(await post(jarSnapshot(ym, recs)))) left.push(ym); }
+  cfg.set('jarsDirty', JSON.stringify(left));
+}
+let syncing = false;
 async function sync() {
-  if (!cfg.get('sheetUrl', '')) return;
-  for (const r of (await allRecs()).filter(x => x.status === 'done' && !x.synced)) {
-    if (await post(r)) { r.synced = true; await putRec(r); }
-  }
+  if (!cfg.get('sheetUrl', '') || syncing) return;
+  syncing = true;
+  try {
+    for (const r of (await allRecs()).filter(x => x.status === 'done' && !x.synced)) {
+      if (await post(r)) { r.synced = true; await tx('records', 'readwrite', s => s.put(r)); }
+    }
+    await flushJars();
+  } finally { syncing = false; }
   if (curView === 'home') renderHome();
 }
 window.addEventListener('online', sync);
@@ -448,95 +562,139 @@ const monthShort = ym => { const [y, m] = ym.split('-').map(Number); return new 
 const weekdayName = i => new Date(2024, 0, 7 + i).toLocaleDateString(LOC(), { weekday: 'long' });
 const catName = c => (c.split(' ').slice(1).join(' ') || c).toLowerCase();
 const recById = {};
-const monthNav = id => `<div class="mnav ${id}"><button data-m="-1" aria-label="${tr('Previous month')}">‹</button><span>${monthLabel(viewYm)}</span>` +
+// Thanh chuyển tháng: ‹ tháng › và nút nhỏ "Today" (chỉ hiện khi đang xem tháng khác) để về tháng hiện tại
+const monthNav = id => `<div class="mnav ${id}"><button data-m="-1" aria-label="${tr('Previous month')}">‹</button>` +
+  `<div class="mmid"><span>${monthLabel(viewYm)}</span>${viewYm !== nowYm() ? `<button class="tdy" data-today="1">${tr('Today')}</button>` : ''}</div>` +
   `<button data-m="1" aria-label="${tr('Next month')}" ${viewYm >= nowYm() ? 'disabled' : ''}>›</button></div>`;
+function monthClick(e) {   // trả về true nếu bấm vào nút chuyển tháng / Today
+  const b = e.target.closest('[data-m],[data-today]');
+  if (!b || b.disabled) return false;
+  if (b.dataset.today !== undefined) viewYm = nowYm(); else shiftMonth(Number(b.dataset.m));
+  return true;
+}
 function bindMonthNav(box, rerender) {
   box.onclick = e => {
-    const b = e.target.closest('[data-m]');
-    if (b && !b.disabled) { shiftMonth(Number(b.dataset.m)); rerender(); return true; }
+    if (monthClick(e)) { rerender(); return; }
     const it = e.target.closest('.item');
     if (it && recById[it.dataset.id]) openSheet(recById[it.dataset.id]);
   };
 }
 
-// ---------- trang chủ ----------
+// ---------- hiệu ứng: đếm số, hiện dần khi cuộn, thanh tiêu đề thu gọn ----------
+const lastCount = {};
+function countTo(el) {
+  const to = Number(el.dataset.count), key = el.dataset.key || '', from = lastCount[key] ?? 0;
+  lastCount[key] = to;
+  if (from === to || matchMedia('(prefers-reduced-motion: reduce)').matches) { el.textContent = fmt(to); return; }
+  const t0 = performance.now();
+  const step = t => { const p = Math.min(1, (t - t0) / 800), e = 1 - Math.pow(1 - p, 4); el.textContent = fmt(from + (to - from) * e); if (p < 1) requestAnimationFrame(step); };
+  requestAnimationFrame(step);
+}
+const runCounts = root => root.querySelectorAll('[data-count]').forEach(countTo);
+const io = 'IntersectionObserver' in window ? new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { threshold: 0.06 }) : null;
+function reveal() {
+  document.querySelectorAll('main .card, main .kpi, main h2, main .item, main .dayh').forEach(el => {
+    if (el.classList.contains('rv')) return;
+    el.classList.add('rv'); if (io) io.observe(el); else el.classList.add('in');
+  });
+}
+let revealQueued = false;
+new MutationObserver(() => { if (!revealQueued) { revealQueued = true; requestAnimationFrame(() => { revealQueued = false; reveal(); }); } })
+  .observe(document.querySelector('main'), { childList: true, subtree: true });
+addEventListener('scroll', () => $('header').classList.toggle('scrolled', scrollY > 24), { passive: true });
+
+// ---------- Tổng quan: số liệu nhanh + dòng thời gian giao dịch ----------
+function dayLabel(d) {
+  const t = new Date(), y = new Date(); y.setDate(t.getDate() - 1);
+  if (d.toDateString() === t.toDateString()) return tr('Today');
+  if (d.toDateString() === y.toDateString()) return tr('Yesterday');
+  return d.toLocaleDateString(DLOC(), { weekday: 'short', day: 'numeric', month: 'short' });
+}
 async function renderHome() {
   await renderPending();
-  const recs = (await allRecs()).filter(r => r.status === 'done').sort((a, b) => b.time.localeCompare(a.time));
+  const recs = (await doneRecs()).sort((a, b) => b.time.localeCompare(a.time));
   recs.forEach(r => recById[r.id] = r);
   const monthAll = recs.filter(r => ymOf(r.time) === viewYm);
-  const month = monthAll.filter(r => !isInc(r));
-  const incTotal = monthAll.filter(isInc).reduce((s, r) => s + Number(r.amount), 0);
-  const by = {}; month.forEach(r => by[r.category] = (by[r.category] || 0) + Number(r.amount));
-  const total = month.reduce((s, r) => s + Number(r.amount), 0), max = Math.max(1, ...Object.values(by));
+  const spent = sum(monthAll.filter(r => !isInc(r))), inc = sum(monthAll.filter(isInc)), net = inc - spent;
   $('#stats').innerHTML = monthNav('') +
-    `<b class="total">${fmt(total)}</b><div class="sub">${month.length === 1 ? tr('{0} transaction', 1) : tr('{0} transactions', month.length)}</div>` +
-    (incTotal ? `<div class="inout"><span>▲ ${tr('Income')} ${fmt(incTotal)}</span><span>${tr('Net')} ${incTotal - total < 0 ? '−' : ''}${fmt(Math.abs(incTotal - total))}</span></div>` : '') +
-    Object.entries(by).sort((a, b) => b[1] - a[1]).map(([k, v]) =>
-      `<div class="bar"><span>${esc(k)}</span><i style="width:${Math.round(v / max * 100)}px"></i><span>${fmt(v)}</span></div>`).join('') +
-    (cfg.get('sheetUrl', '') ? '' : `<p class="hint">${tr('Google Sheet not connected. Open Settings > Advanced and paste the link.')}</p>`);
+    `<div class="hl">${tr('Spent this month')}</div><b class="total" data-key="home-spent" data-count="${spent}">${fmt(spent)}</b>` +
+    `<div class="trio"><div><span>${tr('Income')}</span><b data-key="home-inc" data-count="${inc}">${fmt(inc)}</b></div>` +
+    `<div><span>${tr('Net')}</span><b data-key="home-net" data-count="${net}">${fmt(net)}</b></div>` +
+    `<div><span>${tr('Transactions')}</span><b>${monthAll.length}</b></div></div>`;
+  runCounts($('#stats'));
   const box = $('#recent'); box.innerHTML = '';
+  let grp = null, lastDay = '';
   for (const r of monthAll) {
-    const d = document.createElement('div'); d.className = 'item'; d.dataset.id = r.id;
-    d.innerHTML = `<div class="t">${esc(r.category)}<small>${new Date(r.time).toLocaleString(DLOC())}${r.note ? ' · ' + esc(r.note) : ''}${r.synced ? '' : ' · ' + tr('⏳ not synced yet')}</small></div><div class="amt ${isInc(r) ? 'in' : ''}">${isInc(r) ? '+' : ''}${fmt(r.amount)}</div>`;
-    if (r.photo) { const b = await getPhoto(r.id); if (b) { const i = new Image(); i.src = URL.createObjectURL(b); d.prepend(i); } }
-    box.append(d);
+    const d = new Date(r.time);
+    if (d.toDateString() !== lastDay) {
+      lastDay = d.toDateString();
+      box.insertAdjacentHTML('beforeend', `<div class="dayh">${dayLabel(d)}</div>`);
+      grp = document.createElement('div'); grp.className = 'card list'; box.append(grp);
+    }
+    const it = document.createElement('div'); it.className = 'item'; it.dataset.id = r.id;
+    it.innerHTML = `<div class="t">${esc(r.category)}<small>${d.toLocaleTimeString(DLOC(), { hour: '2-digit', minute: '2-digit' })}${r.note ? ' · ' + esc(r.note) : ''}${r.synced ? '' : ' · ' + tr('⏳ pending')}</small></div><div class="amt ${isInc(r) ? 'in' : ''}">${isInc(r) ? '+' : ''}${fmt(r.amount)}</div>`;
+    if (r.photo) { const b = await getPhoto(r.id); if (b) { const i = new Image(); i.src = URL.createObjectURL(b); it.prepend(i); } }
+    grp.append(it);
   }
   if (!monthAll.length) box.innerHTML = `<p class="hint">${tr('No transactions in this month.')}</p>`;
 }
-$('#stats').onclick = e => {
-  const b = e.target.closest('[data-m]');
-  if (b && !b.disabled) { shiftMonth(Number(b.dataset.m)); renderHome(); }
-};
+bindMonthNav($('#stats'), renderHome);
 $('#recent').onclick = e => {
   const it = e.target.closest('.item');
   if (it && recById[it.dataset.id]) openSheet(recById[it.dataset.id]);
 };
 
-// ---------- thống kê trực quan (SVG/CSS thuần, không cần thư viện) ----------
+// ---------- Thống kê: phân tích bằng biểu đồ (không lặp lại phần tổng quan) ----------
 const PAL = ['#3b82f6', '#14b8a6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16', '#ec4899'];
 const short = n => n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 0 : 1).replace(/\.0$/, '') + 'M' : n >= 1e3 ? Math.round(n / 1e3) + 'k' : String(Math.round(n));
 function sumBy(arr, f) { const o = {}; arr.forEach(r => { const k = f(r); o[k] = (o[k] || 0) + Number(r.amount); }); return o; }
 
 async function renderStats() {
-  const all = (await allRecs()).filter(r => r.status === 'done');
+  const all = await doneRecs();
   all.forEach(r => recById[r.id] = r);
-  const recs = all.filter(r => !isInc(r));   // mọi biểu đồ chi tiêu chỉ tính khoản chi
-  const incIn = ym => all.filter(r => isInc(r) && ymOf(r.time) === ym).reduce((s, r) => s + Number(r.amount), 0);
+  const recs = all.filter(r => !isInc(r));   // biểu đồ chi tiêu chỉ tính khoản chi
+  const incIn = ym => sum(all.filter(r => isInc(r) && ymOf(r.time) === ym));
   const inM = ym => recs.filter(r => ymOf(r.time) === ym);
-  const tot = a => a.reduce((s, r) => s + Number(r.amount), 0);
-  const m = inM(viewYm), total = tot(m);
+  const m = inM(viewYm), total = sum(m);
   const [y, mo] = viewYm.split('-').map(Number);
   const dim = new Date(y, mo, 0).getDate();
   const isCur = viewYm === nowYm();
   const elapsed = isCur ? new Date().getDate() : dim;
-  const prevYm = addMonths(viewYm, -1), pTotal = tot(inM(prevYm));
+  const prevYm = addMonths(viewYm, -1), pTotal = sum(inM(prevYm));
   let h = monthNav('light');
   if (!m.length) { $('#statsBody').innerHTML = h + `<div class="card empty">${tr('No transactions in this month yet.')}</div>`; return; }
 
   const avgDay = total / Math.max(1, elapsed);
   const biggest = m.reduce((a, b) => Number(b.amount) > Number(a.amount) ? b : a);
   const pct = pTotal ? (total - pTotal) / pTotal * 100 : null;
-  const delta = pct === null ? `<span class="delta">${tr('No previous month')}</span>`
-    : `<span class="delta ${pct > 0 ? 'up' : 'down'}">${pct > 0 ? '▲' : '▼'} ${Math.abs(pct).toFixed(0)}% ${tr('vs {0}', monthShort(prevYm))}</span>`;
+  const incNow = incIn(viewYm);
+
+  // Đánh giá tổng quát lên đầu
+  const prevs = [-1, -2, -3].map(n => sum(inM(addMonths(viewYm, n)))).filter(v => v > 0);
+  const avg3 = prevs.length ? prevs.reduce((a, b) => a + b, 0) / prevs.length : 0;
+  let rating = ['neutral', 'Not enough history yet'];
+  if (avg3) { const r = total / avg3; rating = r > 1.15 ? ['high', 'Above your recent average'] : r < 0.85 ? ['low', 'Below your recent average'] : ['mid', 'In line with your recent average']; }
+  h += `<div class="verdict card"><div class="rate ${rating[0]}">${tr(rating[1])}</div>` +
+    (pct === null ? '' : `<span class="delta ${pct > 0 ? 'up' : 'down'}">${pct > 0 ? '▲' : '▼'} ${Math.abs(pct).toFixed(0)}% ${tr('vs {0}', monthShort(prevYm))}</span>`) + '</div>';
 
   h += `<div class="kpis">
-    <div class="kpi wide"><div class="l">${tr('Total spent')}</div><div class="v">${fmt(total)}</div>${delta}</div>
     <div class="kpi"><div class="l">${tr('Daily average')}</div><div class="v sm">${fmt(avgDay)}</div></div>
-    <div class="kpi"><div class="l">${tr('Transactions')}</div><div class="v sm">${m.length}</div></div>
-    <div class="kpi wide"><div class="l">${tr('Largest expense')}</div><div class="v sm">${fmt(biggest.amount)}</div><div class="sub2">${esc(biggest.category)}${biggest.note ? ' · ' + esc(biggest.note) : ''}</div></div>
+    <div class="kpi"><div class="l">${tr('Largest expense')}</div><div class="v sm">${fmt(biggest.amount)}</div><div class="sub2">${esc(biggest.category)}</div></div>
+    ${incNow ? `<div class="kpi"><div class="l">${tr('Savings rate')}</div><div class="v sm">${Math.round((incNow - total) / incNow * 100)}%</div></div>` : ''}
+    ${isCur && elapsed < dim ? `<div class="kpi"><div class="l">${tr('Month-end estimate')}</div><div class="v sm">${fmt(avgDay * dim)}</div></div>` : ''}
   </div>`;
 
-  // Thu nhập so với chi tiêu (6 tháng) + tỷ lệ tiết kiệm
-  const monthsIO = [-5, -4, -3, -2, -1, 0].map(n => addMonths(viewYm, n));
-  const inc6 = monthsIO.map(incIn), exp6 = monthsIO.map(ym => tot(inM(ym)));
-  const incNow = incIn(viewYm);
+  const months = [-5, -4, -3, -2, -1, 0].map(n => addMonths(viewYm, n));
+  const inc6 = months.map(incIn), exp6 = months.map(ym => sum(inM(ym)));
   if (inc6.some(v => v > 0)) {
-    const io = Math.max(1, ...inc6, ...exp6);
+    const mx = Math.max(1, ...inc6, ...exp6);
     h += `<h2>${tr('Income vs spending')}</h2><div class="card">` +
-      (incNow ? `<div class="iorow"><div><span>${tr('Income')}</span><b class="pos">${fmt(incNow)}</b></div><div><span>${tr('Net')}</span><b class="${incNow - total < 0 ? 'neg' : 'pos'}">${incNow - total < 0 ? '−' : ''}${fmt(Math.abs(incNow - total))}</b></div><div><span>${tr('Savings rate')}</span><b>${Math.round((incNow - total) / incNow * 100)}%</b></div></div>` : '') +
-      `<div class="cols two">${monthsIO.map((ym, i) => `<div class="col"><div class="pair"><div class="cbar inc" style="height:${Math.max(inc6[i] ? 4 : 0, inc6[i] / io * 100)}%"></div><div class="cbar sel" style="height:${Math.max(exp6[i] ? 4 : 0, exp6[i] / io * 100)}%"></div></div><span class="cl">${monthShort(ym)}</span></div>`).join('')}</div>` +
+      `<div class="cols two">${months.map((ym, i) => `<div class="col"><div class="pair"><div class="cbar inc" style="height:${Math.max(inc6[i] ? 4 : 0, inc6[i] / mx * 100)}%"></div><div class="cbar sel" style="height:${Math.max(exp6[i] ? 4 : 0, exp6[i] / mx * 100)}%"></div></div><span class="cl">${monthShort(ym)}</span></div>`).join('')}</div>` +
       `<div class="iolg"><span><i class="g"></i>${tr('Income')}</span><span><i class="b"></i>${tr('Spending')}</span></div></div>`;
+  } else {
+    const mx = Math.max(1, ...exp6);
+    h += `<h2>${tr('Last 6 months')}</h2><div class="card"><div class="cols">${months.map((ym, i) =>
+      `<div class="col"><span class="cv">${exp6[i] ? short(exp6[i]) : ''}</span><div class="cbar ${ym === viewYm ? 'sel' : ''}" style="height:${Math.max(exp6[i] ? 4 : 0, exp6[i] / mx * 100)}%"></div><span class="cl">${monthShort(ym)}</span></div>`).join('')}</div></div>`;
   }
 
   const byCat = Object.entries(sumBy(m, r => r.category)).sort((a, b) => b[1] - a[1]);
@@ -552,11 +710,6 @@ async function renderStats() {
     <div class="legend">${slices.map(([k, v], i) => `<div class="lg"><i style="background:${PAL[i % PAL.length]}"></i><span>${esc(k)}</span><b>${Math.round(v / total * 100)}%</b></div>`).join('')}</div>
   </div>`;
 
-  const months = [-5, -4, -3, -2, -1, 0].map(n => addMonths(viewYm, n));
-  const mt = months.map(ym => tot(inM(ym))), mmax = Math.max(1, ...mt);
-  h += `<h2>${tr('Last 6 months')}</h2><div class="card"><div class="cols">${months.map((ym, i) =>
-    `<div class="col"><span class="cv">${mt[i] ? short(mt[i]) : ''}</span><div class="cbar ${ym === viewYm ? 'sel' : ''}" style="height:${Math.max(mt[i] ? 4 : 0, mt[i] / mmax * 100)}%"></div><span class="cl">${monthShort(ym)}</span></div>`).join('')}</div></div>`;
-
   const days = Array(dim).fill(0); m.forEach(r => days[new Date(r.time).getDate() - 1] += Number(r.amount));
   const dmax = Math.max(1, ...days);
   h += `<h2>${tr('Daily spending')}</h2><div class="card"><div class="dcols">${days.map(v =>
@@ -571,108 +724,121 @@ async function renderStats() {
   h += `<h2>${tr('Top expenses')}</h2><div class="card list">${[...m].sort((a, b) => Number(b.amount) - Number(a.amount)).slice(0, 5).map((r, i) =>
     `<div class="item" data-id="${r.id}"><div class="rank">${i + 1}</div><div class="t">${esc(r.category)}<small>${new Date(r.time).toLocaleDateString(DLOC())}${r.note ? ' · ' + esc(r.note) : ''}</small></div><div class="amt">${fmt(r.amount)}</div></div>`).join('')}</div>`;
 
-  const prevs = [-1, -2, -3].map(n => tot(inM(addMonths(viewYm, n)))).filter(v => v > 0);
-  const avg3 = prevs.length ? prevs.reduce((a, b) => a + b, 0) / prevs.length : 0;
-  let rating = ['neutral', 'Not enough history yet'];
-  if (avg3) { const r = total / avg3; rating = r > 1.15 ? ['high', 'Above your recent average'] : r < 0.85 ? ['low', 'Below your recent average'] : ['mid', 'In line with your recent average']; }
   const wd = Array(7).fill(0); m.forEach(r => wd[new Date(r.time).getDay()] += Number(r.amount));
   const wdTop = wd.indexOf(Math.max(...wd));
   const tips = [];
   if (pct !== null) tips.push(tr('Spending is <b>{0}% {1}</b> than {2} ({3}).', Math.abs(pct).toFixed(0), tr(pct > 0 ? 'higher' : 'lower'), monthLabel(prevYm), fmt(pTotal)));
   tips.push(tr('<b>{0}</b> is your biggest category: {1}% of the month ({2}).', esc(byCat[0][0]), Math.round(byCat[0][1] / total * 100), fmt(byCat[0][1])));
   if (byCat.length > 1) tips.push(tr('The top 2 categories together make up {0}% of spending.', Math.round((byCat[0][1] + byCat[1][1]) / total * 100)));
-  tips.push(tr('You spend about <b>{0}</b> per day.', fmt(avgDay)) + (isCur && elapsed < dim ? tr(' At this pace the month would end near <b>{0}</b>.', fmt(avgDay * dim)) : ''));
+  tips.push(tr('You spend about <b>{0}</b> per day.', fmt(avgDay)));
   tips.push(tr('Spending peaks on <b>{0}</b> ({1}).', weekdayName(wdTop) + (lang === 'en' ? 's' : ''), fmt(wd[wdTop])));
   tips.push(tr('Largest single expense: <b>{0}</b> ({1}) on {2}.', fmt(biggest.amount), esc(biggest.category), new Date(biggest.time).toLocaleDateString(DLOC())));
   if (incNow) tips.push(incNow >= total ? tr('You saved <b>{0}%</b> of your income this month.', Math.round((incNow - total) / incNow * 100)) : tr('Spending is higher than income by <b>{0}</b> this month.', fmt(total - incNow)));
-  h += `<h2>${tr('Assessment')}</h2><div class="card"><div class="rate ${rating[0]}">${tr(rating[1])}${avg3 ? ` <small>${tr('(3-month avg {0})', fmt(avg3))}</small>` : ''}</div><ul class="tips">${tips.map(t => `<li>${t}</li>`).join('')}</ul></div>`;
+  h += `<h2>${tr('Assessment')}</h2><div class="card"><ul class="tips">${tips.map(t => `<li>${t}</li>`).join('')}</ul></div>`;
   $('#statsBody').innerHTML = h;
 }
 bindMonthNav($('#statsBody'), renderStats);
 
-// ---------- quy tắc 6 hũ (55/10/10/10/10/5) ----------
-const DEF_JARS = 'Necessities | 55 | Fuel, Home bills, Health, Other\nLong-term savings | 10 |\nEducation | 10 |\nPlay | 10 | Food & Coffee, Shopping, Entertainment\nFinancial freedom | 10 |\nGive | 5 |';
-const JAR_ICONS = ['🏠', '🏦', '📚', '🎉', '🌱', '🎁'];
-const jarCfg = () => cfg.get('jars', DEF_JARS).split('\n').map(l => l.split('|').map(s => s.trim())).filter(a => a[0])
-  .map(a => { const raw = (a[2] || '').split(',').map(s => s.trim()).filter(Boolean); return { name: a[0], pct: Number(a[1]) || 0, raw, cats: raw.map(s => s.toLowerCase()) }; });
-const saveJars = jars => cfg.set('jars', jars.map(j => `${j.name} | ${j.pct} | ${j.raw.join(', ')}`).join('\n'));
-const income = () => Number(cfg.get('income', '0')) || 0;
-
-async function renderJars() {
-  const allM = (await allRecs()).filter(r => r.status === 'done' && ymOf(r.time) === viewYm);
-  const recs = allM.filter(r => !isInc(r));
-  const incEntries = allM.filter(isInc).reduce((s, r) => s + Number(r.amount), 0);
-  const fromEntries = incEntries > 0;   // có khoản thu đã nhập thì dùng, không thì dùng thu nhập đặt tay
-  const jars = jarCfg(), inc = fromEntries ? incEntries : income();
-  let h = monthNav('light') +
-    `<div class="card incrow"><label>${tr('Monthly income (set manually)')}<input id="incomeIn" inputmode="numeric" placeholder="0" value="${inc ? inc.toLocaleString(LOC()) : ''}"></label><button id="incomeSave" class="big">${tr('Save')}</button></div>`;
-  if (!inc) {
-    $('#jarsBody').innerHTML = h + `<p class="hint">${tr('Set your monthly income to split it into jars.')}</p>`;
-    bindIncome(); return;
-  }
-  const spentOf = j => recs.filter(r => j.cats.includes(catName(r.category))).reduce((s, r) => s + Number(r.amount), 0);
-  const mapped = new Set(jars.flatMap(j => j.cats));
-  const unassigned = recs.filter(r => !mapped.has(catName(r.category))).reduce((s, r) => s + Number(r.amount), 0);
-  const totalSpent = recs.reduce((s, r) => s + Number(r.amount), 0);
-  const sumPct = jars.reduce((s, j) => s + j.pct, 0);
-  h += `<div class="kpis"><div class="kpi wide"><div class="l">${tr(fromEntries ? 'Income this month (from your entries)' : 'Monthly income')}</div><div class="v">${fmt(inc)}</div>` +
-    `<div class="sub2">${tr('Spent {0} · {1}% of income', fmt(totalSpent), Math.round(totalSpent / inc * 100))}</div></div></div>`;
-  if (sumPct !== 100) h += `<div class="card warnbox">${tr('Your jar percentages add up to {0}%, not 100%. Fix them in Settings > Advanced.', sumPct)}</div>`;
-  h += `<h2>${tr('Your jars')}</h2>`;
-  jars.forEach((j, i) => {
-    const alloc = inc * j.pct / 100, spent = spentOf(j), left = alloc - spent;
-    const track = j.cats.length > 0;
-    const used = alloc ? Math.min(100, spent / alloc * 100) : 0;
-    h += `<div class="card jar"><div class="jtop"><span class="jic">${JAR_ICONS[i % JAR_ICONS.length]}</span><div class="jn">${esc(j.name)}<small>${j.pct}% · ${fmt(alloc)}</small></div>` +
-      (track ? `<div class="jr ${left < 0 ? 'over' : ''}">${left < 0 ? tr('Over by {0}', fmt(-left)) : tr('{0} left', fmt(left))}</div>` : `<div class="jr">${tr('Set aside')}</div>`) + '</div>' +
-      (track ? `<div class="jbar"><i class="${left < 0 ? 'over' : used > 85 ? 'warn' : ''}" style="width:${used}%"></i></div><div class="jsub">${tr('Spent {0} of {1}', fmt(spent), fmt(alloc))}</div>`
-        : `<div class="jsub">${tr('Transfer {0} to this jar each month. Nothing is tracked here.', fmt(alloc))}</div>`) + '</div>';
+// ---------- 6 hũ: tự cập nhật theo thu nhập (cả tháng) và chi tiêu; % mỗi tháng lưu riêng ----------
+function computeJars(ym, recs, pct) {
+  const m = recs.filter(r => ymOf(r.time) === ym);
+  const incs = m.filter(isInc), income = sum(incs), map = jarMap();
+  const spent = Array(6).fill(0); let unassigned = 0;
+  m.filter(r => !isInc(r)).forEach(r => {
+    const j = map[catName(r.category)];
+    if (Number.isInteger(j) && j >= 0 && j < 6) spent[j] += Number(r.amount); else unassigned += Number(r.amount);
   });
-  if (unassigned > 0) h += `<div class="card jsub">${tr('Not in any jar: <b>{0}</b>. Assign those categories to a jar in the Categories tab.', fmt(unassigned))}</div>`;
+  return { income, nInc: incs.length, unassigned, jars: JAR_KEYS.map((k, i) => { const allocated = income * (pct[i] || 0) / 100; return { key: k, pct: pct[i] || 0, allocated, spent: spent[i], remaining: allocated - spent[i] }; }) };
+}
+let draftPct = [], draftYm = '', jarRecs = [];
+const sameArr = (a, b) => a.length === b.length && a.every((v, i) => v === b[i]);
+async function renderJars() {
+  jarRecs = await doneRecs();
+  if (draftYm !== viewYm) { draftPct = pctFor(viewYm); draftYm = viewYm; }
+  const c = computeJars(viewYm, jarRecs, draftPct);
+  let h = monthNav('light') +
+    `<div class="card incbox"><div class="hl">${tr('Income this month')}</div><b class="total" data-key="jars-inc" data-count="${c.income}">${fmt(c.income)}</b>` +
+    `<div class="sub">${c.nInc === 1 ? tr('{0} income entry', 1) : tr('{0} income entries', c.nInc)} · ${tr('Jars fill automatically from your income and spending.')}</div>` +
+    `<button id="jarAddInc" class="pill">+ ${tr('Add income')}</button></div><h2>${tr('Jars')}</h2>`;
+  JAR_KEYS.forEach((k, i) => {
+    h += `<div class="card jar" data-i="${i}"><div class="jtop"><span class="jic">${JAR_ICONS[i]}</span><div class="jn">${esc(jarName(i))}<small data-alloc></small></div>` +
+      `<label class="pct"><input type="number" inputmode="decimal" step="0.5" min="0" max="100" data-pct="${i}" value="${draftPct[i]}"><span>%</span></label></div>` +
+      `<div class="jbar"><i data-bar></i></div><div class="jsub"><span data-spent></span><b data-left></b></div></div>`;
+  });
+  h += `<div class="card totrow"><span>${tr('Total')}</span><b id="pctTotal"></b></div>` +
+    `<button id="saveMonth" class="big"></button><p class="hint">${tr('Percentages can differ every month. Save to keep them for {0}.', monthLabel(viewYm))}</p><div id="jarNote"></div>`;
   $('#jarsBody').innerHTML = h;
-  bindIncome();
+  runCounts($('#jarsBody'));
+  paintJars();
 }
-function bindIncome() {
-  const i = $('#incomeIn'); if (!i) return;
-  i.oninput = () => { const d = i.value.replace(/\D/g, ''); i.value = d ? Number(d).toLocaleString(LOC()) : ''; };
-  $('#incomeSave').onclick = () => { cfg.set('income', i.value.replace(/\D/g, '')); renderJars(); };
+// Cập nhật số liệu từng hũ ngay khi gõ % (không dựng lại giao diện để giữ con trỏ)
+function paintJars() {
+  const c = computeJars(viewYm, jarRecs, draftPct);
+  c.jars.forEach((j, i) => {
+    const card = $(`.jar[data-i="${i}"]`); if (!card) return;
+    const used = j.allocated ? Math.min(100, j.spent / j.allocated * 100) : 0;
+    card.querySelector('[data-alloc]').textContent = fmt(j.allocated);
+    card.querySelector('[data-spent]').textContent = tr('Spent {0}', fmt(j.spent));
+    const left = card.querySelector('[data-left]');
+    left.textContent = j.remaining < 0 ? tr('Over by {0}', fmt(-j.remaining)) : tr('{0} left', fmt(j.remaining));
+    left.className = j.remaining < 0 ? 'over' : '';
+    const bar = card.querySelector('[data-bar]'); bar.style.width = used + '%'; bar.className = j.remaining < 0 ? 'over' : used > 85 ? 'warn' : '';
+  });
+  const total = Math.round(draftPct.reduce((s, v) => s + (Number(v) || 0), 0) * 100) / 100;
+  const ok = total === 100;
+  const tEl = $('#pctTotal'); tEl.textContent = total + '%'; tEl.className = ok ? 'pos' : 'neg';
+  const saved = pctSaved()[viewYm], isSame = !!saved && sameArr(saved, draftPct);
+  const btn = $('#saveMonth');
+  btn.textContent = !ok ? tr('Percentages must add up to 100') : isSame ? '✓ ' + tr('Saved for {0}', monthLabel(viewYm)) : tr('Save {0}', monthLabel(viewYm));
+  btn.disabled = !ok || isSame;
+  $('#jarNote').innerHTML = c.unassigned > 0 ? `<div class="card jsub">${tr('Not in any jar: <b>{0}</b>. Assign those categories to a jar in the Categories tab.', fmt(c.unassigned))}</div>` : '';
 }
-bindMonthNav($('#jarsBody'), renderJars);
+$('#jarsBody').addEventListener('input', e => {
+  const i = e.target.dataset?.pct; if (i === undefined) return;
+  draftPct[Number(i)] = Math.max(0, Math.min(100, Number(e.target.value) || 0));
+  paintJars();
+});
+$('#jarsBody').addEventListener('click', e => {
+  if (monthClick(e)) { renderJars(); return; }
+  if (e.target.closest('#jarAddInc')) { cur = newRec(); cur.type = 'income'; renderCats(); show('cat'); return; }
+  if (e.target.closest('#saveMonth') && !$('#saveMonth').disabled) {
+    const s = pctSaved(); s[viewYm] = draftPct.slice(); cfg.set('jarpct', JSON.stringify(s));
+    markJars(viewYm); sync(); paintJars();
+  }
+});
 
 // ---------- tab Danh mục: xem, thêm, xoá, gán hũ ----------
 async function renderCategories() {
-  const recs = (await allRecs()).filter(r => r.status === 'done' && ymOf(r.time) === viewYm && !isInc(r));
+  const recs = (await doneRecs()).filter(r => ymOf(r.time) === viewYm && !isInc(r));
   const spentBy = {}; recs.forEach(r => { const k = catName(r.category); spentBy[k] = (spentBy[k] || 0) + Number(r.amount); });
-  const jars = jarCfg();
-  const jarOptions = sel => `<option value="-1">${tr('No jar')}</option>` + jars.map((j, i) => `<option value="${i}" ${sel === i ? 'selected' : ''}>${esc(j.name)}</option>`).join('');
-  let h = monthNav('light') + `<p class="hint">${tr('Your categories and the jar each one belongs to. New ones show up in the expense form and in your Google Sheet as soon as you use them.')}</p>`;
+  const map = jarMap();
+  const jarOptions = sel => `<option value="-1">${tr('No jar')}</option>` + JAR_KEYS.map((k, i) => `<option value="${i}" ${sel === i ? 'selected' : ''}>${esc(jarName(i))}</option>`).join('');
+  let h = monthNav('light') + `<p class="hint">${tr('Your categories and the jar each one belongs to. Spending in a category is deducted from its jar.')}</p>`;
   cats().forEach((c, i) => {
     const [e, ...rest] = c.split(' '); const name = rest.join(' ') || e;
-    const ji = jars.findIndex(j => j.cats.includes(name.toLowerCase()));
+    const ji = Number.isInteger(map[name.toLowerCase()]) ? map[name.toLowerCase()] : -1;
     h += `<div class="card crow"><span class="cic">${esc(e)}</span><div class="cn">${esc(name)}<small>${tr('{0} this month', fmt(spentBy[name.toLowerCase()] || 0))}</small></div>` +
       `<select class="jsel" data-name="${esc(name)}" aria-label="Jar">${jarOptions(ji)}</select><button class="cdel" data-i="${i}" aria-label="${tr('Remove')}">✕</button></div>`;
   });
   h += `<h2>${tr('Add a category')}</h2><div class="card addcat"><div class="arow"><label class="ico">${tr('Icon')}<input id="newEmoji" value="🏷️" maxlength="4"></label>` +
     `<label class="nm">${tr('Name')}<input id="newName" placeholder="${tr('e.g. Pets')}"></label></div>` +
     `<select id="newJar" class="jsel wide" aria-label="Jar">${jarOptions(-1)}</select><button id="addCat" class="big">${tr('Add')}</button></div>`;
-  // Danh mục thu nhập (không gán hũ)
-  h += `<h2>${tr('Income categories')}</h2>` + icats().map((c, i) => {
+  h += `<h2>${tr('Income categories')}</h2><div class="card list">` + icats().map((c, i) => {
     const [e, ...rest] = c.split(' ');
-    return `<div class="card crow"><span class="cic">${esc(e)}</span><div class="cn">${esc(rest.join(' ') || e)}</div><button class="cdel" data-ii="${i}" aria-label="${tr('Remove')}">✕</button></div>`;
-  }).join('') +
+    return `<div class="crow flat"><span class="cic">${esc(e)}</span><div class="cn">${esc(rest.join(' ') || e)}</div><button class="cdel" data-ii="${i}" aria-label="${tr('Remove')}">✕</button></div>`;
+  }).join('') + '</div>' +
     `<h2>${tr('Add an income category')}</h2><div class="card addcat"><div class="arow"><label class="ico">${tr('Icon')}<input id="newIEmoji" value="💰" maxlength="4"></label>` +
     `<label class="nm">${tr('Name')}<input id="newIName" placeholder="${tr('e.g. Rental')}"></label></div><button id="addICat" class="big">${tr('Add')}</button></div>`;
   $('#catsBody').innerHTML = h;
 }
 const setJarFor = (name, idx) => {
-  const jars = jarCfg(), n = name.toLowerCase();
-  jars.forEach(j => { j.raw = j.raw.filter(c => c.toLowerCase() !== n); });
-  if (idx >= 0 && jars[idx]) jars[idx].raw.push(name);
-  saveJars(jars);
+  const map = jarMap(), n = name.toLowerCase();
+  if (idx >= 0) map[n] = idx; else delete map[n];
+  cfg.set('jarmap', JSON.stringify(map));
+  markAllJars().then(sync);   // đổi gán hũ ảnh hưởng số đã chi của các tháng
 };
 $('#catsBody').onclick = e => {
-  const b = e.target.closest('[data-m]');
-  if (b && !b.disabled) { shiftMonth(Number(b.dataset.m)); renderCategories(); return; }
+  if (monthClick(e)) { renderCategories(); return; }
   const del = e.target.closest('.cdel');
   if (del && del.dataset.ii !== undefined) {   // xoá danh mục thu nhập
     if (!confirm(tr('Remove this category? Past expenses keep it.'))) return;
@@ -708,10 +874,11 @@ async function openSheet(r) {
   $('#sheetBody').innerHTML =
     `<div class="d-cat">${esc(r.category)}</div><div class="d-amt ${isInc(r) ? 'in' : ''}">${isInc(r) ? '+' : ''}${fmt(r.amount)}</div>` +
     row('Type', isInc(r) ? tr('Income') : tr('Expense')) + row('Date', new Date(r.time).toLocaleString(DLOC())) + row('Bank', r.bank) + row('Payee', r.payee) +
-    row('Note', r.note) + row('Google Sheet', r.synced ? tr('Synced') : tr('Not synced yet')) +
+    row('Note', r.note) + row('Sync', r.synced ? tr('Synced') : tr('Pending')) +
     '<div id="sheetPhoto"></div>';
   $('#sheet').hidden = false;
   document.body.classList.add('noscroll');
+  try { history.pushState({ v: curView, d: depth, sheet: 1 }, ''); } catch {}   // vuốt quay lại sẽ đóng cửa sổ này
   if (r.photo) {
     const b = await getPhoto(r.id);
     if (b) {
@@ -722,7 +889,8 @@ async function openSheet(r) {
     }
   }
 }
-function closeSheet() { $('#sheet').hidden = true; document.body.classList.remove('noscroll'); }
+function hideSheet() { $('#sheet').hidden = true; document.body.classList.remove('noscroll'); }
+const closeSheet = () => { if (!$('#sheet').hidden) history.back(); };
 $('#sheetClose').onclick = closeSheet;
 $('#sheet').onclick = e => { if (e.target.id === 'sheet') closeSheet(); };
 
@@ -730,7 +898,7 @@ $('#sheet').onclick = e => { if (e.target.id === 'sheet') closeSheet(); };
 async function openGallery() {
   show('gallery');
   const g = $('#gal'); g.innerHTML = '';
-  const recs = (await allRecs()).filter(r => r.photo && r.status === 'done').sort((a, b) => b.time.localeCompare(a.time));
+  const recs = (await doneRecs()).filter(r => r.photo).sort((a, b) => b.time.localeCompare(a.time));
   if (!recs.length) g.innerHTML = `<p class="hint">${tr('No photos yet.')}</p>`;
   for (const r of recs) {
     const b = await getPhoto(r.id); if (!b) continue;
@@ -747,11 +915,11 @@ async function savePhoto(blob, name) {
   } else toast(tr('Press and hold the photo to save it'));
 }
 
-// ---------- cài đặt: ngôn ngữ, giao diện, phiên bản (+ nâng cao thu gọn) ----------
-// File Google Sheet chứa dữ liệu (chỉ mở được khi đăng nhập đúng tài khoản Google, Sheet không chia sẻ cho ai)
-const SHEET_FILE = 'https://docs.google.com/spreadsheets/d/1h6gpLCcJoevkHnPB9yo8R86ALhcuY2pb5Bjd_H8fLhw/edit';
+// ---------- cài đặt: ngôn ngữ, giao diện, bảo mật, dữ liệu, phiên bản (+ nâng cao thu gọn) ----------
 function renderSettings() {
   $('#verText').textContent = VERSION;
+  $('#openSheetLink').href = cfg.get('sheetFile', SHEET_FILE);
+  $('#sheetFile').value = cfg.get('sheetFile', SHEET_FILE);
   $('#pinState').textContent = tr(hasPin() ? 'On' : 'Off');
   $('#pinSet').hidden = hasPin(); $('#pinChange').hidden = !hasPin(); $('#pinOff').hidden = !hasPin();
   // Face ID chỉ hiện khi đã có PIN (làm dự phòng) và thiết bị hỗ trợ
@@ -761,10 +929,7 @@ function renderSettings() {
     $('#faceRow').hidden = false; $('#faceState').textContent = tr(faceOn() ? 'On' : 'Off');
     $('#faceOnBtn').hidden = faceOn(); $('#faceOffBtn').hidden = !faceOn();
   });
-  $('#openSheetLink').href = cfg.get('sheetFile', SHEET_FILE);
-  $('#sheetFile').value = cfg.get('sheetFile', SHEET_FILE);
   $('#sheetUrl').value = cfg.get('sheetUrl', '');
-  $('#jarsText').value = cfg.get('jars', DEF_JARS);
   $('#banksText').value = cfg.get('banks', DEF_BANKS);
   document.querySelectorAll('#segLang button').forEach(b => b.classList.toggle('on', b.dataset.v === lang));
   document.querySelectorAll('#segTheme button').forEach(b => b.classList.toggle('on', b.dataset.v === cfg.get('theme', 'auto')));
@@ -778,9 +943,8 @@ document.querySelectorAll('#segTheme button').forEach(b => b.onclick = () => {
 $('#saveAdv').onclick = () => {
   cfg.set('sheetFile', $('#sheetFile').value.trim() || SHEET_FILE);
   cfg.set('sheetUrl', $('#sheetUrl').value.trim());
-  cfg.set('jars', $('#jarsText').value);
   cfg.set('banks', $('#banksText').value);
-  sync(); show('home');
+  markAllJars().then(sync); goTop('home');
 };
 $('#testSheet').onclick = async () => {
   cfg.set('sheetUrl', $('#sheetUrl').value.trim());
@@ -802,7 +966,7 @@ const pinHash = async (pin, salt) => {
   const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(salt + ':' + pin));
   return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join('');
 };
-let lockMode = 'verify', lockBuf = '', lockFirst = '', lockDone = null, fails = 0, lockedUntil = 0, hiddenAt = 0;
+let lockMode = 'verify', lockBuf = '', lockFirst = '', lockDone = null, fails = 0, lockedUntil = 0;
 const drawDots = () => { $('#dots').innerHTML = [0, 1, 2, 3].map(i => `<i class="${i < lockBuf.length ? 'on' : ''}"></i>`).join(''); };
 const lockTitle = () => { $('#lockTitle').textContent = tr(lockMode === 'verify' ? 'Enter PIN' : lockFirst ? 'Confirm PIN' : 'Create a 4-digit PIN'); };
 // Face ID qua WebAuthn (xác thực nền tảng của iPhone). Chỉ là khoá phía máy, giống PIN; PIN luôn là dự phòng.
@@ -865,7 +1029,7 @@ $('#pad').innerHTML = [1, 2, 3, 4, 5, 6, 7, 8, 9, '', 0, 'back'].map(k =>
   k === '' ? '<span></span>' : `<button data-k="${k}">${k === 'back' ? '⌫' : k}</button>`).join('');
 $('#pad').onclick = e => { const b = e.target.closest('button'); if (b) lockPress(b.dataset.k); };
 $('#lockCancel').onclick = () => { $('#lock').hidden = true; lockDone = null; };
-$('#lockForgot').onclick = () => { $('#padMsg').textContent = tr('To reset a forgotten PIN, delete the app icon and add it again from Safari. Data on this phone is lost; your Google Sheet keeps everything.'); };
+$('#lockForgot').onclick = () => { $('#padMsg').textContent = tr('To reset a forgotten PIN, delete the app icon and add it again from Safari. Data on this phone that is not synced yet is lost.'); };
 $('#pinSet').onclick = () => openLock('set', renderSettings, true);
 $('#pinChange').onclick = () => openLock('verify', () => openLock('set', renderSettings, true), true);
 $('#pinOff').onclick = () => openLock('verify', () => { cfg.del('pin'); cfg.del('faceId'); renderSettings(); }, true);
