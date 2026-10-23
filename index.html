@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Chi tiêu">
+<meta name="theme-color" content="#0f766e">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="stylesheet" href="style.css">
+<title>Chi tiêu</title>
+</head>
+<body>
+<header>
+  <button id="back" class="icon" hidden aria-label="Quay lại">‹</button>
+  <h1 id="title">Chi tiêu</h1>
+  <button id="openSettings" class="icon" aria-label="Cài đặt">⚙</button>
+</header>
+<main>
+
+  <section id="v-home">
+    <button id="btnScan" class="big">📷 Quét QR</button>
+    <button id="btnManual" class="ghost">Nhập tay (không quét)</button>
+    <div id="pending"></div>
+    <div class="row"><h2>Tháng này</h2><button id="btnGallery" class="link">Thư viện ảnh</button></div>
+    <div id="stats" class="card"></div>
+    <h2>Gần đây</h2>
+    <div id="recent"></div>
+  </section>
+
+  <section id="v-scan" hidden>
+    <div class="camwrap"><video id="video" playsinline muted></video></div>
+    <p id="scanMsg" class="hint">Đưa mã QR vào khung hình…</p>
+  </section>
+
+  <section id="v-cat" hidden>
+    <div id="qrInfo" class="card" hidden></div>
+    <div id="cats" class="grid"></div>
+  </section>
+
+  <section id="v-detail" hidden>
+    <label>Số tiền (₫)<input id="amount" inputmode="numeric" placeholder="0"></label>
+    <label>Ghi chú<input id="note" placeholder="Ví dụ: cà phê với khách"></label>
+    <div class="photo">
+      <label class="btn">📸 Chụp ảnh hoá đơn
+        <input id="photoIn" type="file" accept="image/*" capture="environment" hidden>
+      </label>
+      <img id="preview" alt="" hidden>
+    </div>
+    <button id="toBank" class="big">Tiếp: chọn ngân hàng</button>
+    <button id="saveOnly" class="ghost">Chỉ lưu, không mở ngân hàng</button>
+  </section>
+
+  <section id="v-bank" hidden>
+    <p class="hint">Chọn ngân hàng. App sẽ mở app ngân hàng, bạn tự xác thực khuôn mặt như bình thường.</p>
+    <div id="banks" class="grid"></div>
+  </section>
+
+  <section id="v-gallery" hidden>
+    <div id="gal" class="gal"></div>
+  </section>
+
+  <section id="v-settings" hidden>
+    <label>Link Google Apps Script (Web App)<input id="sheetUrl" placeholder="https://script.google.com/macros/s/…/exec"></label>
+    <button id="testSheet" class="ghost">Gửi thử 1 dòng</button>
+    <h2>Danh mục</h2>
+    <textarea id="catsText" rows="6"></textarea>
+    <p class="hint">Mỗi dòng một danh mục, dạng: biểu tượng tên (ví dụ: ⛽ Tiền xăng)</p>
+    <h2>Ngân hàng</h2>
+    <textarea id="banksText" rows="10"></textarea>
+    <p class="hint">Mỗi dòng: Tên | link mở app (ví dụ: MB Bank | mbbank://). Sửa lại nếu app không mở được.</p>
+    <button id="saveSettings" class="big">Lưu cài đặt</button>
+  </section>
+
+</main>
+<div id="toast" hidden></div>
+<script src="vendor/jsQR.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
