@@ -95,3 +95,29 @@ video{width:100%;height:100%;object-fit:cover}
 
 #toast{position:fixed;left:16px;right:16px;bottom:calc(20px + env(safe-area-inset-bottom));background:var(--fg);color:var(--bg);padding:13px 16px;border-radius:14px;z-index:9;text-align:center;font-weight:600;box-shadow:var(--shadow)}
 [hidden]{display:none!important}
+
+/* Xem theo tháng + tổng */
+#stats>b::before{content:none}
+#stats>b{display:none}
+.mnav{display:flex;align-items:center;justify-content:space-between;margin:-4px 0 12px}
+.mnav span{font-weight:700;font-size:15px;letter-spacing:.02em}
+.mnav button{width:36px;height:36px;border-radius:50%;border:0;background:rgba(255,255,255,.16);color:#fff;font-size:22px;line-height:1;padding:0 0 3px}
+.mnav button:disabled{opacity:.3}
+.total{display:block;font-size:34px;letter-spacing:-.02em;font-weight:800}
+.sub{font-size:13px;opacity:.75;margin:0 0 10px}
+.item{cursor:pointer}
+.item:active{opacity:.6}
+
+/* Cửa sổ phóng to chi tiết giao dịch */
+body.noscroll{overflow:hidden}
+.sheet{position:fixed;inset:0;z-index:20;background:rgba(5,12,16,.55);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);display:flex;align-items:flex-end;justify-content:center;animation:fadeIn .18s ease}
+.sheet-card{position:relative;width:100%;max-width:560px;max-height:88vh;overflow:auto;background:var(--card);border-radius:28px 28px 0 0;padding:26px 20px calc(28px + env(safe-area-inset-bottom));animation:zoomUp .22s cubic-bezier(.2,.9,.3,1.1);box-shadow:0 -10px 40px rgba(0,0,0,.3)}
+.sheet-x{position:absolute;top:14px;right:14px;font-size:24px;box-shadow:none}
+.d-cat{font-size:15px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.d-amt{font-size:42px;font-weight:800;letter-spacing:-.02em;color:var(--accent);margin:2px 0 14px}
+.drow{display:flex;justify-content:space-between;gap:16px;padding:12px 0;border-top:1px solid var(--line);font-size:16px}
+.drow span{color:var(--muted);flex:none}
+.drow b{text-align:right;font-weight:600;word-break:break-word}
+.d-photo{display:block;width:100%;border-radius:18px;margin-top:16px;box-shadow:var(--shadow)}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes zoomUp{from{transform:translateY(40px) scale(.94);opacity:0}to{transform:none;opacity:1}}

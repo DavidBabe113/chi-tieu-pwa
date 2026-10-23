@@ -1,40 +1,40 @@
 <!doctype html>
-<html lang="vi">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Chi tiêu">
+<meta name="apple-mobile-web-app-title" content="Expenses">
 <meta name="theme-color" content="#0f766e">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="stylesheet" href="style.css">
-<title>Chi tiêu</title>
+<title>Expenses</title>
 </head>
 <body>
 <header>
-  <button id="back" class="icon" hidden aria-label="Quay lại">‹</button>
-  <h1 id="title">Chi tiêu</h1>
-  <button id="openSettings" class="icon" aria-label="Cài đặt">⚙</button>
+  <button id="back" class="icon" hidden aria-label="Back">‹</button>
+  <h1 id="title">Expenses</h1>
+  <button id="openSettings" class="icon" aria-label="Settings">⚙</button>
 </header>
 <main>
 
   <section id="v-home">
     <div id="pending"></div>
-    <div class="row"><h2>Tháng này</h2><button id="btnGallery" class="link">Thư viện ảnh</button></div>
+    <div class="row"><h2>Summary</h2><button id="btnGallery" class="link">Photo library</button></div>
     <div id="stats" class="card"></div>
-    <h2>Gần đây</h2>
+    <h2>Transactions</h2>
     <div id="recent"></div>
-    <button id="btnManual" class="fab-add" aria-label="Nhập tay không quét">+</button>
-    <button id="btnScan" class="fab-scan" aria-label="Quét QR">
+    <button id="btnManual" class="fab-add" aria-label="Add manually">+</button>
+    <button id="btnScan" class="fab-scan" aria-label="Scan QR">
       <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><rect x="8" y="8" width="3" height="3" rx=".5"/><rect x="13" y="8" width="3" height="3" rx=".5"/><rect x="8" y="13" width="3" height="3" rx=".5"/><path d="M13.5 14.5h2.5v2"/></svg>
     </button>
   </section>
 
   <section id="v-scan" hidden>
     <div class="camwrap"><video id="video" playsinline muted></video></div>
-    <p id="scanMsg" class="hint">Đưa mã QR vào khung hình…</p>
+    <p id="scanMsg" class="hint">Point the camera at the QR code…</p>
   </section>
 
   <section id="v-cat" hidden>
@@ -43,43 +43,51 @@
   </section>
 
   <section id="v-detail" hidden>
-    <label>Số tiền (₫)<input id="amount" inputmode="numeric" placeholder="0"></label>
-    <label>Ghi chú<input id="note" placeholder="Ví dụ: cà phê với khách"></label>
+    <label>Amount (₫)<input id="amount" inputmode="numeric" placeholder="0"></label>
+    <label>Note<input id="note" placeholder="e.g. coffee with a client"></label>
     <div class="photo">
-      <label class="btn">📸 Chụp ảnh hoá đơn
+      <label class="btn">📸 Take a receipt photo
         <input id="photoIn" type="file" accept="image/*" capture="environment" hidden>
       </label>
       <img id="preview" alt="" hidden>
-      <button id="photoAlbum" class="big" hidden>📁 Lưu vào album "Quản lý chi tiêu"</button>
-      <button id="photoSave" class="ghost" hidden>Lưu thủ công qua bảng chia sẻ</button>
+      <button id="photoAlbum" class="big" hidden>📁 Save to the expense album</button>
+      <button id="photoSave" class="ghost" hidden>Save manually via the share sheet</button>
     </div>
-    <button id="toBank" class="big">Tiếp: chọn ngân hàng</button>
-    <button id="saveOnly" class="ghost">Chỉ lưu, không mở ngân hàng</button>
+    <button id="toBank" class="big">Next: choose bank</button>
+    <button id="saveOnly" class="ghost">Save only, do not open a bank</button>
   </section>
 
   <section id="v-bank" hidden>
-    <p class="hint">Chọn ngân hàng. App sẽ mở app ngân hàng, bạn tự xác thực khuôn mặt như bình thường.</p>
+    <p class="hint">Choose a bank. Its app opens and you confirm with Face ID as usual. Enter the amount there yourself.</p>
     <div id="banks" class="grid"></div>
   </section>
 
   <section id="v-gallery" hidden>
-    <p class="hint">Đây là kho ảnh riêng của app. Chạm vào một ảnh rồi chọn "Lưu hình ảnh" để đưa vào album Ảnh của iPhone.</p>
+    <p class="hint">This is the app's own photo storage. Tap a photo and choose "Save Image" to put it into your iPhone Photos.</p>
     <div id="gal" class="gal"></div>
   </section>
 
   <section id="v-settings" hidden>
-    <label>Link Google Apps Script (Web App)<input id="sheetUrl" placeholder="https://script.google.com/macros/s/…/exec"></label>
-    <button id="testSheet" class="ghost">Gửi thử 1 dòng</button>
-    <h2>Danh mục</h2>
+    <label>Google Apps Script link (Web App)<input id="sheetUrl" placeholder="https://script.google.com/macros/s/…/exec"></label>
+    <button id="testSheet" class="ghost">Send a test row</button>
+    <h2>Categories</h2>
     <textarea id="catsText" rows="6"></textarea>
-    <p class="hint">Mỗi dòng một danh mục, dạng: biểu tượng tên (ví dụ: ⛽ Tiền xăng)</p>
-    <h2>Ngân hàng</h2>
+    <p class="hint">One category per line: icon then name (e.g. ⛽ Fuel)</p>
+    <h2>Banks</h2>
     <textarea id="banksText" rows="10"></textarea>
-    <p class="hint">Mỗi dòng: Tên | link mở app (ví dụ: MB Bank | mbbank://). Sửa lại nếu app không mở được.</p>
-    <button id="saveSettings" class="big">Lưu cài đặt</button>
+    <p class="hint">One per line: Name | app link (e.g. MB Bank | mbbank://). Edit if an app does not open.</p>
+    <button id="saveSettings" class="big">Save settings</button>
   </section>
 
 </main>
+
+<div id="sheet" class="sheet" hidden>
+  <div class="sheet-card" role="dialog" aria-modal="true">
+    <button id="sheetClose" class="icon sheet-x" aria-label="Close">×</button>
+    <div id="sheetBody"></div>
+  </div>
+</div>
+
 <div id="toast" hidden></div>
 <script src="vendor/jsQR.js"></script>
 <script src="app.js"></script>

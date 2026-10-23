@@ -1,8 +1,9 @@
 'use strict';
 const $ = s => document.querySelector(s);
-const fmt = n => (Number(n) || 0).toLocaleString('vi-VN') + '₫';
+const fmt = n => (Number(n) || 0).toLocaleString('en-US') + '₫';
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-const DEF_CATS = '⛽ Tiền xăng\n☕ Ăn / cà phê\n🛍 Shopping\n🏠 Hoá đơn nhà\n🏥 Sức khoẻ\n🎬 Giải trí\n📦 Khác';
+const DEF_CATS = '⛽ Fuel\n☕ Food & Coffee\n🛍 Shopping\n🏠 Home bills\n🏥 Health\n🎬 Entertainment\n📦 Other';
 // URL scheme mở thẳng app ngân hàng trên iOS (lấy từ trang chuyển tiếp của dl.vietqr.io). Chỉ mở app,
 // không truyền được số tiền / tài khoản (iOS không có link điền sẵn đã kiểm chứng).
 const DEF_BANKS = [
@@ -16,7 +17,11 @@ const DEF_BANKS = [
 const cfg = {
   get: (k, d) => { try { return localStorage.getItem(k) ?? d; } catch { return d; } },
   set: (k, v) => { try { localStorage.setItem(k, v); } catch {} },
+  del: k => { try { localStorage.removeItem(k); } catch {} },
 };
+// Cài đặt cũ (tiếng Việt / link cũ) chưa chỉnh tay thì tự đổi sang mặc định mới
+if (cfg.get('cats', '').startsWith('⛽ Tiền xăng')) cfg.del('cats');
+if (/vcbdigibank|dl\.vietqr\.io|techcombank:\/\//.test(cfg.get('banks', ''))) cfg.del('banks');
 
 let dbp;
 function db() {
@@ -62,7 +67,7 @@ function toast(msg, ms = 2600) {
 }
 
 // ---------- điều hướng ----------
-const TITLES = { home: 'Chi tiêu', scan: 'Quét QR', cat: 'Chọn danh mục', detail: 'Chi tiết', bank: 'Chọn ngân hàng', gallery: 'Thư viện ảnh', settings: 'Cài đặt' };
+const TITLES = { home: 'Expenses', scan: 'Scan QR', cat: 'Choose category', detail: 'Details', bank: 'Choose bank', gallery: 'Photo library', settings: 'Settings' };
 function show(v, push = true) {
   if (v !== 'scan') stopScan();
   if (push) stack.push(v);
@@ -85,11 +90,11 @@ function newRec() {
 
 async function startScan() {
   show('scan');
-  $('#scanMsg').textContent = 'Đưa mã QR vào khung hình…';
+  $('#scanMsg').textContent = 'Point the camera at the QR code…';
   try {
     stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
   } catch {
-    $('#scanMsg').textContent = 'Không mở được camera. Vào Cài đặt iPhone > Safari / app > Camera để cấp quyền.';
+    $('#scanMsg').textContent = 'Cannot open the camera. Allow camera access in iPhone Settings > Safari / this app.';
     return;
   }
   const v = $('#video'); v.srcObject = stream; await v.play();
@@ -140,7 +145,7 @@ function onQr(raw) {
     cur.amount = q.amount || ''; cur.payee = q.payee || ''; cur.note = q.note || '';
     cur.acc = q.acc || ''; cur.bin = q.bin || '';
     $('#qrInfo').hidden = false;
-    $('#qrInfo').textContent = `Người nhận: ${q.payee || '—'}${q.acc ? ' · ' + q.acc : ''}${q.amount ? ' · ' + fmt(q.amount) : ''}`;
+    $('#qrInfo').textContent = `Payee: ${q.payee || '—'}${q.acc ? ' · ' + q.acc : ''}${q.amount ? ' · ' + fmt(q.amount) : ''}`;
   } else {
     cur.payee = raw.length > 60 ? raw.slice(0, 60) + '…' : raw;
     $('#qrInfo').hidden = false;
@@ -158,20 +163,20 @@ function renderCats() {
   cats().forEach(c => {
     const [e, ...rest] = c.split(' ');
     const b = document.createElement('button');
-    b.innerHTML = `<span class="e">${e}</span>${rest.join(' ') || e}`;
+    b.innerHTML = `<span class="e">${esc(e)}</span>${esc(rest.join(' ') || e)}`;
     b.onclick = () => { cur.category = c; openDetail(); };
     $('#cats').append(b);
   });
 }
 function openDetail() {
-  $('#amount').value = cur.amount ? Number(cur.amount).toLocaleString('vi-VN') : '';
+  $('#amount').value = cur.amount ? Number(cur.amount).toLocaleString('en-US') : '';
   $('#note').value = cur.note;
   $('#preview').hidden = true; $('#photoSave').hidden = true; $('#photoAlbum').hidden = true; curPhoto = null;
   show('detail');
 }
 $('#amount').oninput = e => {
   const d = e.target.value.replace(/\D/g, '');
-  e.target.value = d ? Number(d).toLocaleString('vi-VN') : '';
+  e.target.value = d ? Number(d).toLocaleString('en-US') : '';
 };
 $('#photoIn').onchange = async e => {
   const f = e.target.files[0]; if (!f) return;
@@ -194,12 +199,12 @@ async function toAlbum(silent) {
       img.src = URL.createObjectURL(curPhoto);
     });
     await navigator.clipboard.write([new ClipboardItem({ 'image/png': png })]);
-  } catch { if (!silent) toast('Không copy được ảnh, thử lại'); return; }
+  } catch { if (!silent) toast('Could not copy the photo, try again'); return; }
   location.href = 'shortcuts://run-shortcut?name=' + encodeURIComponent('LuuAnhChiTieu');
 }
 $('#photoAlbum').onclick = () => toAlbum(false);
 // iOS không cho web tự ghi vào album Ảnh: mở Share Sheet, bạn chọn "Lưu hình ảnh"
-$('#photoSave').onclick = () => savePhoto(curPhoto, `ChiTieu_${Date.now()}.jpg`);
+$('#photoSave').onclick = () => savePhoto(curPhoto, `Expense_${Date.now()}.jpg`);
 function shrink(file, max = 1280) {
   return new Promise(res => {
     const img = new Image();
@@ -216,7 +221,7 @@ function shrink(file, max = 1280) {
 function collectDetail() {
   cur.amount = $('#amount').value.replace(/\D/g, '');
   cur.note = $('#note').value.trim();
-  if (!cur.amount) { toast('Nhập số tiền trước nhé'); return false; }
+  if (!cur.amount) { toast('Enter an amount first'); return false; }
   return true;
 }
 async function stash() {
@@ -226,12 +231,12 @@ async function stash() {
   }
 }
 
-// "Chỉ lưu" = chi tiền mặt, không qua ngân hàng → coi như thành công, ghi Sheet luôn
+// "Save only" = chi tiền mặt, không qua ngân hàng → ghi Sheet luôn, không báo gì
 $('#saveOnly').onclick = async () => {
   if (!collectDetail()) return;
   await stash();
   cur.status = 'done'; await putRec(cur); sync();
-  toast('Đã lưu'); show('home');
+  show('home');
 };
 $('#toBank').onclick = () => { if (collectDetail()) { renderBanks(); show('bank'); } };
 
@@ -251,20 +256,20 @@ async function openBank(b) {
   await putRec(cur);
   sync();
   stack.length = 0; stack.push('home');
-  if (!b.url) { toast('Chưa có link app cho ngân hàng này, sửa trong Cài đặt'); show('home'); return; }
+  if (!b.url) { toast('No app link for this bank. Set one in Settings'); show('home'); return; }
   show('home', false);
   location.href = b.url;
-  setTimeout(() => { if (!document.hidden) toast('Không mở được app. Kiểm tra link trong Cài đặt.', 4000); }, 1800);
+  setTimeout(() => { if (!document.hidden) toast('Could not open the app. Check the link in Settings.', 4000); }, 1800);
 }
 
-// ---------- xác nhận giao dịch & đồng bộ ----------
+// ---------- thẻ xác nhận cũ (giao dịch pending từ bản trước) & đồng bộ ----------
 async function renderPending() {
   const recs = (await allRecs()).filter(r => r.status === 'pending');
   const box = $('#pending'); box.innerHTML = '';
   recs.forEach(r => {
     const d = document.createElement('div'); d.className = 'card pend';
-    d.innerHTML = `<b>Giao dịch thành công?</b><div>${r.category} · ${fmt(r.amount)} · ${r.bank}</div>
-      <div class="acts"><button class="no">Huỷ</button><button class="ok">Thành công</button></div>`;
+    d.innerHTML = `<b>Did the transfer go through?</b><div>${esc(r.category)} · ${fmt(r.amount)} · ${esc(r.bank)}</div>
+      <div class="acts"><button class="no">Cancel</button><button class="ok">Done</button></div>`;
     d.querySelector('.ok').onclick = async () => { r.status = 'done'; await putRec(r); renderHome(); sync(); };
     d.querySelector('.no').onclick = async () => { await delRec(r.id); await delPhoto(r.id); renderHome(); };
     box.append(d);
@@ -289,33 +294,80 @@ async function sync() {
 }
 window.addEventListener('online', sync);
 
-// ---------- trang chủ ----------
+// ---------- trang chủ: xem theo từng tháng ----------
+const ymOf = iso => { const d = new Date(iso); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); };
+const nowYm = () => ymOf(new Date().toISOString());
+let viewYm = nowYm();
+function shiftMonth(n) {
+  const [y, m] = viewYm.split('-').map(Number);
+  viewYm = ymOf(new Date(y, m - 1 + n, 1).toISOString());
+}
+const recById = {};
+
 async function renderHome() {
   await renderPending();
   const recs = (await allRecs()).filter(r => r.status === 'done').sort((a, b) => b.time.localeCompare(a.time));
-  const ym = new Date().toISOString().slice(0, 7);
-  const month = recs.filter(r => r.time.startsWith(ym));
+  recs.forEach(r => recById[r.id] = r);
+  const month = recs.filter(r => ymOf(r.time) === viewYm);
   const by = {}; month.forEach(r => by[r.category] = (by[r.category] || 0) + Number(r.amount));
   const total = month.reduce((s, r) => s + Number(r.amount), 0), max = Math.max(1, ...Object.values(by));
-  $('#stats').innerHTML = `<b style="font-size:22px">${fmt(total)}</b>` +
+  const [y, m] = viewYm.split('-').map(Number);
+  const label = new Date(y, m - 1, 1).toLocaleString('en-US', { month: 'long', year: 'numeric' });
+  $('#stats').innerHTML =
+    `<div class="mnav"><button data-m="-1" aria-label="Previous month">‹</button><span>${label}</span>` +
+    `<button data-m="1" aria-label="Next month" ${viewYm >= nowYm() ? 'disabled' : ''}>›</button></div>` +
+    `<b class="total">${fmt(total)}</b><div class="sub">${month.length} transaction${month.length === 1 ? '' : 's'}</div>` +
     Object.entries(by).sort((a, b) => b[1] - a[1]).map(([k, v]) =>
-      `<div class="bar"><span style="width:110px">${k}</span><i style="width:${Math.round(v / max * 100)}px"></i><span>${fmt(v)}</span></div>`).join('') +
-    (cfg.get('sheetUrl', '') ? '' : '<p class="hint">Chưa nối Google Sheet. Vào ⚙ Cài đặt để dán link.</p>');
+      `<div class="bar"><span>${esc(k)}</span><i style="width:${Math.round(v / max * 100)}px"></i><span>${fmt(v)}</span></div>`).join('') +
+    (cfg.get('sheetUrl', '') ? '' : '<p class="hint">Google Sheet not connected. Open ⚙ Settings and paste the link.</p>');
   const box = $('#recent'); box.innerHTML = '';
-  for (const r of recs.slice(0, 15)) {
-    const d = document.createElement('div'); d.className = 'item';
-    d.innerHTML = `<div class="t">${r.category}<small>${new Date(r.time).toLocaleString('vi-VN')}${r.note ? ' · ' + r.note : ''}${r.synced ? '' : ' · ⏳ chưa lên Sheet'}</small></div><div class="amt">${fmt(r.amount)}</div>`;
+  for (const r of month) {
+    const d = document.createElement('div'); d.className = 'item'; d.dataset.id = r.id;
+    d.innerHTML = `<div class="t">${esc(r.category)}<small>${new Date(r.time).toLocaleString('en-GB')}${r.note ? ' · ' + esc(r.note) : ''}${r.synced ? '' : ' · ⏳ not synced yet'}</small></div><div class="amt">${fmt(r.amount)}</div>`;
     if (r.photo) { const b = await getPhoto(r.id); if (b) { const i = new Image(); i.src = URL.createObjectURL(b); d.prepend(i); } }
     box.append(d);
   }
+  if (!month.length) box.innerHTML = '<p class="hint">No transactions in this month.</p>';
 }
+$('#stats').onclick = e => {
+  const b = e.target.closest('[data-m]');
+  if (b && !b.disabled) { shiftMonth(Number(b.dataset.m)); renderHome(); }
+};
+
+// ---------- phóng to chi tiết giao dịch ----------
+$('#recent').onclick = e => {
+  const it = e.target.closest('.item');
+  if (it && recById[it.dataset.id]) openSheet(recById[it.dataset.id]);
+};
+async function openSheet(r) {
+  const row = (k, v) => v ? `<div class="drow"><span>${k}</span><b>${esc(v)}</b></div>` : '';
+  $('#sheetBody').innerHTML =
+    `<div class="d-cat">${esc(r.category)}</div><div class="d-amt">${fmt(r.amount)}</div>` +
+    row('Date', new Date(r.time).toLocaleString('en-GB')) + row('Bank', r.bank) + row('Payee', r.payee) +
+    row('Note', r.note) + row('Google Sheet', r.synced ? 'Synced' : 'Not synced yet') +
+    '<div id="sheetPhoto"></div>';
+  $('#sheet').hidden = false;
+  document.body.classList.add('noscroll');
+  if (r.photo) {
+    const b = await getPhoto(r.id);
+    if (b) {
+      const i = new Image(); i.src = URL.createObjectURL(b); i.className = 'd-photo';
+      i.onclick = () => savePhoto(b, r.photo);
+      $('#sheetPhoto').append(i);
+      $('#sheetPhoto').insertAdjacentHTML('beforeend', '<p class="hint">Tap the photo to save it to your iPhone Photos.</p>');
+    }
+  }
+}
+function closeSheet() { $('#sheet').hidden = true; document.body.classList.remove('noscroll'); }
+$('#sheetClose').onclick = closeSheet;
+$('#sheet').onclick = e => { if (e.target.id === 'sheet') closeSheet(); };
 
 // ---------- thư viện ảnh ----------
 async function openGallery() {
   show('gallery');
   const g = $('#gal'); g.innerHTML = '';
   const recs = (await allRecs()).filter(r => r.photo && r.status === 'done').sort((a, b) => b.time.localeCompare(a.time));
-  if (!recs.length) g.innerHTML = '<p class="hint">Chưa có ảnh nào.</p>';
+  if (!recs.length) g.innerHTML = '<p class="hint">No photos yet.</p>';
   for (const r of recs) {
     const b = await getPhoto(r.id); if (!b) continue;
     const i = new Image(); i.src = URL.createObjectURL(b);
@@ -328,7 +380,7 @@ async function savePhoto(blob, name) {
   const f = new File([blob], name, { type: 'image/jpeg' });
   if (navigator.canShare && navigator.canShare({ files: [f] })) {
     try { await navigator.share({ files: [f] }); } catch {}
-  } else toast('Giữ lâu vào ảnh để lưu');
+  } else toast('Press and hold the photo to save it');
 }
 
 // ---------- cài đặt ----------
@@ -342,15 +394,19 @@ $('#saveSettings').onclick = () => {
   cfg.set('sheetUrl', $('#sheetUrl').value.trim());
   cfg.set('cats', $('#catsText').value);
   cfg.set('banks', $('#banksText').value);
-  toast('Đã lưu cài đặt'); sync(); show('home');
+  sync(); show('home');
 };
 $('#testSheet').onclick = async () => {
   cfg.set('sheetUrl', $('#sheetUrl').value.trim());
-  const ok = await post({ id: 'test-' + Date.now(), time: new Date().toISOString(), category: 'TEST', amount: 0, note: 'dòng thử', payee: '', bank: '', photo: '' });
-  toast(ok ? 'Đã gửi, mở Sheet kiểm tra tab ChiTieu' : 'Gửi lỗi, kiểm tra link');
+  const ok = await post({ id: 'test-' + Date.now(), time: new Date().toISOString(), category: 'TEST', amount: 0, note: 'test row', payee: '', bank: '', photo: '' });
+  toast(ok ? 'Sent. Check the ChiTieu tab in your Sheet' : 'Send failed, check the link');
 };
 
 // ---------- khởi động ----------
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {});
+  let reloaded = false;   // bản mới của service worker lên thì tự tải lại một lần
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (!reloaded) { reloaded = true; location.reload(); } });
+}
 show('home', false);
 sync();
