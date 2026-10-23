@@ -226,8 +226,9 @@ function renderBanks() {
 }
 async function openBank(b) {
   await stash();
-  cur.bank = b.name; cur.status = 'pending';   // chưa ghi Sheet, chờ xác nhận thành công
+  cur.bank = b.name; cur.status = 'done';   // đã nhập số tiền + chọn ngân hàng = lưu luôn
   await putRec(cur);
+  sync();
   stack.length = 0; stack.push('home');
   if (!b.url) { toast('Chưa có link app cho ngân hàng này, sửa trong Cài đặt'); show('home'); return; }
   show('home', false);

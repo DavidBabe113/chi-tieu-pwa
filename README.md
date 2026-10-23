@@ -1,6 +1,6 @@
 # Chi tiêu (PWA cho iPhone)
 
-Quét QR → chọn danh mục → nhập số tiền / chụp ảnh → chọn ngân hàng (mở app ngân hàng) → quay lại bấm **Thành công** → ghi vào Google Sheet.
+Quét QR → chọn danh mục → nhập số tiền / chụp ảnh → chọn ngân hàng (mở app ngân hàng) → quay lại 
 
 - Số tiền: Google Sheet qua Apps Script (`apps-script/Code.gs`). Chỉ ghi sau khi bạn xác nhận giao dịch thành công.
 - Ảnh hoá đơn: lưu trong bộ nhớ app trên máy (IndexedDB), không lên cloud. Chạm vào ảnh trong Thư viện để lưu vào Photos qua Share Sheet.
@@ -12,5 +12,5 @@ Quét QR → chọn danh mục → nhập số tiền / chụp ảnh → chọn 
 3. Mở app > ⚙ > dán link `/exec` > Gửi thử.
 
 ## Lưu ý
-- Luồng: quét QR (hoặc nhập tay) > danh mục > chọn ngân hàng > app ngân hàng mở ra, bạn tự nhập số tiền và xác thực ở đó. Link điền sẵn qua VietQR không hoạt động trên iOS (đã kiểm chứng), nên app không truyền số tiền sang ngân hàng.
+- Luồng: quét QR (hoặc nhập tay) > danh mục > nhập số tiền > chọn ngân hàng. Chọn ngân hàng là lưu luôn và đẩy lên Sheet (không có bước xác nhận). App ngân hàng mở ra, bạn tự nhập số tiền và xác thực ở đó.
 - Link `/exec` chỉ lưu trên máy bạn, không nằm trong repo.
