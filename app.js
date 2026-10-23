@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.1.0';
+const VERSION = '2.3.0';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -21,7 +21,20 @@ const VI = {
   'Scan QR': 'Quét QR', 'Choose category': 'Chọn danh mục', 'Details': 'Chi tiết', 'Choose bank': 'Chọn ngân hàng',
   'Photo library': 'Thư viện ảnh', 'Settings': 'Cài đặt', 'Back': 'Quay lại', 'Close': 'Đóng', 'Add manually': 'Nhập tay',
   // tổng quan
-  'Spent this month': 'Đã chi tháng này', 'Dashboard': 'Bảng tổng hợp', 'Transactions': 'Giao dịch', 'Previous month': 'Tháng trước', 'Next month': 'Tháng sau',
+  'Spent this month': 'Đã chi tháng này', 'Dashboard': 'Bảng tổng hợp',
+  'Link my Google account': 'Liên kết tài khoản Google của tôi', 'Google Client ID': 'Google Client ID', 'Google email or username': 'Email Google hoặc tên đăng nhập',
+  'Password (leave empty for a Google email)': 'Mật khẩu (bỏ trống nếu dùng email Google)', 'This Google account is not on the member list': 'Tài khoản Google này chưa có trong danh sách thành viên',
+  'Google sign-in failed': 'Đăng nhập Google không thành công', 'or': 'hoặc',
+  'Account': 'Tài khoản', 'Signed in as': 'Đăng nhập với', 'Change password': 'Đổi mật khẩu', 'Log out': 'Đăng xuất', 'Members': 'Thành viên', 'Username': 'Tên đăng nhập', 'Password': 'Mật khẩu',
+  'Member': 'Thành viên', 'Admin': 'Quản trị viên', 'Role': 'Vai trò', 'Add member': 'Thêm thành viên', 'You': 'Bạn', 'Reset password': 'Đặt lại mật khẩu',
+  'Administrators can do everything.': 'Quản trị viên có mọi quyền.', 'Remove this member? Their transactions stay.': 'Xoá thành viên này? Giao dịch của họ vẫn được giữ.',
+  'New password for {0}': 'Mật khẩu mới cho {0}', 'Sign in': 'Đăng nhập', 'Create your admin account': 'Tạo tài khoản quản trị', 'Create account': 'Tạo tài khoản',
+  'This account will be the administrator. Choose a password you will remember.': 'Tài khoản này sẽ là quản trị viên. Hãy chọn mật khẩu bạn nhớ được.',
+  'Save password': 'Lưu mật khẩu', 'New password': 'Mật khẩu mới', 'Current password': 'Mật khẩu hiện tại', 'Confirm password': 'Nhập lại mật khẩu',
+  'Wrong username or password': 'Sai tên đăng nhập hoặc mật khẩu', 'Wrong current password': 'Sai mật khẩu hiện tại', 'Password must have at least 4 characters': 'Mật khẩu cần ít nhất 4 ký tự',
+  'Passwords do not match': 'Hai mật khẩu không khớp', 'That username is already taken': 'Tên đăng nhập này đã có',
+  'Add expenses': 'Thêm chi tiêu', 'Add income': 'Thêm khoản thu', "See everyone's transactions": 'Xem giao dịch của mọi người', 'See the Dashboard': 'Xem bảng tổng hợp',
+  'See 6 Jars': 'Xem 6 hũ', 'Edit jar percentages': 'Sửa tỷ lệ các hũ', 'Manage categories': 'Quản lý danh mục', 'Transactions': 'Giao dịch', 'Previous month': 'Tháng trước', 'Next month': 'Tháng sau',
   'Today': 'Hôm nay', 'Yesterday': 'Hôm qua', 'No transactions in this month.': 'Chưa có giao dịch trong tháng này.',
   '⏳ pending': '⏳ chờ đồng bộ', 'Did the transfer go through?': 'Giao dịch đã thành công?', 'Cancel': 'Huỷ', 'Done': 'Xong',
   // quét & nhập
@@ -138,6 +151,7 @@ const DEF_BANKS = [
 ].join('\n');
 const OLD_BANKS = 'Vietcombank | vietcombankmobile://\nMB Bank | mbbank://\nTechcombank | tcb://\nVPBank | vpbankneo://\nACB | acbone://\nBIDV | bidv.smartbanking.partner://\nTPBank | hydro://\nVietinBank | vietinbankipay://\nAgribank | agribankmobile://\nOCB | newomni-app://';
 // File Google Sheet chứa dữ liệu (chỉ mở được khi đăng nhập đúng tài khoản Google, Sheet không chia sẻ cho ai)
+const GOOGLE_CLIENT_ID = '';   // Google OAuth Client ID (công khai, không phải bí mật); có thể ghi đè trong Cài đặt > Advanced
 const SHEET_FILE = 'https://docs.google.com/spreadsheets/d/1h6gpLCcJoevkHnPB9yo8R86ALhcuY2pb5Bjd_H8fLhw/edit';
 // Cài đặt cũ chưa chỉnh tay thì tự đổi sang mặc định mới
 if (cfg.get('cats', '').startsWith('⛽ Tiền xăng')) cfg.del('cats');
@@ -193,7 +207,8 @@ const allRecs = () => tx('records', 'readonly', s => s.getAll());
 const putPhoto = (id, blob) => tx('photos', 'readwrite', s => s.put({ id, blob }));
 const getPhoto = id => tx('photos', 'readonly', s => s.get(id)).then(x => x && x.blob);
 const delPhoto = id => tx('photos', 'readwrite', s => s.delete(id));
-const doneRecs = async () => (await allRecs()).filter(r => r.status === 'done');
+const rawDone = async () => (await allRecs()).filter(r => r.status === 'done');   // toàn bộ (dùng cho đồng bộ)
+const doneRecs = async () => { const a = await rawDone(); return can('seeAll') ? a : a.filter(mine); };   // theo quyền người xem
 
 // ---------- trạng thái ----------
 let cur = null;          // bản ghi đang soạn
@@ -218,6 +233,7 @@ let depth = 0, pendingTop = null, lastBack = 0, dir = 'fwd';
 try { history.replaceState({ v: 'home', d: 0 }, ''); } catch {}
 // mode: true = thêm vào lịch sử, false = không đụng lịch sử, 'replace' = thay mục hiện tại
 function show(v, mode = true) {
+  if ((v === 'jars' || v === 'cats') && !TABKEYS.includes(v)) v = 'home';
   if (v !== 'scan') stopScan();
   const inner = !TOP.includes(v);
   try {
@@ -230,8 +246,8 @@ function show(v, mode = true) {
   document.querySelectorAll('main > section').forEach(s => s.hidden = s.id !== 'v-' + v);
   $('#title').textContent = tr(TITLES[v]);
   $('#back').hidden = !inner;
-  $('#tabs').hidden = inner;
-  if (!inner) $('#tabs').style.setProperty('--i', TOP.indexOf(v));
+  $('#tabs').hidden = inner || TABKEYS.length < 2;
+  if (!inner) $('#tabs').style.setProperty('--i', Math.max(0, TABKEYS.indexOf(v)));
   document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === v));
   window.scrollTo(0, 0);
   if (v === 'home') renderHome();
@@ -274,7 +290,7 @@ $('#btnScan').onclick = startScan;
 $('#btnManual').onclick = () => { cur = newRec(); renderCats(); show('cat'); };
 
 function newRec() {
-  return { type: 'expense', fromQr: false, acc: '', bin: '', id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), time: new Date().toISOString(), category: '', amount: '', note: '', payee: '', bank: '', photo: '', status: 'draft', synced: false };
+  return { type: 'expense', by: me ? me.id : '', fromQr: false, acc: '', bin: '', id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), time: new Date().toISOString(), category: '', amount: '', note: '', payee: '', bank: '', photo: '', status: 'draft', synced: false };
 }
 
 async function startScan() {
@@ -372,8 +388,10 @@ function onQr(raw, mode = 'replace') {
 document.querySelectorAll('#segType button').forEach(b => b.onclick = () => { cur.type = b.dataset.v; renderCats(); });
 function renderCats() {
   if (!cur.payee) $('#qrInfo').hidden = true;
-  $('#segType').hidden = cur.fromQr;   // quét QR chuyển khoản luôn là chi tiêu
-  document.querySelectorAll('#segType button').forEach(b => b.classList.toggle('on', b.dataset.v === cur.type));
+  const types = ['expense', 'income'].filter(k => can(k === 'expense' ? 'addExpense' : 'addIncome'));
+  if (!types.includes(cur.type)) cur.type = types[0] || 'expense';
+  $('#segType').hidden = cur.fromQr || types.length < 2;   // quét QR chuyển khoản luôn là chi tiêu
+  document.querySelectorAll('#segType button').forEach(b => { b.hidden = !types.includes(b.dataset.v); b.classList.toggle('on', b.dataset.v === cur.type); });
   $('#cats').innerHTML = '';
   (cur.type === 'income' ? icats() : cats()).forEach(c => {
     const [e, ...rest] = c.split(' ');
@@ -454,17 +472,17 @@ async function stash() {
 
 // "Save only" = chi tiền mặt, không qua ngân hàng → lưu luôn, không báo gì
 $('#saveOnly').onclick = async () => {
-  if (!collectDetail()) return;
+  if (!can('addExpense') || !collectDetail()) return;
   await stash();
   cur.status = 'done'; await putRec(cur); sync();
   goTop('home');
 };
 $('#saveIncome').onclick = async () => {
-  if (!collectDetail()) return;
+  if (!can('addIncome') || !collectDetail()) return;
   cur.type = 'income'; cur.status = 'done'; await putRec(cur); sync();
   goTop('home');
 };
-$('#toBank').onclick = () => { if (collectDetail()) { renderBanks(); show('bank'); } };
+$('#toBank').onclick = () => { if (can('addExpense') && collectDetail()) { renderBanks(); show('bank'); } };
 
 // ---------- chọn ngân hàng ----------
 function renderBanks() {
@@ -518,7 +536,7 @@ function markJars(ym) {
   const d = getJSON('jarsDirty', []); if (!d.includes(ym)) { d.push(ym); cfg.set('jarsDirty', JSON.stringify(d)); }
 }
 async function markAllJars() {   // đổi gán danh mục → hũ ảnh hưởng mọi tháng đã có giao dịch
-  (await doneRecs()).forEach(r => markJars(ymOf(r.time)));
+  (await rawDone()).forEach(r => markJars(ymOf(r.time)));
   markJars(viewYm);
 }
 // Bảng 6 hũ của một tháng gửi lên Sheet: tỷ lệ, thu nhập, phân bổ, đã chi, còn lại (đồng nhất với số trong app)
@@ -530,7 +548,7 @@ function jarSnapshot(ym, recs) {
 async function flushJars() {
   const dirty = getJSON('jarsDirty', []);
   if (!dirty.length || !cfg.get('sheetUrl', '')) return;
-  const recs = await doneRecs(), left = [];
+  const recs = await rawDone(), left = [];
   for (const ym of dirty) { if (!(await post(jarSnapshot(ym, recs)))) left.push(ym); }
   cfg.set('jarsDirty', JSON.stringify(left));
 }
@@ -752,7 +770,7 @@ async function renderJars() {
     `</div><h2>${tr('Jars')}</h2>`;
   JAR_KEYS.forEach((k, i) => {
     h += `<div class="card jar" data-i="${i}"><div class="jtop"><span class="jic">${JAR_ICONS[i]}</span><div class="jn">${esc(jarName(i))}<small data-alloc></small></div>` +
-      `<label class="pct"><input type="number" inputmode="decimal" step="0.5" min="0" max="100" data-pct="${i}" value="${draftPct[i]}"><span>%</span></label></div>` +
+      `<label class="pct"><input type="number" inputmode="decimal" step="0.5" min="0" max="100" data-pct="${i}" value="${draftPct[i]}" ${can('editJars') ? '' : 'disabled'}><span>%</span></label></div>` +
       `<div class="jbar"><i data-bar></i></div><div class="jsub"><span data-spent></span><b data-left></b></div></div>`;
   });
   h += `<div class="card totrow"><span>${tr('Total')}</span><b id="pctTotal"></b></div>` +
@@ -780,7 +798,7 @@ function paintJars() {
   const saved = pctSaved()[viewYm], isSame = !!saved && sameArr(saved, draftPct);
   const btn = $('#saveMonth');
   btn.textContent = !ok ? tr('Percentages must add up to 100') : isSame ? '✓ ' + tr('Saved for {0}', monthLabel(viewYm)) : tr('Save {0}', monthLabel(viewYm));
-  btn.disabled = !ok || isSame;
+  btn.disabled = !ok || isSame; btn.hidden = !can('editJars');
   $('#jarNote').innerHTML = c.unassigned > 0 ? `<div class="card jsub">${tr('Not in any jar: <b>{0}</b>. Assign those categories to a jar in the Categories tab.', fmt(c.unassigned))}</div>` : '';
 }
 $('#jarsBody').addEventListener('input', e => {
@@ -790,7 +808,7 @@ $('#jarsBody').addEventListener('input', e => {
 });
 $('#jarsBody').addEventListener('click', e => {
   if (monthClick(e)) { renderJars(); return; }
-  if (e.target.closest('#saveMonth') && !$('#saveMonth').disabled) {
+  if (can('editJars') && e.target.closest('#saveMonth') && !$('#saveMonth').disabled) {
     const s = pctSaved(); s[viewYm] = draftPct.slice(); cfg.set('jarpct', JSON.stringify(s));
     markJars(viewYm); sync(); paintJars();
   }
@@ -895,8 +913,12 @@ async function savePhoto(blob, name) {
 // ---------- cài đặt: ngôn ngữ, giao diện, bảo mật, dữ liệu, phiên bản (+ nâng cao thu gọn) ----------
 function renderSettings() {
   $('#verText').textContent = VERSION;
+  $('#whoAmI').textContent = me ? (me.email || me.name) + ' · ' + tr(me.role === 'admin' ? 'Admin' : 'Member') : '';
+  $('#linkGoogle').hidden = !(me && !me.email && gClientId());
+  renderMembers();
   $('#openSheetLink').href = cfg.get('sheetFile', SHEET_FILE);
   $('#sheetFile').value = cfg.get('sheetFile', SHEET_FILE);
+  $('#gClientId').value = cfg.get('gClientId', GOOGLE_CLIENT_ID);
   $('#pinState').textContent = tr(hasPin() ? 'On' : 'Off');
   $('#pinSet').hidden = hasPin(); $('#pinChange').hidden = !hasPin(); $('#pinOff').hidden = !hasPin();
   // Face ID chỉ hiện khi đã có PIN (làm dự phòng) và thiết bị hỗ trợ
@@ -919,6 +941,7 @@ document.querySelectorAll('#segTheme button').forEach(b => b.onclick = () => {
 });
 $('#saveAdv').onclick = () => {
   cfg.set('sheetFile', $('#sheetFile').value.trim() || SHEET_FILE);
+  cfg.set('gClientId', $('#gClientId').value.trim());
   cfg.set('sheetUrl', $('#sheetUrl').value.trim());
   cfg.set('banks', $('#banksText').value);
   markAllJars().then(sync); goTop('home');
@@ -1021,6 +1044,203 @@ document.addEventListener('visibilitychange', () => {
   else if (!$('#lock').hidden && lockMode === 'verify' && faceOn()) tryFace(true);   // quay lại thì thử Face ID
 });
 
+// ---------- tài khoản admin / member ----------
+// Khoá phía app, dữ liệu dùng chung trên máy này. Admin thấy và làm mọi thứ; member bị giới hạn theo các quyền admin bật cho họ.
+// Lưu ý: vì chạy hoàn toàn trên máy nên đây là lớp phân quyền giao diện, không chống được người cố tình xoá dữ liệu app rồi tạo lại.
+const PERMS = [
+  ['addExpense', 'Add expenses', true], ['addIncome', 'Add income', false], ["seeAll", "See everyone's transactions", false],
+  ['viewDash', 'See the Dashboard', true], ['viewJars', 'See 6 Jars', true], ['editJars', 'Edit jar percentages', false], ['editCats', 'Manage categories', false],
+];
+const users = () => getJSON('users', []);
+const saveUsers = a => cfg.set('users', JSON.stringify(a));
+let me = null, TABKEYS = ['home'];
+const isAdmin = () => !!me && me.role === 'admin';
+const can = k => isAdmin() || !!(me && me.perms && me.perms[k]);
+const adminId = () => (users().find(u => u.role === 'admin') || {}).id;
+const mine = r => !!me && (r.by || adminId()) === me.id;   // giao dịch cũ chưa có người tạo thuộc về admin
+const uid = () => 'u' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+const defPerms = role => Object.fromEntries(PERMS.map(([k, , d]) => [k, role === 'admin' ? true : d]));
+async function pwHash(pw, salt) {
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveBits']);
+  const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', salt: new TextEncoder().encode(salt), iterations: 100000, hash: 'SHA-256' }, key, 256);
+  return [...new Uint8Array(bits)].map(x => x.toString(16).padStart(2, '0')).join('');
+}
+
+// Áp quyền của người đang đăng nhập lên giao diện
+function applyPermissions() {
+  TABKEYS = ['home'].concat(can('viewJars') ? ['jars'] : [], can('editCats') ? ['cats'] : []);
+  document.querySelectorAll('#tabs button').forEach(b => b.hidden = !TABKEYS.includes(b.dataset.tab));
+  $('#tabs').style.setProperty('--n', TABKEYS.length);
+  $('#btnScan').hidden = !can('addExpense');
+  $('#btnManual').hidden = !(can('addExpense') || can('addIncome'));
+  $('#dash').hidden = !can('viewDash');
+  $('#adminTop').hidden = !isAdmin(); $('#adminAdv').hidden = !isAdmin();
+}
+
+// Màn đăng nhập / tạo admin / đổi mật khẩu
+let lgMode = 'login', lgFails = 0, lgLockedUntil = 0;
+const lgSay = m => { $('#lgMsg').textContent = m ? tr(m) : ''; };
+function openLogin(mode, cancelable) {
+  lgMode = mode;
+  const set = mode === 'setup', chg = mode === 'changepw';
+  $('#lgTitle').textContent = tr(set ? 'Create your admin account' : chg ? 'Change password' : 'Sign in');
+  $('#lgOld').hidden = !chg; $('#lgUser').hidden = chg; $('#lgPass2').hidden = !(set || chg); $('#lgPass').hidden = false; $('#lgGo').hidden = false;
+  $('#lgOld').placeholder = tr('Current password'); $('#lgUser').placeholder = tr('Username');
+  $('#lgPass').placeholder = tr(chg ? 'New password' : 'Password'); $('#lgPass2').placeholder = tr('Confirm password');
+  ['lgOld', 'lgUser', 'lgPass', 'lgPass2'].forEach(id => $('#' + id).value = '');
+  if (set) $('#lgUser').value = 'admin';
+  lgSay(set ? 'This account will be the administrator. Choose a password you will remember.' : '');
+  $('#lgGo').textContent = tr(set ? 'Create account' : chg ? 'Save password' : 'Sign in');
+  $('#lgCancel').hidden = !cancelable;
+  const link = mode === 'link';
+  ['lgUser', 'lgPass', 'lgGo'].forEach(id => { if (link) $('#' + id).hidden = true; });
+  if (link) $('#lgTitle').textContent = tr('Link my Google account');
+  $('#gBtn').hidden = true; $('#gOr').hidden = true;
+  if (!chg && !link) showGoogle('#gBtn', loginWithEmail).then(ok => { $('#gOr').hidden = !ok; });
+  $('#login').hidden = false;
+}
+function signIn(u) {
+  me = u; cfg.set('session', u.id); lgFails = 0;
+  $('#login').hidden = true;
+  applyPermissions(); show('home', false); sync();
+}
+async function lgSubmit() {
+  if (Date.now() < lgLockedUntil) { $('#lgMsg').textContent = tr('Too many attempts. Wait {0}s', Math.ceil((lgLockedUntil - Date.now()) / 1000)); return; }
+  const name = $('#lgUser').value.trim(), pw = $('#lgPass').value, pw2 = $('#lgPass2').value;
+  if (lgMode === 'setup') {
+    if (!name) return lgSay('Enter a name first');
+    if (pw.length < 4) return lgSay('Password must have at least 4 characters');
+    if (pw !== pw2) return lgSay('Passwords do not match');
+    const salt = uid(), u = { id: uid(), name, role: 'admin', perms: defPerms('admin'), salt, hash: await pwHash(pw, salt) };
+    saveUsers([u]); return signIn(u);
+  }
+  if (lgMode === 'changepw') {
+    if (await pwHash($('#lgOld').value, me.salt) !== me.hash) return lgSay('Wrong current password');
+    if (pw.length < 4) return lgSay('Password must have at least 4 characters');
+    if (pw !== pw2) return lgSay('Passwords do not match');
+    const salt = uid(), list = users(), i = list.findIndex(x => x.id === me.id);
+    list[i].salt = salt; list[i].hash = await pwHash(pw, salt); saveUsers(list); me = list[i];
+    $('#login').hidden = true; return;
+  }
+  const u = users().find(x => x.name.toLowerCase() === name.toLowerCase());
+  if (!u || !u.hash || await pwHash(pw, u.salt) !== u.hash) {
+    if (++lgFails >= 5) { lgFails = 0; lgLockedUntil = Date.now() + 30000; }
+    return lgSay('Wrong username or password');
+  }
+  signIn(u);
+}
+$('#lgGo').onclick = lgSubmit;
+['lgUser', 'lgPass', 'lgPass2', 'lgOld'].forEach(id => $('#' + id).addEventListener('keydown', e => { if (e.key === 'Enter') lgSubmit(); }));
+$('#lgCancel').onclick = () => { $('#login').hidden = true; };
+function logout() { me = null; cfg.del('session'); applyPermissions(); show('home', false); openLogin('login'); }
+$('#logoutBtn').onclick = logout;
+$('#chgPw').onclick = () => openLogin('changepw', true);
+// ---------- đăng nhập bằng tài khoản Google (Google Identity Services) ----------
+// Cần Google Client ID (admin dán trong Cài đặt > Advanced). Email Google được xác thực qua tokeninfo của Google;
+// tài khoản được nhận diện theo email: admin là email đã liên kết, member là email admin đã thêm.
+const gClientId = () => (cfg.get('gClientId', GOOGLE_CLIENT_ID) || '').trim();
+let gisReady = null;
+const loadGis = () => gisReady ??= new Promise((res, rej) => {
+  if (window.google && google.accounts && google.accounts.id) return res();
+  const s = document.createElement('script'); s.src = 'https://accounts.google.com/gsi/client'; s.async = true; s.onload = res; s.onerror = () => { gisReady = null; rej(new Error('gis')); };
+  document.head.append(s);
+});
+async function googleEmail(credential) {   // trả về email đã được Google xác thực, hoặc ném lỗi
+  const r = await fetch('https://oauth2.googleapis.com/tokeninfo?id_token=' + encodeURIComponent(credential));
+  if (!r.ok) throw new Error('token');
+  const j = await r.json();
+  if (j.aud !== gClientId() || String(j.email_verified) !== 'true' || Number(j.exp) * 1000 < Date.now() || !j.email) throw new Error('invalid');
+  return String(j.email).toLowerCase();
+}
+let gCallback = null;
+async function showGoogle(target, onEmail) {   // vẽ nút "Sign in with Google" vào phần tử target
+  const el = $(target); el.hidden = true; el.innerHTML = '';
+  if (!gClientId()) return false;
+  try {
+    await loadGis();
+    gCallback = async r => {
+      try { await onEmail(await googleEmail(r.credential)); } catch { lgSay('Google sign-in failed'); }
+    };
+    google.accounts.id.initialize({ client_id: gClientId(), callback: r => gCallback(r), auto_select: false });
+    google.accounts.id.renderButton(el, { theme: 'filled_blue', size: 'large', shape: 'pill', text: 'signin_with', width: 280 });
+    el.hidden = false; return true;
+  } catch { return false; }
+}
+// Đăng nhập: email phải thuộc một tài khoản; lần đầu (chưa có ai) thì email này trở thành admin
+async function loginWithEmail(email) {
+  const list = users();
+  let u = list.find(x => (x.email || '').toLowerCase() === email);
+  if (!u && !list.length) {
+    u = { id: uid(), name: email.split('@')[0], email, role: 'admin', perms: defPerms('admin') };
+    saveUsers([u]);
+  }
+  if (!u) return lgSay('This Google account is not on the member list');
+  signIn(u);
+}
+// Liên kết Google với tài khoản đang đăng nhập (admin dùng để sau này vào bằng Google)
+async function linkGoogle(email) {
+  const list = users();
+  if (list.some(x => x.id !== me.id && (x.email || '').toLowerCase() === email)) return toast(tr('That username is already taken'));
+  const i = list.findIndex(x => x.id === me.id); list[i].email = email; saveUsers(list); me = list[i];
+  $('#login').hidden = true; renderSettings();
+}
+$('#linkGoogle').onclick = async () => {
+  openLogin('link', true);
+  if (!(await showGoogle('#gBtn', linkGoogle))) { lgSay('Google sign-in failed'); }
+};
+
+
+// Quản lý member (chỉ admin)
+function renderMembers() {
+  const box = $('#memberList'); if (!isAdmin()) { box.innerHTML = ''; return; }
+  box.innerHTML = users().map(u => {
+    const self = u.id === me.id;
+    return `<div class="card member"><div class="mhead"><div class="cn">${esc(u.name)}<small>${tr(u.role === 'admin' ? 'Admin' : 'Member')}${self ? ' · ' + tr('You') : ''}</small></div>` +
+      (self ? '' : `<button class="mini" data-act="reset" data-id="${u.id}">${tr('Reset password')}</button><button class="cdel" data-act="del" data-id="${u.id}" aria-label="${tr('Remove')}">✕</button>`) + '</div>' +
+      (u.role === 'admin' ? `<p class="hint">${tr('Administrators can do everything.')}</p>` :
+        PERMS.map(([k, label]) => `<label class="sw"><span>${tr(label)}</span><input type="checkbox" data-act="perm" data-id="${u.id}" data-k="${k}" ${u.perms && u.perms[k] ? 'checked' : ''}><i></i></label>`).join('')) + '</div>';
+  }).join('');
+}
+$('#memberList').addEventListener('change', e => {
+  const t = e.target; if (!isAdmin() || t.dataset.act !== 'perm') return;
+  const list = users(), u = list.find(x => x.id === t.dataset.id); if (!u) return;
+  u.perms = u.perms || {}; u.perms[t.dataset.k] = t.checked; saveUsers(list);
+});
+$('#memberList').addEventListener('click', async e => {
+  const b = e.target.closest('[data-act]'); if (!b || !isAdmin() || b.dataset.act === 'perm') return;
+  const list = users(), u = list.find(x => x.id === b.dataset.id); if (!u || u.id === me.id) return;
+  if (b.dataset.act === 'del') {
+    if (!confirm(tr('Remove this member? Their transactions stay.'))) return;
+    saveUsers(list.filter(x => x.id !== u.id)); renderMembers(); return;
+  }
+  if (b.dataset.act === 'reset') {
+    const pw = prompt(tr('New password for {0}', u.name)); if (!pw) return;
+    if (pw.length < 4) { toast(tr('Password must have at least 4 characters')); return; }
+    u.salt = uid(); u.hash = await pwHash(pw, u.salt); saveUsers(list);
+  }
+});
+$('#addMember').onclick = async () => {
+  if (!isAdmin()) return;
+  const id = $('#mName').value.trim(), pw = $('#mPass').value, role = $('#mRole').value === 'admin' ? 'admin' : 'member';
+  if (!id) { toast(tr('Enter a name first')); return; }
+  const isMail = id.includes('@'), list = users();
+  if (isMail && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(id)) { toast(tr('Google sign-in failed')); return; }
+  if (!isMail && pw.length < 4) { toast(tr('Password must have at least 4 characters')); return; }
+  if (list.some(x => x.name.toLowerCase() === id.toLowerCase() || (x.email || '') === id.toLowerCase())) { toast(tr('That username is already taken')); return; }
+  const u = { id: uid(), name: id, role, perms: defPerms(role) };
+  if (isMail) u.email = id.toLowerCase(); else { u.salt = uid(); u.hash = await pwHash(pw, u.salt); }
+  list.push(u); saveUsers(list);
+  $('#mName').value = ''; $('#mPass').value = ''; renderMembers();
+};
+function initAccount() {
+  const sid = cfg.get('session', ''); me = users().find(u => u.id === sid) || null;
+  applyPermissions();
+  show('home', false);
+  if (!users().length) openLogin('setup');
+  else if (!me) openLogin('login');
+  else sync();
+}
+
 // ---------- khởi động ----------
 if (hasPin()) openLock('verify');
 if ('serviceWorker' in navigator) {
@@ -1029,5 +1249,4 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.addEventListener('controllerchange', () => { if (!reloaded) { reloaded = true; location.reload(); } });
 }
 translateDom();
-show('home', false);
-sync();
+initAccount();
