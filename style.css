@@ -103,7 +103,7 @@ video{width:100%;height:100%;object-fit:cover}
 
 /* Xem theo tháng + tổng */
 #stats>b::before{content:none}
-#stats>b{display:none}
+#stats>b:not(.total){display:none}
 .mnav{display:flex;align-items:center;justify-content:space-between;margin:-4px 0 12px}
 .mnav span{font-weight:700;font-size:15px;letter-spacing:.02em}
 .mnav button{width:36px;height:36px;border-radius:50%;border:0;background:rgba(255,255,255,.16);color:#fff;font-size:22px;line-height:1;padding:0 0 3px}
@@ -251,3 +251,37 @@ details.adv[open] summary::after{transform:rotate(90deg)}
 .arow .ico{width:84px;flex:none}
 .arow .nm{flex:1}
 .arow .ico input{text-align:center;font-size:22px}
+
+/* Thu nhập */
+#segType{margin-bottom:12px}
+.amt.in,.d-amt.in{color:#16a34a}
+.inout{display:flex;justify-content:space-between;gap:12px;margin:2px 0 10px;font-size:14px;font-weight:700;color:#bcd0f5}
+.iorow{display:flex;gap:8px;margin-bottom:14px}
+.iorow>div{flex:1}
+.iorow span{display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.iorow b{font-size:17px;font-weight:800}
+.pos{color:#16a34a}.neg{color:var(--danger)}
+.cols.two .pair{display:flex;align-items:flex-end;justify-content:center;gap:4px;height:130px;width:100%}
+.cols.two .col{justify-content:flex-end}
+.cols.two .pair .cbar{width:14px;max-width:14px;flex:none}
+.cbar.inc{background:#16a34a}
+.iolg{display:flex;gap:16px;justify-content:center;margin-top:10px;font-size:12px;color:var(--muted);font-weight:600}
+.iolg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px}
+.iolg i.g{background:#16a34a}.iolg i.b{background:var(--accent2)}
+
+/* Khoá PIN */
+.lock{position:fixed;inset:0;z-index:60;background:linear-gradient(160deg,#0f1f4d,#1e3a8a 60%,#2b57c4);display:flex;align-items:center;justify-content:center;padding:24px}
+.lock-card{width:100%;max-width:320px;text-align:center;color:#fff}
+.lock-ic{font-size:40px;margin-bottom:6px}
+.lock-card h2{color:#fff;text-transform:none;letter-spacing:0;font-size:20px;margin:6px 0 18px}
+.dots{display:flex;justify-content:center;gap:16px;margin-bottom:10px}
+.dots i{width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,.7)}
+.dots i.on{background:#fff}
+.dots.shake{animation:shake .35s}
+@keyframes shake{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+.padmsg{min-height:36px;font-size:13px;color:#ffd7d7;margin:6px 0 10px}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;justify-items:center}
+.pad button{width:74px;height:74px;border-radius:50%;border:0;background:rgba(255,255,255,.14);color:#fff;font-size:28px;font-weight:600}
+.pad button:active{background:rgba(255,255,255,.3)}
+.lock-card .link{color:#cfe0ff;margin-top:14px}
+.lock-card .face{margin-top:6px;padding:12px 22px;border-radius:999px;border:1.5px solid rgba(255,255,255,.55);background:rgba(255,255,255,.12);color:#fff;font-weight:700}

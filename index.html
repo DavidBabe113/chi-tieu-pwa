@@ -56,6 +56,7 @@
   </section>
 
   <section id="v-cat" hidden>
+    <div class="seg" id="segType"><button data-v="expense" class="on">Expense</button><button data-v="income">Income</button></div>
     <div id="qrInfo" class="card" hidden></div>
     <div id="cats" class="grid"></div>
   </section>
@@ -73,6 +74,7 @@
     </div>
     <button id="toBank" class="big">Next: choose bank</button>
     <button id="saveOnly" class="ghost">Save only, do not open a bank</button>
+    <button id="saveIncome" class="big" hidden>Save income</button>
   </section>
 
   <section id="v-bank" hidden>
@@ -90,6 +92,14 @@
     <div class="seg" id="segLang"><button data-v="en">English</button><button data-v="vi">Tiếng Việt</button></div>
     <h2>Appearance</h2>
     <div class="seg" id="segTheme"><button data-v="light">Light</button><button data-v="dark">Dark</button><button data-v="auto">Auto</button></div>
+    <h2>Security</h2>
+    <div class="card verrow"><span>PIN lock</span><b id="pinState"></b></div>
+    <button id="pinSet" class="ghost">Set PIN</button>
+    <button id="pinChange" class="ghost" hidden>Change PIN</button>
+    <button id="pinOff" class="ghost" hidden>Turn off PIN</button>
+    <div class="card verrow" id="faceRow" hidden><span>Face ID</span><b id="faceState"></b></div>
+    <button id="faceOnBtn" class="ghost" hidden>Turn on Face ID</button>
+    <button id="faceOffBtn" class="ghost" hidden>Turn off Face ID</button>
     <h2>Data</h2>
     <a id="openSheetLink" class="ghost linkbtn" target="_blank" rel="noopener">📊 Open Google Sheet</a>
     <h2>About</h2>
@@ -117,6 +127,19 @@
   <div class="sheet-card" role="dialog" aria-modal="true">
     <button id="sheetClose" class="icon sheet-x" aria-label="Close">×</button>
     <div id="sheetBody"></div>
+  </div>
+</div>
+
+<div id="lock" class="lock" hidden>
+  <div class="lock-card">
+    <div class="lock-ic">🔒</div>
+    <h2 id="lockTitle">Enter PIN</h2>
+    <div id="dots" class="dots"></div>
+    <p id="padMsg" class="padmsg"></p>
+    <div id="pad" class="pad"></div>
+    <button id="lockFace" class="face" hidden>Use Face ID</button>
+    <button id="lockForgot" class="link">Forgot PIN?</button>
+    <button id="lockCancel" class="link" hidden>Cancel</button>
   </div>
 </div>
 

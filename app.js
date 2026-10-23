@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '1.4.0';
+const VERSION = '1.5.0';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -66,6 +66,19 @@ const VI = {
   'e.g. Pets': 'Ví dụ: Thú cưng', 'That category already exists': 'Danh mục này đã có', 'Enter a name first': 'Hãy nhập tên trước',
   'Remove this category? Past expenses keep it.': 'Xoá danh mục này? Các khoản đã chi vẫn giữ nguyên.', 'Remove': 'Xoá',
   // cài đặt
+  'Expense': 'Chi tiêu', 'Income': 'Thu nhập', 'Save income': 'Lưu khoản thu', 'Income categories': 'Danh mục thu nhập',
+  'Add an income category': 'Thêm danh mục thu nhập', 'e.g. Rental': 'Ví dụ: Cho thuê', 'Net': 'Chênh lệch', 'Savings rate': 'Tỷ lệ tiết kiệm',
+  'Income vs spending': 'Thu nhập và chi tiêu', 'Income this month (from your entries)': 'Thu nhập tháng này (từ các khoản bạn nhập)',
+  'Monthly income (set manually)': 'Thu nhập hàng tháng (đặt tay)', 'Type': 'Loại', 'Income {0} · Net {1}': 'Thu {0} · Còn lại {1}',
+  'You saved <b>{0}%</b> of your income this month.': 'Bạn đã tiết kiệm <b>{0}%</b> thu nhập tháng này.',
+  'Spending is higher than income by <b>{0}</b> this month.': 'Chi tiêu vượt thu nhập <b>{0}</b> trong tháng này.',
+  'Income': 'Thu nhập', 'Spending': 'Chi tiêu',
+  'Security': 'Bảo mật', 'PIN lock': 'Khoá bằng mã PIN', 'Set PIN': 'Đặt mã PIN', 'Change PIN': 'Đổi mã PIN', 'Turn off PIN': 'Tắt mã PIN',
+  'On': 'Bật', 'Off': 'Tắt', 'Enter PIN': 'Nhập mã PIN', 'Create a 4-digit PIN': 'Tạo mã PIN 4 số', 'Confirm PIN': 'Nhập lại mã PIN',
+  'PINs do not match': 'Hai mã PIN không khớp', 'Wrong PIN': 'Sai mã PIN', 'Too many attempts. Wait {0}s': 'Nhập sai nhiều lần. Chờ {0} giây',
+  'Forgot PIN?': 'Quên mã PIN?', 'Face ID': 'Face ID', 'Turn on Face ID': 'Bật Face ID', 'Turn off Face ID': 'Tắt Face ID', 'Use Face ID': 'Dùng Face ID',
+  'Face ID failed, enter your PIN': 'Face ID không thành công, hãy nhập mã PIN', 'Face ID could not be turned on on this device': 'Không bật được Face ID trên thiết bị này',
+  'To reset a forgotten PIN, delete the app icon and add it again from Safari. Data on this phone is lost; your Google Sheet keeps everything.': 'Quên mã PIN thì xoá icon app rồi thêm lại từ Safari. Dữ liệu trên máy sẽ mất, Google Sheet vẫn giữ nguyên.',
   'Data': 'Dữ liệu', '📊 Open Google Sheet': '📊 Mở Google Sheet', 'Google Sheet file link': 'Link file Google Sheet',
   'Language': 'Ngôn ngữ', 'Appearance': 'Giao diện', 'Light': 'Sáng', 'Dark': 'Tối', 'Auto': 'Tự động', 'About': 'Thông tin', 'Version': 'Phiên bản',
   'Check for updates': 'Kiểm tra cập nhật', 'Advanced': 'Nâng cao', 'Google Apps Script link (Web App)': 'Link Google Apps Script (Web App)',
@@ -77,7 +90,7 @@ const VI = {
 const tr = (s, ...a) => { let r = (lang === 'vi' && VI[s]) || s; a.forEach((v, i) => r = r.replace('{' + i + '}', v)); return r; };
 const LOC = () => lang === 'vi' ? 'vi-VN' : 'en-US';
 const DLOC = () => lang === 'vi' ? 'vi-VN' : 'en-GB';
-const fmt = n => (Number(n) || 0).toLocaleString(LOC()) + '₫';
+const fmt = n => (Math.round(Number(n)) || 0).toLocaleString(LOC()) + '₫';
 
 // Dịch phần HTML tĩnh: ghi nhớ bản tiếng Anh gốc rồi thay theo ngôn ngữ đang chọn
 function translateDom() {
@@ -90,8 +103,8 @@ function translateDom() {
   }
   document.querySelectorAll('[placeholder],[aria-label]').forEach(el => ['placeholder', 'aria-label'].forEach(a => {
     if (!el.hasAttribute(a)) return;
-    const key = 'o' + a; if (!el.dataset[key]) el.dataset[key] = el.getAttribute(a);
-    const o = el.dataset[key]; el.setAttribute(a, lang === 'vi' && VI[o] ? VI[o] : o);
+    const key = 'data-o-' + a; if (!el.hasAttribute(key)) el.setAttribute(key, el.getAttribute(a));
+    const o = el.getAttribute(key); el.setAttribute(a, lang === 'vi' && VI[o] ? VI[o] : o);
   }));
   document.documentElement.lang = lang;
   document.title = tr('Expenses');
@@ -163,6 +176,9 @@ let stream = null, scanning = false, curView = 'home';
 const stack = [];        // lịch sử màn hình để nút quay lại
 
 const cats = () => cfg.get('cats', DEF_CATS).split('\n').map(s => s.trim()).filter(Boolean);
+const DEF_ICATS = '💼 Salary\n🎁 Bonus\n💻 Freelance\n📈 Investment\n🧧 Gift\n💰 Other income';
+const icats = () => cfg.get('icats', DEF_ICATS).split('\n').map(s => s.trim()).filter(Boolean);
+const isInc = r => r.type === 'income';       // bản ghi cũ không có type = chi tiêu
 const banks = () => cfg.get('banks', DEF_BANKS).split('\n').map(l => l.split('|').map(s => s.trim()))
   .filter(a => a[0]).map(a => ({ name: a[0], url: a[1] || '' }));
 
@@ -201,7 +217,7 @@ $('#btnManual').onclick = () => { cur = newRec(); renderCats(); show('cat'); };
 $('#btnGallery').onclick = openGallery;
 
 function newRec() {
-  return { acc: '', bin: '', id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), time: new Date().toISOString(), category: '', amount: '', note: '', payee: '', bank: '', photo: '', status: 'draft', synced: false };
+  return { type: 'expense', fromQr: false, acc: '', bin: '', id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), time: new Date().toISOString(), category: '', amount: '', note: '', payee: '', bank: '', photo: '', status: 'draft', synced: false };
 }
 
 async function startScan() {
@@ -255,7 +271,7 @@ function parseVietQR(raw) {
 
 function onQr(raw) {
   stopScan();
-  cur = newRec();
+  cur = newRec(); cur.fromQr = true;
   const q = parseVietQR(raw);
   if (q) {
     cur.amount = q.amount || ''; cur.payee = q.payee || ''; cur.note = q.note || '';
@@ -273,10 +289,13 @@ function onQr(raw) {
 }
 
 // ---------- danh mục (màn chọn khi ghi chi tiêu) / chi tiết ----------
+document.querySelectorAll('#segType button').forEach(b => b.onclick = () => { cur.type = b.dataset.v; renderCats(); });
 function renderCats() {
   if (!cur.payee) $('#qrInfo').hidden = true;
+  $('#segType').hidden = cur.fromQr;   // quét QR chuyển khoản luôn là chi tiêu
+  document.querySelectorAll('#segType button').forEach(b => b.classList.toggle('on', b.dataset.v === cur.type));
   $('#cats').innerHTML = '';
-  cats().forEach(c => {
+  (cur.type === 'income' ? icats() : cats()).forEach(c => {
     const [e, ...rest] = c.split(' ');
     const b = document.createElement('button');
     b.innerHTML = `<span class="e">${esc(e)}</span>${esc(rest.join(' ') || e)}`;
@@ -288,6 +307,8 @@ function openDetail() {
   $('#amount').value = cur.amount ? Number(cur.amount).toLocaleString(LOC()) : '';
   $('#note').value = cur.note;
   $('#preview').hidden = true; $('#photoSave').hidden = true; $('#photoAlbum').hidden = true; curPhoto = null;
+  const inc = cur.type === 'income';   // khoản thu: không ảnh, không ngân hàng
+  $('.photo').hidden = inc; $('#toBank').hidden = inc; $('#saveOnly').hidden = inc; $('#saveIncome').hidden = !inc;
   show('detail');
 }
 $('#amount').oninput = e => {
@@ -352,6 +373,11 @@ $('#saveOnly').onclick = async () => {
   if (!collectDetail()) return;
   await stash();
   cur.status = 'done'; await putRec(cur); sync();
+  show('home');
+};
+$('#saveIncome').onclick = async () => {
+  if (!collectDetail()) return;
+  cur.type = 'income'; cur.status = 'done'; await putRec(cur); sync();
   show('home');
 };
 $('#toBank').onclick = () => { if (collectDetail()) { renderBanks(); show('bank'); } };
@@ -438,22 +464,25 @@ async function renderHome() {
   await renderPending();
   const recs = (await allRecs()).filter(r => r.status === 'done').sort((a, b) => b.time.localeCompare(a.time));
   recs.forEach(r => recById[r.id] = r);
-  const month = recs.filter(r => ymOf(r.time) === viewYm);
+  const monthAll = recs.filter(r => ymOf(r.time) === viewYm);
+  const month = monthAll.filter(r => !isInc(r));
+  const incTotal = monthAll.filter(isInc).reduce((s, r) => s + Number(r.amount), 0);
   const by = {}; month.forEach(r => by[r.category] = (by[r.category] || 0) + Number(r.amount));
   const total = month.reduce((s, r) => s + Number(r.amount), 0), max = Math.max(1, ...Object.values(by));
   $('#stats').innerHTML = monthNav('') +
     `<b class="total">${fmt(total)}</b><div class="sub">${month.length === 1 ? tr('{0} transaction', 1) : tr('{0} transactions', month.length)}</div>` +
+    (incTotal ? `<div class="inout"><span>▲ ${tr('Income')} ${fmt(incTotal)}</span><span>${tr('Net')} ${incTotal - total < 0 ? '−' : ''}${fmt(Math.abs(incTotal - total))}</span></div>` : '') +
     Object.entries(by).sort((a, b) => b[1] - a[1]).map(([k, v]) =>
       `<div class="bar"><span>${esc(k)}</span><i style="width:${Math.round(v / max * 100)}px"></i><span>${fmt(v)}</span></div>`).join('') +
     (cfg.get('sheetUrl', '') ? '' : `<p class="hint">${tr('Google Sheet not connected. Open Settings > Advanced and paste the link.')}</p>`);
   const box = $('#recent'); box.innerHTML = '';
-  for (const r of month) {
+  for (const r of monthAll) {
     const d = document.createElement('div'); d.className = 'item'; d.dataset.id = r.id;
-    d.innerHTML = `<div class="t">${esc(r.category)}<small>${new Date(r.time).toLocaleString(DLOC())}${r.note ? ' · ' + esc(r.note) : ''}${r.synced ? '' : ' · ' + tr('⏳ not synced yet')}</small></div><div class="amt">${fmt(r.amount)}</div>`;
+    d.innerHTML = `<div class="t">${esc(r.category)}<small>${new Date(r.time).toLocaleString(DLOC())}${r.note ? ' · ' + esc(r.note) : ''}${r.synced ? '' : ' · ' + tr('⏳ not synced yet')}</small></div><div class="amt ${isInc(r) ? 'in' : ''}">${isInc(r) ? '+' : ''}${fmt(r.amount)}</div>`;
     if (r.photo) { const b = await getPhoto(r.id); if (b) { const i = new Image(); i.src = URL.createObjectURL(b); d.prepend(i); } }
     box.append(d);
   }
-  if (!month.length) box.innerHTML = `<p class="hint">${tr('No transactions in this month.')}</p>`;
+  if (!monthAll.length) box.innerHTML = `<p class="hint">${tr('No transactions in this month.')}</p>`;
 }
 $('#stats').onclick = e => {
   const b = e.target.closest('[data-m]');
@@ -470,8 +499,10 @@ const short = n => n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 0 : 1).replace(/\.0$/
 function sumBy(arr, f) { const o = {}; arr.forEach(r => { const k = f(r); o[k] = (o[k] || 0) + Number(r.amount); }); return o; }
 
 async function renderStats() {
-  const recs = (await allRecs()).filter(r => r.status === 'done');
-  recs.forEach(r => recById[r.id] = r);
+  const all = (await allRecs()).filter(r => r.status === 'done');
+  all.forEach(r => recById[r.id] = r);
+  const recs = all.filter(r => !isInc(r));   // mọi biểu đồ chi tiêu chỉ tính khoản chi
+  const incIn = ym => all.filter(r => isInc(r) && ymOf(r.time) === ym).reduce((s, r) => s + Number(r.amount), 0);
   const inM = ym => recs.filter(r => ymOf(r.time) === ym);
   const tot = a => a.reduce((s, r) => s + Number(r.amount), 0);
   const m = inM(viewYm), total = tot(m);
@@ -495,6 +526,18 @@ async function renderStats() {
     <div class="kpi"><div class="l">${tr('Transactions')}</div><div class="v sm">${m.length}</div></div>
     <div class="kpi wide"><div class="l">${tr('Largest expense')}</div><div class="v sm">${fmt(biggest.amount)}</div><div class="sub2">${esc(biggest.category)}${biggest.note ? ' · ' + esc(biggest.note) : ''}</div></div>
   </div>`;
+
+  // Thu nhập so với chi tiêu (6 tháng) + tỷ lệ tiết kiệm
+  const monthsIO = [-5, -4, -3, -2, -1, 0].map(n => addMonths(viewYm, n));
+  const inc6 = monthsIO.map(incIn), exp6 = monthsIO.map(ym => tot(inM(ym)));
+  const incNow = incIn(viewYm);
+  if (inc6.some(v => v > 0)) {
+    const io = Math.max(1, ...inc6, ...exp6);
+    h += `<h2>${tr('Income vs spending')}</h2><div class="card">` +
+      (incNow ? `<div class="iorow"><div><span>${tr('Income')}</span><b class="pos">${fmt(incNow)}</b></div><div><span>${tr('Net')}</span><b class="${incNow - total < 0 ? 'neg' : 'pos'}">${incNow - total < 0 ? '−' : ''}${fmt(Math.abs(incNow - total))}</b></div><div><span>${tr('Savings rate')}</span><b>${Math.round((incNow - total) / incNow * 100)}%</b></div></div>` : '') +
+      `<div class="cols two">${monthsIO.map((ym, i) => `<div class="col"><div class="pair"><div class="cbar inc" style="height:${Math.max(inc6[i] ? 4 : 0, inc6[i] / io * 100)}%"></div><div class="cbar sel" style="height:${Math.max(exp6[i] ? 4 : 0, exp6[i] / io * 100)}%"></div></div><span class="cl">${monthShort(ym)}</span></div>`).join('')}</div>` +
+      `<div class="iolg"><span><i class="g"></i>${tr('Income')}</span><span><i class="b"></i>${tr('Spending')}</span></div></div>`;
+  }
 
   const byCat = Object.entries(sumBy(m, r => r.category)).sort((a, b) => b[1] - a[1]);
   const slices = byCat.slice(0, 7); const rest = byCat.slice(7).reduce((s, [, v]) => s + v, 0); if (rest) slices.push([tr('Others'), rest]);
@@ -541,6 +584,7 @@ async function renderStats() {
   tips.push(tr('You spend about <b>{0}</b> per day.', fmt(avgDay)) + (isCur && elapsed < dim ? tr(' At this pace the month would end near <b>{0}</b>.', fmt(avgDay * dim)) : ''));
   tips.push(tr('Spending peaks on <b>{0}</b> ({1}).', weekdayName(wdTop) + (lang === 'en' ? 's' : ''), fmt(wd[wdTop])));
   tips.push(tr('Largest single expense: <b>{0}</b> ({1}) on {2}.', fmt(biggest.amount), esc(biggest.category), new Date(biggest.time).toLocaleDateString(DLOC())));
+  if (incNow) tips.push(incNow >= total ? tr('You saved <b>{0}%</b> of your income this month.', Math.round((incNow - total) / incNow * 100)) : tr('Spending is higher than income by <b>{0}</b> this month.', fmt(total - incNow)));
   h += `<h2>${tr('Assessment')}</h2><div class="card"><div class="rate ${rating[0]}">${tr(rating[1])}${avg3 ? ` <small>${tr('(3-month avg {0})', fmt(avg3))}</small>` : ''}</div><ul class="tips">${tips.map(t => `<li>${t}</li>`).join('')}</ul></div>`;
   $('#statsBody').innerHTML = h;
 }
@@ -555,10 +599,13 @@ const saveJars = jars => cfg.set('jars', jars.map(j => `${j.name} | ${j.pct} | $
 const income = () => Number(cfg.get('income', '0')) || 0;
 
 async function renderJars() {
-  const recs = (await allRecs()).filter(r => r.status === 'done' && ymOf(r.time) === viewYm);
-  const jars = jarCfg(), inc = income();
+  const allM = (await allRecs()).filter(r => r.status === 'done' && ymOf(r.time) === viewYm);
+  const recs = allM.filter(r => !isInc(r));
+  const incEntries = allM.filter(isInc).reduce((s, r) => s + Number(r.amount), 0);
+  const fromEntries = incEntries > 0;   // có khoản thu đã nhập thì dùng, không thì dùng thu nhập đặt tay
+  const jars = jarCfg(), inc = fromEntries ? incEntries : income();
   let h = monthNav('light') +
-    `<div class="card incrow"><label>${tr('Monthly income')}<input id="incomeIn" inputmode="numeric" placeholder="0" value="${inc ? inc.toLocaleString(LOC()) : ''}"></label><button id="incomeSave" class="big">${tr('Save')}</button></div>`;
+    `<div class="card incrow"><label>${tr('Monthly income (set manually)')}<input id="incomeIn" inputmode="numeric" placeholder="0" value="${inc ? inc.toLocaleString(LOC()) : ''}"></label><button id="incomeSave" class="big">${tr('Save')}</button></div>`;
   if (!inc) {
     $('#jarsBody').innerHTML = h + `<p class="hint">${tr('Set your monthly income to split it into jars.')}</p>`;
     bindIncome(); return;
@@ -568,7 +615,7 @@ async function renderJars() {
   const unassigned = recs.filter(r => !mapped.has(catName(r.category))).reduce((s, r) => s + Number(r.amount), 0);
   const totalSpent = recs.reduce((s, r) => s + Number(r.amount), 0);
   const sumPct = jars.reduce((s, j) => s + j.pct, 0);
-  h += `<div class="kpis"><div class="kpi wide"><div class="l">${tr('Monthly income')}</div><div class="v">${fmt(inc)}</div>` +
+  h += `<div class="kpis"><div class="kpi wide"><div class="l">${tr(fromEntries ? 'Income this month (from your entries)' : 'Monthly income')}</div><div class="v">${fmt(inc)}</div>` +
     `<div class="sub2">${tr('Spent {0} · {1}% of income', fmt(totalSpent), Math.round(totalSpent / inc * 100))}</div></div></div>`;
   if (sumPct !== 100) h += `<div class="card warnbox">${tr('Your jar percentages add up to {0}%, not 100%. Fix them in Settings > Advanced.', sumPct)}</div>`;
   h += `<h2>${tr('Your jars')}</h2>`;
@@ -594,7 +641,7 @@ bindMonthNav($('#jarsBody'), renderJars);
 
 // ---------- tab Danh mục: xem, thêm, xoá, gán hũ ----------
 async function renderCategories() {
-  const recs = (await allRecs()).filter(r => r.status === 'done' && ymOf(r.time) === viewYm);
+  const recs = (await allRecs()).filter(r => r.status === 'done' && ymOf(r.time) === viewYm && !isInc(r));
   const spentBy = {}; recs.forEach(r => { const k = catName(r.category); spentBy[k] = (spentBy[k] || 0) + Number(r.amount); });
   const jars = jarCfg();
   const jarOptions = sel => `<option value="-1">${tr('No jar')}</option>` + jars.map((j, i) => `<option value="${i}" ${sel === i ? 'selected' : ''}>${esc(j.name)}</option>`).join('');
@@ -608,6 +655,13 @@ async function renderCategories() {
   h += `<h2>${tr('Add a category')}</h2><div class="card addcat"><div class="arow"><label class="ico">${tr('Icon')}<input id="newEmoji" value="🏷️" maxlength="4"></label>` +
     `<label class="nm">${tr('Name')}<input id="newName" placeholder="${tr('e.g. Pets')}"></label></div>` +
     `<select id="newJar" class="jsel wide" aria-label="Jar">${jarOptions(-1)}</select><button id="addCat" class="big">${tr('Add')}</button></div>`;
+  // Danh mục thu nhập (không gán hũ)
+  h += `<h2>${tr('Income categories')}</h2>` + icats().map((c, i) => {
+    const [e, ...rest] = c.split(' ');
+    return `<div class="card crow"><span class="cic">${esc(e)}</span><div class="cn">${esc(rest.join(' ') || e)}</div><button class="cdel" data-ii="${i}" aria-label="${tr('Remove')}">✕</button></div>`;
+  }).join('') +
+    `<h2>${tr('Add an income category')}</h2><div class="card addcat"><div class="arow"><label class="ico">${tr('Icon')}<input id="newIEmoji" value="💰" maxlength="4"></label>` +
+    `<label class="nm">${tr('Name')}<input id="newIName" placeholder="${tr('e.g. Rental')}"></label></div><button id="addICat" class="big">${tr('Add')}</button></div>`;
   $('#catsBody').innerHTML = h;
 }
 const setJarFor = (name, idx) => {
@@ -620,6 +674,16 @@ $('#catsBody').onclick = e => {
   const b = e.target.closest('[data-m]');
   if (b && !b.disabled) { shiftMonth(Number(b.dataset.m)); renderCategories(); return; }
   const del = e.target.closest('.cdel');
+  if (del && del.dataset.ii !== undefined) {   // xoá danh mục thu nhập
+    if (!confirm(tr('Remove this category? Past expenses keep it.'))) return;
+    const list = icats(); list.splice(Number(del.dataset.ii), 1); cfg.set('icats', list.join('\n')); renderCategories(); return;
+  }
+  if (e.target.id === 'addICat') {
+    const name = $('#newIName').value.trim(), emoji = ($('#newIEmoji').value.trim().replace(/\s+/g, '') || '💰');
+    if (!name) { toast(tr('Enter a name first')); return; }
+    if (icats().some(c => catName(c) === name.toLowerCase())) { toast(tr('That category already exists')); return; }
+    cfg.set('icats', icats().concat(`${emoji} ${name}`).join('\n')); renderCategories(); return;
+  }
   if (del) {
     if (!confirm(tr('Remove this category? Past expenses keep it.'))) return;
     const list = cats(); const [removed] = list.splice(Number(del.dataset.i), 1);
@@ -642,8 +706,8 @@ $('#catsBody').onchange = e => {
 async function openSheet(r) {
   const row = (k, v) => v ? `<div class="drow"><span>${tr(k)}</span><b>${esc(v)}</b></div>` : '';
   $('#sheetBody').innerHTML =
-    `<div class="d-cat">${esc(r.category)}</div><div class="d-amt">${fmt(r.amount)}</div>` +
-    row('Date', new Date(r.time).toLocaleString(DLOC())) + row('Bank', r.bank) + row('Payee', r.payee) +
+    `<div class="d-cat">${esc(r.category)}</div><div class="d-amt ${isInc(r) ? 'in' : ''}">${isInc(r) ? '+' : ''}${fmt(r.amount)}</div>` +
+    row('Type', isInc(r) ? tr('Income') : tr('Expense')) + row('Date', new Date(r.time).toLocaleString(DLOC())) + row('Bank', r.bank) + row('Payee', r.payee) +
     row('Note', r.note) + row('Google Sheet', r.synced ? tr('Synced') : tr('Not synced yet')) +
     '<div id="sheetPhoto"></div>';
   $('#sheet').hidden = false;
@@ -688,6 +752,15 @@ async function savePhoto(blob, name) {
 const SHEET_FILE = 'https://docs.google.com/spreadsheets/d/1h6gpLCcJoevkHnPB9yo8R86ALhcuY2pb5Bjd_H8fLhw/edit';
 function renderSettings() {
   $('#verText').textContent = VERSION;
+  $('#pinState').textContent = tr(hasPin() ? 'On' : 'Off');
+  $('#pinSet').hidden = hasPin(); $('#pinChange').hidden = !hasPin(); $('#pinOff').hidden = !hasPin();
+  // Face ID chỉ hiện khi đã có PIN (làm dự phòng) và thiết bị hỗ trợ
+  $('#faceRow').hidden = $('#faceOnBtn').hidden = $('#faceOffBtn').hidden = true;
+  if (hasPin()) faceSupported().then(ok => {
+    if (!ok) return;
+    $('#faceRow').hidden = false; $('#faceState').textContent = tr(faceOn() ? 'On' : 'Off');
+    $('#faceOnBtn').hidden = faceOn(); $('#faceOffBtn').hidden = !faceOn();
+  });
   $('#openSheetLink').href = cfg.get('sheetFile', SHEET_FILE);
   $('#sheetFile').value = cfg.get('sheetFile', SHEET_FILE);
   $('#sheetUrl').value = cfg.get('sheetUrl', '');
@@ -722,7 +795,93 @@ $('#updateApp').onclick = async () => {   // xoá service worker + cache rồi t
   location.reload();
 };
 
+// ---------- mã PIN (khoá app) ----------
+// Lưu ý: PIN nằm trong trình duyệt nên chỉ để chặn người khác mở app, không phải mã hoá dữ liệu.
+const hasPin = () => !!cfg.get('pin', '');
+const pinHash = async (pin, salt) => {
+  const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(salt + ':' + pin));
+  return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join('');
+};
+let lockMode = 'verify', lockBuf = '', lockFirst = '', lockDone = null, fails = 0, lockedUntil = 0, hiddenAt = 0;
+const drawDots = () => { $('#dots').innerHTML = [0, 1, 2, 3].map(i => `<i class="${i < lockBuf.length ? 'on' : ''}"></i>`).join(''); };
+const lockTitle = () => { $('#lockTitle').textContent = tr(lockMode === 'verify' ? 'Enter PIN' : lockFirst ? 'Confirm PIN' : 'Create a 4-digit PIN'); };
+// Face ID qua WebAuthn (xác thực nền tảng của iPhone). Chỉ là khoá phía máy, giống PIN; PIN luôn là dự phòng.
+const b64 = buf => btoa(String.fromCharCode(...new Uint8Array(buf)));
+const unb64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+const faceOn = () => !!cfg.get('faceId', '');
+async function faceSupported() {
+  try { return !!(window.PublicKeyCredential && await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()); } catch { return false; }
+}
+async function faceEnable() {
+  const cred = await navigator.credentials.create({ publicKey: {
+    challenge: crypto.getRandomValues(new Uint8Array(32)), rp: { name: 'Expenses' },
+    user: { id: crypto.getRandomValues(new Uint8Array(16)), name: 'user', displayName: 'Expenses' },
+    pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
+    authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required', residentKey: 'discouraged' }, timeout: 60000 } });
+  cfg.set('faceId', b64(cred.rawId));
+}
+async function faceVerify() {
+  await navigator.credentials.get({ publicKey: {
+    challenge: crypto.getRandomValues(new Uint8Array(32)),
+    allowCredentials: [{ type: 'public-key', id: unb64(cfg.get('faceId', '')) }], userVerification: 'required', timeout: 60000 } });
+}
+async function tryFace(silent) {
+  try { await faceVerify(); fails = 0; closeLock(); }
+  catch { if (!silent) $('#padMsg').textContent = tr('Face ID failed, enter your PIN'); }
+}
+$('#lockFace').onclick = () => tryFace(false);
+function openLock(mode, done, cancelable) {
+  lockMode = mode; lockBuf = ''; lockFirst = ''; lockDone = done || null;
+  $('#lockCancel').hidden = !cancelable; $('#lockForgot').hidden = !(mode === 'verify' && !cancelable);
+  $('#lockFace').hidden = !(mode === 'verify' && faceOn());
+  $('#padMsg').textContent = ''; lockTitle(); drawDots(); $('#lock').hidden = false;
+  if (mode === 'verify' && faceOn()) tryFace(true);   // iOS có thể đòi chạm nút trước; nếu vậy bấm "Use Face ID"
+}
+const closeLock = () => { $('#lock').hidden = true; if (lockDone) { const f = lockDone; lockDone = null; f(); } };
+async function lockSubmit() {
+  const buf = lockBuf; lockBuf = '';
+  if (lockMode === 'verify') {
+    const [salt, h] = cfg.get('pin', ':').split(':');
+    if (await pinHash(buf, salt) === h) { fails = 0; return closeLock(); }
+    if (++fails >= 5) { fails = 0; lockedUntil = Date.now() + 30000; }
+    $('#padMsg').textContent = tr('Wrong PIN'); $('#dots').classList.add('shake'); setTimeout(() => $('#dots').classList.remove('shake'), 400);
+  } else if (!lockFirst) {
+    lockFirst = buf; lockTitle();
+  } else if (lockFirst === buf) {
+    const salt = Math.random().toString(36).slice(2);
+    cfg.set('pin', salt + ':' + await pinHash(buf, salt)); return closeLock();
+  } else {
+    lockFirst = ''; lockTitle(); $('#padMsg').textContent = tr('PINs do not match');
+  }
+  drawDots();
+}
+function lockPress(d) {
+  if (Date.now() < lockedUntil) { $('#padMsg').textContent = tr('Too many attempts. Wait {0}s', Math.ceil((lockedUntil - Date.now()) / 1000)); return; }
+  if (d === 'back') lockBuf = lockBuf.slice(0, -1); else if (lockBuf.length < 4) lockBuf += d;
+  drawDots(); $('#padMsg').textContent = '';
+  if (lockBuf.length === 4) setTimeout(lockSubmit, 120);
+}
+$('#pad').innerHTML = [1, 2, 3, 4, 5, 6, 7, 8, 9, '', 0, 'back'].map(k =>
+  k === '' ? '<span></span>' : `<button data-k="${k}">${k === 'back' ? '⌫' : k}</button>`).join('');
+$('#pad').onclick = e => { const b = e.target.closest('button'); if (b) lockPress(b.dataset.k); };
+$('#lockCancel').onclick = () => { $('#lock').hidden = true; lockDone = null; };
+$('#lockForgot').onclick = () => { $('#padMsg').textContent = tr('To reset a forgotten PIN, delete the app icon and add it again from Safari. Data on this phone is lost; your Google Sheet keeps everything.'); };
+$('#pinSet').onclick = () => openLock('set', renderSettings, true);
+$('#pinChange').onclick = () => openLock('verify', () => openLock('set', renderSettings, true), true);
+$('#pinOff').onclick = () => openLock('verify', () => { cfg.del('pin'); cfg.del('faceId'); renderSettings(); }, true);
+$('#faceOnBtn').onclick = async () => {
+  try { await faceEnable(); } catch { toast(tr('Face ID could not be turned on on this device')); }
+  renderSettings();
+};
+$('#faceOffBtn').onclick = () => { cfg.del('faceId'); renderSettings(); };
+// Khoá lại khi quay về app sau hơn 1 phút (đủ để chuyển sang app ngân hàng rồi về)
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) hiddenAt = Date.now();
+  else if (hasPin() && $('#lock').hidden && hiddenAt && Date.now() - hiddenAt > 60000) openLock('verify');
+});
+
 // ---------- khởi động ----------
+if (hasPin()) openLock('verify');
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {});
   let reloaded = false;   // bản mới của service worker lên thì tự tải lại một lần
