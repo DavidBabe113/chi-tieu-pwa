@@ -3,18 +3,14 @@ const $ = s => document.querySelector(s);
 const fmt = n => (Number(n) || 0).toLocaleString('vi-VN') + '₫';
 
 const DEF_CATS = '⛽ Tiền xăng\n☕ Ăn / cà phê\n🛍 Shopping\n🏠 Hoá đơn nhà\n🏥 Sức khoẻ\n🎬 Giải trí\n📦 Khác';
-// Link chuẩn của VietQR (api.vietqr.io/v2/ios-app-deeplinks). Chỉ các app trong AUTOFILL mới tự điền
-// số tài khoản / số tiền / nội dung; các app còn lại chỉ được mở lên.
+// URL scheme mở thẳng app ngân hàng trên iOS (lấy từ trang chuyển tiếp của dl.vietqr.io). Chỉ mở app,
+// không truyền được số tiền / tài khoản (iOS không có link điền sẵn đã kiểm chứng).
 const DEF_BANKS = [
-  'Vietcombank | https://dl.vietqr.io/pay?app=vcb', 'MB Bank | https://dl.vietqr.io/pay?app=mb',
-  'Techcombank | https://dl.vietqr.io/pay?app=tcb', 'VPBank | https://dl.vietqr.io/pay?app=vpb',
-  'ACB | https://dl.vietqr.io/pay?app=acb', 'BIDV | https://dl.vietqr.io/pay?app=bidv',
-  'TPBank | https://dl.vietqr.io/pay?app=tpb', 'VietinBank | https://dl.vietqr.io/pay?app=icb',
-  'Agribank | https://dl.vietqr.io/pay?app=vba', 'OCB | https://dl.vietqr.io/pay?app=ocb',
+  'Vietcombank | vietcombankmobile://', 'MB Bank | mbbank://', 'Techcombank | tcb://',
+  'VPBank | vpbankneo://', 'ACB | acbone://', 'BIDV | bidv.smartbanking.partner://',
+  'TPBank | hydro://', 'VietinBank | vietinbankipay://', 'Agribank | agribankmobile://',
+  'OCB | newomni-app://',
 ].join('\n');
-const AUTOFILL = new Set(['mb', 'icb', 'bidv', 'ocb', 'acb']);
-// BIN trong mã QR -> mã ngân hàng của người nhận (tham số ba của link VietQR)
-const BIN2CODE = { 970436: 'vcb', 970416: 'acb', 970422: 'mb', 970407: 'tcb', 970432: 'vpb', 970418: 'bidv', 970423: 'tpb', 970415: 'icb', 970403: 'stb', 970405: 'vba', 970448: 'ocb', 970437: 'hdb', 970441: 'vib', 970443: 'shb', 970426: 'msb' };
 
 // ---------- lưu trữ ----------
 const cfg = {
@@ -223,8 +219,7 @@ function renderBanks() {
   $('#banks').innerHTML = '';
   banks().forEach(b => {
     const el = document.createElement('button');
-    const id = (b.url.match(/app=([\w-]+)/) || [])[1];
-    el.textContent = b.name + (AUTOFILL.has(id) && cur.acc ? ' ✓' : '');
+    el.textContent = b.name;
     el.onclick = () => openBank(b);
     $('#banks').append(el);
   });
@@ -236,12 +231,7 @@ async function openBank(b) {
   stack.length = 0; stack.push('home');
   if (!b.url) { toast('Chưa có link app cho ngân hàng này, sửa trong Cài đặt'); show('home'); return; }
   show('home', false);
-  let url = b.url;
-  const code = BIN2CODE[cur.bin];
-  if (/dl\.vietqr\.io\/pay/.test(url) && cur.acc && code) {
-    url += `&ba=${encodeURIComponent(cur.acc + '@' + code)}&am=${cur.amount}` + (cur.note ? `&tn=${encodeURIComponent(cur.note)}` : '');
-  }
-  location.href = url;
+  location.href = b.url;
   setTimeout(() => { if (!document.hidden) toast('Không mở được app. Kiểm tra link trong Cài đặt.', 4000); }, 1800);
 }
 

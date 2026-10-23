@@ -12,5 +12,5 @@ Quét QR → chọn danh mục → nhập số tiền / chụp ảnh → chọn 
 3. Mở app > ⚙ > dán link `/exec` > Gửi thử.
 
 ## Lưu ý
-- Link mở app ngân hàng dùng link chuẩn VietQR (dl.vietqr.io/pay). Chỉ MB, VietinBank, BIDV, OCB, ACB tự điền sẵn tài khoản/số tiền/nội dung (dấu ✓); Vietcombank và các ngân hàng khác chỉ mở app, bạn tự nhập số tiền. Điền sẵn chỉ hoạt động khi đã quét QR để biết tài khoản nhận.
+- Trên iOS app chỉ mở được app ngân hàng (URL scheme lấy từ VietQR), KHÔNG điền sẵn được số tiền/tài khoản; bạn quét/nhập lại trong app ngân hàng. Đã kiểm chứng: trang dl.vietqr.io trên iOS chỉ mở scheme trơn, bỏ qua tham số ba/am/tn.
 - Link `/exec` chỉ lưu trên máy bạn, không nằm trong repo.
