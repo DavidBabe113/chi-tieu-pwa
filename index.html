@@ -21,13 +21,15 @@
 <main>
 
   <section id="v-home">
-    <button id="btnScan" class="big">📷 Quét QR</button>
-    <button id="btnManual" class="ghost">Nhập tay (không quét)</button>
     <div id="pending"></div>
     <div class="row"><h2>Tháng này</h2><button id="btnGallery" class="link">Thư viện ảnh</button></div>
     <div id="stats" class="card"></div>
     <h2>Gần đây</h2>
     <div id="recent"></div>
+    <button id="btnManual" class="fab-add" aria-label="Nhập tay không quét">+</button>
+    <button id="btnScan" class="fab-scan" aria-label="Quét QR">
+      <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><rect x="8" y="8" width="3" height="3" rx=".5"/><rect x="13" y="8" width="3" height="3" rx=".5"/><rect x="8" y="13" width="3" height="3" rx=".5"/><path d="M13.5 14.5h2.5v2"/></svg>
+    </button>
   </section>
 
   <section id="v-scan" hidden>

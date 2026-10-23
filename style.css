@@ -30,6 +30,13 @@ h2{font-size:13px;color:var(--muted);margin:24px 4px 10px;font-weight:700;text-t
 .ghost{display:block;width:100%;padding:14px;border:1px solid var(--line);border-radius:var(--r);background:var(--card);margin:10px 0;font-weight:600;box-shadow:var(--shadow)}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;box-shadow:var(--shadow)}
 
+/* Nút nổi trên trang chủ: quét QR ở giữa, dấu + bên phải */
+#v-home{padding-bottom:140px}
+.fab-scan,.fab-add{position:fixed;z-index:4;border:0;border-radius:50%;display:grid;place-items:center;padding:0;line-height:1}
+.fab-scan{left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);width:76px;height:76px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:var(--on-accent);box-shadow:0 10px 28px color-mix(in srgb,var(--accent) 45%,transparent),0 0 0 6px var(--bg)}
+.fab-scan:active{transform:translateX(-50%) scale(.94)}
+.fab-add{right:max(20px,calc(50% - 260px));bottom:calc(32px + env(safe-area-inset-bottom));width:54px;height:54px;background:var(--card);color:var(--accent);font-size:32px;font-weight:300;border:1px solid var(--line);box-shadow:var(--shadow)}
+
 /* Tổng tháng */
 #stats{background:linear-gradient(145deg,#0f766e,#115e59 60%,#134e4a);color:#fff;border:0;padding:20px}
 #stats>b{display:block;font-size:34px!important;letter-spacing:-.02em;margin-bottom:10px}
