@@ -166,7 +166,7 @@ function renderCats() {
 function openDetail() {
   $('#amount').value = cur.amount ? Number(cur.amount).toLocaleString('vi-VN') : '';
   $('#note').value = cur.note;
-  $('#preview').hidden = true; curPhoto = null;
+  $('#preview').hidden = true; $('#photoSave').hidden = true; curPhoto = null;
   show('detail');
 }
 $('#amount').oninput = e => {
@@ -177,8 +177,11 @@ $('#photoIn').onchange = async e => {
   const f = e.target.files[0]; if (!f) return;
   curPhoto = await shrink(f);
   $('#preview').src = URL.createObjectURL(curPhoto); $('#preview').hidden = false;
+  $('#photoSave').hidden = false;
   e.target.value = '';
 };
+// iOS không cho web tự ghi vào album Ảnh: mở Share Sheet, bạn chọn "Lưu hình ảnh"
+$('#photoSave').onclick = () => savePhoto(curPhoto, `ChiTieu_${Date.now()}.jpg`);
 function shrink(file, max = 1280) {
   return new Promise(res => {
     const img = new Image();
