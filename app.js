@@ -166,7 +166,7 @@ function renderCats() {
 function openDetail() {
   $('#amount').value = cur.amount ? Number(cur.amount).toLocaleString('vi-VN') : '';
   $('#note').value = cur.note;
-  $('#preview').hidden = true; $('#photoSave').hidden = true; curPhoto = null;
+  $('#preview').hidden = true; $('#photoSave').hidden = true; $('#photoAlbum').hidden = true; curPhoto = null;
   show('detail');
 }
 $('#amount').oninput = e => {
@@ -177,9 +177,27 @@ $('#photoIn').onchange = async e => {
   const f = e.target.files[0]; if (!f) return;
   curPhoto = await shrink(f);
   $('#preview').src = URL.createObjectURL(curPhoto); $('#preview').hidden = false;
-  $('#photoSave').hidden = false;
+  $('#photoSave').hidden = false; $('#photoAlbum').hidden = false;
   e.target.value = '';
+  toAlbum(true);   // thử tự lưu; nếu iOS không cho thì nút bên dưới dùng được
 };
+// Lưu vào album riêng: copy ảnh vào clipboard rồi chạy Phím tắt "LuuAnhChiTieu" (Lấy clipboard > Lưu vào album).
+async function toAlbum(silent) {
+  if (!curPhoto) return;
+  try {
+    const png = new Promise(res => {
+      const img = new Image();
+      img.onload = () => {
+        const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
+        c.getContext('2d').drawImage(img, 0, 0); c.toBlob(res, 'image/png'); URL.revokeObjectURL(img.src);
+      };
+      img.src = URL.createObjectURL(curPhoto);
+    });
+    await navigator.clipboard.write([new ClipboardItem({ 'image/png': png })]);
+  } catch { if (!silent) toast('Không copy được ảnh, thử lại'); return; }
+  location.href = 'shortcuts://run-shortcut?name=' + encodeURIComponent('LuuAnhChiTieu');
+}
+$('#photoAlbum').onclick = () => toAlbum(false);
 // iOS không cho web tự ghi vào album Ảnh: mở Share Sheet, bạn chọn "Lưu hình ảnh"
 $('#photoSave').onclick = () => savePhoto(curPhoto, `ChiTieu_${Date.now()}.jpg`);
 function shrink(file, max = 1280) {
