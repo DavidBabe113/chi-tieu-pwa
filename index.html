@@ -22,8 +22,13 @@
   <button data-tab="home" class="on">Overview</button>
   <button data-tab="stats">Statistics</button>
   <button data-tab="jars">6 Jars</button>
+  <button data-tab="cats">Categories</button>
 </nav>
 <main>
+
+  <section id="v-cats" hidden>
+    <div id="catsBody"></div>
+  </section>
 
   <section id="v-jars" hidden>
     <div id="jarsBody"></div>
@@ -81,19 +86,29 @@
   </section>
 
   <section id="v-settings" hidden>
-    <label>Google Apps Script link (Web App)<input id="sheetUrl" placeholder="https://script.google.com/macros/s/…/exec"></label>
-    <button id="testSheet" class="ghost">Send a test row</button>
-    <h2>Categories</h2>
-    <textarea id="catsText" rows="6"></textarea>
-    <p class="hint">One category per line: icon then name (e.g. ⛽ Fuel)</p>
-    <h2>6 Jars</h2>
-    <label>Monthly income (₫)<input id="income" inputmode="numeric" placeholder="0"></label>
-    <textarea id="jarsText" rows="7"></textarea>
-    <p class="hint">One jar per line: Name | percent | categories (comma separated). Percentages should add up to 100.</p>
-    <h2>Banks</h2>
-    <textarea id="banksText" rows="10"></textarea>
-    <p class="hint">One per line: Name | app link (e.g. MB Bank | mbbank://). Edit if an app does not open.</p>
-    <button id="saveSettings" class="big">Save settings</button>
+    <h2>Language</h2>
+    <div class="seg" id="segLang"><button data-v="en">English</button><button data-v="vi">Tiếng Việt</button></div>
+    <h2>Appearance</h2>
+    <div class="seg" id="segTheme"><button data-v="light">Light</button><button data-v="dark">Dark</button><button data-v="auto">Auto</button></div>
+    <h2>Data</h2>
+    <a id="openSheetLink" class="ghost linkbtn" target="_blank" rel="noopener">📊 Open Google Sheet</a>
+    <h2>About</h2>
+    <div class="card verrow"><span>Version</span><b id="verText"></b></div>
+    <button id="updateApp" class="ghost">Check for updates</button>
+
+    <details class="adv">
+      <summary>Advanced</summary>
+      <label>Google Sheet file link<input id="sheetFile" placeholder="https://docs.google.com/spreadsheets/d/…/edit"></label>
+      <label>Google Apps Script link (Web App)<input id="sheetUrl" placeholder="https://script.google.com/macros/s/…/exec"></label>
+      <button id="testSheet" class="ghost">Send a test row</button>
+      <label>Jar percentages</label>
+      <textarea id="jarsText" rows="7"></textarea>
+      <p class="hint">One jar per line: Name | percent | categories. Percentages should add up to 100.</p>
+      <label>Banks</label>
+      <textarea id="banksText" rows="10"></textarea>
+      <p class="hint">One per line: Name (Brand) | app link. Edit if an app does not open.</p>
+      <button id="saveAdv" class="big">Save</button>
+    </details>
   </section>
 
 </main>

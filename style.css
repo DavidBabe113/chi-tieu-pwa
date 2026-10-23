@@ -4,7 +4,12 @@
   --shadow:0 1px 2px rgba(11,21,48,.06),0 6px 20px rgba(11,21,48,.06);
   --r:18px;
 }
-@media (prefers-color-scheme:dark){:root{
+:root[data-theme="dark"]{
+  --bg:#08122a;--fg:#e8eefc;--muted:#8e9bbd;--card:#0f1c3a;--line:#1d2c52;
+  --accent:#60a5fa;--accent2:#93c5fd;--on-accent:#06122e;--warn:#fbbf24;--danger:#f87171;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 20px rgba(0,0,0,.35);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#08122a;--fg:#e8eefc;--muted:#8e9bbd;--card:#0f1c3a;--line:#1d2c52;
   --accent:#60a5fa;--accent2:#93c5fd;--on-accent:#06122e;--warn:#fbbf24;--danger:#f87171;
   --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 20px rgba(0,0,0,.35);
@@ -209,3 +214,40 @@ body.noscroll{overflow:hidden}
 .jbar i.over{background:var(--danger)}
 .jsub{font-size:13px;color:var(--muted);margin-top:8px}
 .warnbox{border-color:var(--warn);color:var(--warn);font-weight:600;margin:10px 0;font-size:14px}
+
+/* 4 tab */
+.tabs button{font-size:13px;padding:9px 4px}
+
+/* Cài đặt */
+.seg{display:flex;gap:4px;padding:4px;background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
+.seg button{flex:1;padding:11px 6px;border:0;border-radius:10px;background:none;font-weight:700;color:var(--muted)}
+.seg button.on{background:linear-gradient(135deg,var(--accent),var(--accent2));color:var(--on-accent)}
+.verrow{display:flex;justify-content:space-between;align-items:center}
+.verrow span{color:var(--muted);font-weight:600}
+a.linkbtn{text-decoration:none;text-align:center;color:var(--accent)}
+details.adv{margin-top:22px;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:4px 16px 14px;box-shadow:var(--shadow)}
+details.adv summary{padding:14px 0 6px;font-weight:700;color:var(--muted);cursor:pointer;list-style:none}
+details.adv summary::-webkit-details-marker{display:none}
+details.adv summary::after{content:" ›";float:right;transition:transform .15s}
+details.adv[open] summary::after{transform:rotate(90deg)}
+
+/* Thu nhập (6 hũ) */
+.incrow{margin:10px 0}
+.incrow label{margin-top:0}
+.incrow input{font-size:22px;font-weight:800}
+.incrow .big{margin:12px 0 0;padding:13px;font-size:16px}
+
+/* Tab Danh mục */
+.crow{display:flex;align-items:center;gap:12px;margin:10px 0;padding:12px 14px}
+.cic{width:46px;height:46px;border-radius:14px;background:color-mix(in srgb,var(--accent) 14%,var(--card));display:grid;place-items:center;font-size:24px;flex:none}
+.cn{flex:1;min-width:0;font-weight:700}
+.cn small{display:block;font-weight:500;color:var(--muted);font-size:13px}
+.jsel{max-width:122px;padding:9px 8px;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--fg);font:inherit;font-size:13px;font-weight:600}
+.jsel.wide{max-width:none;width:100%;margin:12px 0 0;padding:13px;font-size:15px}
+.cdel{width:34px;height:34px;border-radius:50%;border:0;background:color-mix(in srgb,var(--danger) 12%,var(--card));color:var(--danger);font-size:15px;flex:none;padding:0}
+.addcat{margin-top:4px}
+.arow{display:flex;gap:10px}
+.arow label{margin:0}
+.arow .ico{width:84px;flex:none}
+.arow .nm{flex:1}
+.arow .ico input{text-align:center;font-size:22px}
