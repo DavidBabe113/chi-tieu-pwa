@@ -1,5 +1,5 @@
-const CACHE = 'chitieu-v20';
-const SHELL = ['./', 'index.html', 'style.css', 'app.js', 'vendor/jsQR.js', 'manifest.webmanifest', 'icon-180.png', 'icon-192.png', 'icon-512.png'];
+const CACHE = 'chitieu-v21';
+const SHELL = ['./', 'index.html', 'style.css', 'app.js', 'vendor/jsQR.js', 'scan-worker.js', 'manifest.webmanifest', 'icon-180.png', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)));

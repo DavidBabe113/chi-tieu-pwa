@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.4.0';
+const VERSION = '2.5.0';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -291,21 +291,42 @@ addEventListener('touchend', e => {
   if (t.clientX - tx0 > 70 && Math.abs(t.clientY - ty0) < 60 && Date.now() - lastBack > 700) { lastBack = Date.now(); history.back(); }
 }, { passive: true });
 
-// Vuốt ngang giữa các tab (phải → tab trước, trái → tab sau); mép trái dành cho vuốt quay lại
-let sx0 = 0, sy0 = 0, st0 = 0, swipeOk = false;
+// Vuốt ngang giữa các tab: trang đi theo ngón tay (như iOS), thả ra thì trượt sang tab kế hoặc bật lại; mép trái dành cho vuốt quay lại
+let sw = null;
+const swReset = el => { el.style.transition = ''; el.style.transform = ''; el.style.opacity = ''; };
 addEventListener('touchstart', e => {
+  sw = null;
+  if (!(depth === 0 && TOP.includes(curView) && TABKEYS.length > 1 && $('#sheet').hidden && $('#lock').hidden && $('#login').hidden)) return;
   const t = e.touches[0];
-  swipeOk = depth === 0 && TOP.includes(curView) && TABKEYS.length > 1 && $('#sheet').hidden && $('#lock').hidden && $('#login').hidden &&
-    t.clientX > 28 && !e.target.closest('input,textarea,select,.cols,.dcols,.hscroll');
-  sx0 = t.clientX; sy0 = t.clientY; st0 = Date.now();
+  if (t.clientX < 28 || e.target.closest('input,textarea,select,.cols,.dcols')) return;
+  sw = { x: t.clientX, y: t.clientY, t: Date.now(), axis: '', dx: 0, raf: 0, el: $('#v-' + curView) };
 }, { passive: true });
+addEventListener('touchmove', e => {
+  if (!sw) return;
+  const t = e.touches[0], dx = t.clientX - sw.x, dy = t.clientY - sw.y;
+  if (!sw.axis) { if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return; sw.axis = Math.abs(dx) > Math.abs(dy) * 1.2 ? 'x' : 'y'; }
+  if (sw.axis !== 'x') return;
+  const i = TABKEYS.indexOf(curView), edge = (dx > 0 && i === 0) || (dx < 0 && i === TABKEYS.length - 1);
+  sw.dx = edge ? dx * 0.25 : dx;   // ở tab đầu/cuối thì kéo nặng tay
+  if (!sw.raf) sw.raf = requestAnimationFrame(() => {
+    if (!sw) return; sw.raf = 0;
+    sw.el.style.transition = 'none';
+    sw.el.style.transform = 'translate3d(' + sw.dx + 'px,0,0)';
+    sw.el.style.opacity = String(1 - Math.min(0.5, Math.abs(sw.dx) / innerWidth));
+  });
+}, { passive: true });
+addEventListener('touchcancel', () => { if (sw) { cancelAnimationFrame(sw.raf); swReset(sw.el); sw = null; } }, { passive: true });
 addEventListener('touchend', e => {
-  if (!swipeOk) return; swipeOk = false;
-  const t = e.changedTouches[0], dx = t.clientX - sx0, dy = t.clientY - sy0;
-  if (Math.abs(dx) < 60 || Math.abs(dy) > Math.abs(dx) * 0.6 || Date.now() - st0 > 900) return;
+  if (!sw) return;
+  const s0 = sw; sw = null; cancelAnimationFrame(s0.raf);
+  if (s0.axis !== 'x') return;
+  const t = e.changedTouches[0], dx = t.clientX - s0.x, vel = Math.abs(dx) / Math.max(1, Date.now() - s0.t);
   const n = TABKEYS.indexOf(curView) + (dx < 0 ? 1 : -1);
-  if (n < 0 || n >= TABKEYS.length) return;
-  show(TABKEYS[n], true);
+  const go = (Math.abs(dx) > innerWidth * 0.25 || vel > 0.5) && Math.abs(dx) > 30 && n >= 0 && n < TABKEYS.length;
+  const el = s0.el;
+  if (!go) { el.style.transition = 'transform .28s var(--ease),opacity .28s'; el.style.transform = ''; el.style.opacity = ''; setTimeout(() => swReset(el), 300); return; }
+  el.style.transition = 'transform .14s ease-out,opacity .14s'; el.style.transform = 'translate3d(' + (dx < 0 ? -70 : 70) + 'px,0,0)'; el.style.opacity = '0';
+  setTimeout(() => { swReset(el); show(TABKEYS[n], true); }, 130);
 }, { passive: true });
 
 // ---------- quét QR ----------
@@ -319,23 +340,20 @@ function newRec() {
 const scanCv = document.createElement('canvas'), scanCx = scanCv.getContext('2d', { willReadFrequently: true });
 function scanGrab(v, maxSide, crop) {   // lấy khung hình (có thể thu nhỏ / cắt giữa) thành ImageData
   let sw = v.videoWidth, sh = v.videoHeight, sx = 0, sy = 0;
-  if (crop) { sx = sw * 0.2; sy = sh * 0.2; sw *= 0.6; sh *= 0.6; }
+  if (crop) { sx = sw * 0.15; sy = sh * 0.15; sw *= 0.7; sh *= 0.7; }
   const k = Math.min(1, maxSide / Math.max(sw, sh));
   scanCv.width = Math.max(1, Math.round(sw * k)); scanCv.height = Math.max(1, Math.round(sh * k));
   scanCx.drawImage(v, sx, sy, sw, sh, 0, 0, scanCv.width, scanCv.height);
   return scanCx.getImageData(0, 0, scanCv.width, scanCv.height);
 }
-const scanDec = (im, inv) => { const r = jsQR(im.data, im.width, im.height, { inversionAttempts: inv ? 'attemptBoth' : 'dontInvert' }); return r && r.data; };
-function scanFrame(v, n) {   // mỗi khung chỉ thử một cách để luôn mượt; xoay vòng: nhỏ nhanh → vừa → cắt giữa / độ phân giải cao
-  const k = n % 6;
-  if (k === 0 || k === 3) return scanDec(scanGrab(v, 640), false);
-  if (k === 1) return scanDec(scanGrab(v, 1280), false);
-  if (k === 2 || k === 4) return scanDec(scanGrab(v, 960, true), false);
-  return scanDec(scanGrab(v, 1920), true);
-}
+// Các cách quét xoay vòng: nhỏ nhanh → vừa → cắt giữa → độ phân giải cao (có thử mã đảo màu)
+const SCAN_PASSES = [[640, false, false], [1024, false, false], [800, false, true], [480, false, false], [1600, true, false], [1280, false, true]];
+let scanWorker = null;
+function stopWorker() { if (scanWorker) { scanWorker.terminate(); scanWorker = null; } }
 async function startScan() {
   show('scan');
   $('#scanMsg').textContent = tr('Point the camera at the QR code…');
+  $('.camwrap').classList.remove('found');
   const hi = { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30 } };
   try {
     stream = await navigator.mediaDevices.getUserMedia({ video: hi, audio: false });
@@ -352,24 +370,32 @@ async function startScan() {
   const v = $('#video'); v.srcObject = stream; await v.play();
   scanning = true;
   let det = null; try { if ('BarcodeDetector' in window) det = new BarcodeDetector({ formats: ['qr_code'] }); } catch {}
-  let n = 0;
+  stopWorker();
+  try { scanWorker = new Worker('scan-worker.js'); } catch { scanWorker = null; }
+  const found = data => {   // viền xanh báo đã nhận mã rồi mới chuyển màn
+    if (!scanning) return; scanning = false;
+    $('.camwrap').classList.add('found');
+    setTimeout(() => { stopWorker(); onQr(data); }, 160);
+  };
+  let n = 0, busy = false;
+  if (scanWorker) scanWorker.onmessage = m => { busy = false; if (m.data && m.data.data) found(m.data.data); };
   const tick = async () => {
     if (!scanning) return;
-    if (v.videoWidth && v.readyState >= 2) {
-      n++;
+    if (v.videoWidth && v.readyState >= 2 && !busy) {
+      const [side, inv, crop] = SCAN_PASSES[n++ % SCAN_PASSES.length];
       try {
-        let data = null;
-        if (det) { const r = await det.detect(v); if (r.length && r[0].rawValue) data = r[0].rawValue; }
-        if (!data && scanning) data = scanFrame(v, n);
-        if (data) return onQr(data);
-      } catch {}
+        if (det) { const r = await det.detect(v); if (r.length && r[0].rawValue) return found(r[0].rawValue); }
+        const im = scanGrab(v, side, crop);
+        if (scanWorker) { busy = true; scanWorker.postMessage({ buf: im.data.buffer, w: im.width, h: im.height, inv }, [im.data.buffer]); }
+        else { const d = jsQR(im.data, im.width, im.height, { inversionAttempts: inv ? 'attemptBoth' : 'dontInvert' }); if (d && d.data) return found(d.data); }
+      } catch { busy = false; }
     }
     requestAnimationFrame(tick);
   };
   tick();
 }
 function stopScan() {
-  scanning = false;
+  scanning = false; stopWorker();
   if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
 }
 

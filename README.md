@@ -14,3 +14,11 @@ Quét QR → chọn danh mục → nhập số tiền / chụp ảnh → chọn 
 ## Lưu ý
 - Luồng: quét QR (hoặc nhập tay) > danh mục > nhập số tiền > chọn ngân hàng. Chọn ngân hàng là lưu luôn và đẩy lên Sheet (không có bước xác nhận). App ngân hàng mở ra, bạn tự nhập số tiền và xác thực ở đó.
 - Link `/exec` chỉ lưu trên máy bạn, không nằm trong repo.
+
+## Chia sẻ cho người khác dùng
+Repo không chứa dữ liệu hay khoá bí mật nào của bạn. Mỗi người dùng bản của mình theo 3 bước:
+1. **Fork** repo này, bật GitHub Pages (Settings > Pages > nhánh `main`, thư mục gốc).
+2. Tạo Google Sheet + Apps Script riêng (mục "Cài đặt" ở trên) và dán link `/exec` của họ vào ⚙ > Advanced. Dữ liệu từng người nằm trong Sheet và máy của chính họ.
+3. Mở link Pages bằng Safari > Chia sẻ > Thêm vào Màn hình chính. Lần đầu mở sẽ tạo tài khoản admin riêng.
+
+Các file cốt lõi: `index.html`, `app.js`, `style.css`, `sw.js`, `scan-worker.js`, `manifest.webmanifest`, icon, `vendor/jsQR.js`.
