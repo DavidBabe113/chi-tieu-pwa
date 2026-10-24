@@ -492,3 +492,6 @@ main{overflow-x:clip}
 .pin.in{border-color:#16a34a}.pin.in::after{border-top-color:#16a34a}
 .pin i{font-style:normal;font-size:14px;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;background:#fee2e2}
 .pin.in i{background:#dcfce7}
+
+.lg[data-info]{cursor:pointer}
+.lg[data-info]:active{opacity:.6}

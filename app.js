@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.12.0';
+const VERSION = '2.13.0';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -18,7 +18,7 @@ const VI = {
   // tab & tiêu đề
   'Expenses': 'Chi tiêu', 'Overview': 'Tổng quan', 'Statistics': 'Thống kê', '6 Jars': '6 hũ', 'Categories': 'Danh mục',
   'Choose from Photos': 'Chọn từ thư viện ảnh', 'No QR code found in this photo': 'Không tìm thấy mã QR trong ảnh này', 'Scan QR from a photo': 'Quét QR từ ảnh',
-  'Scan QR': 'Quét QR', 'Choose category': 'Chọn danh mục', 'Details': 'Chi tiết', 'Choose bank': 'Chọn ngân hàng', 'Payment method': 'Lựa chọn thanh toán', 'Next: payment method': 'Tiếp: lựa chọn thanh toán', 'Banks': 'Ngân hàng', 'Nothing found': 'Không tìm thấy', 'Search': 'Tìm kiếm', 'Choose how you pay. The app opens and you confirm as usual. Enter the amount there yourself.': 'Chọn cách thanh toán. App sẽ mở, bạn xác nhận như bình thường và tự nhập số tiền ở đó.', 'By payment method': 'Theo hình thức thanh toán',
+  'Scan QR': 'Quét QR', 'Choose category': 'Chọn danh mục', 'Details': 'Chi tiết', 'Choose bank': 'Chọn ngân hàng', 'Payment method': 'Lựa chọn thanh toán', 'Each slice is one day: how much of the month spending happened that day. Tap a day for details.': 'Mỗi miếng là một ngày: ngày đó chiếm bao nhiêu phần chi của tháng. Chạm vào ngày để xem chi tiết.', 'Other days': 'Các ngày còn lại', 'Highest': 'Cao nhất', 'Tap to see the list': 'Chạm để xem danh sách', 'Payment places': 'Các nơi thanh toán', 'Next: payment method': 'Tiếp: lựa chọn thanh toán', 'Banks': 'Ngân hàng', 'Nothing found': 'Không tìm thấy', 'Search': 'Tìm kiếm', 'Choose how you pay. The app opens and you confirm as usual. Enter the amount there yourself.': 'Chọn cách thanh toán. App sẽ mở, bạn xác nhận như bình thường và tự nhập số tiền ở đó.', 'By payment method': 'Theo hình thức thanh toán',
   'Photo library': 'Thư viện ảnh', 'Settings': 'Cài đặt', 'Back': 'Quay lại', 'Close': 'Đóng', 'Add manually': 'Nhập tay',
   // tổng quan
   'Spent this month': 'Đã chi tháng này', 'Dashboard': 'Bảng tổng hợp', 'Monthly summary': 'Tổng hợp theo tháng', 'Each bar is one day of the month. Touch a bar to see that day.': 'Mỗi cột là một ngày trong tháng. Chạm vào cột để xem ngày đó.', 'Places in {0}': 'Số nơi thanh toán trong {0}', 'Places on {0}': 'Số nơi thanh toán ngày {0}', 'Map': 'Bản đồ', 'Wallet': 'Ví', 'Wallets': 'Ví', 'Payments': 'Thanh toán', '+ Add wallet': '+ Thêm ví', 'No wallet': 'Chưa chọn ví', 'By wallet': 'Theo ví', 'Wallet name': 'Tên ví', 'Savings rate': 'Tỷ lệ thiết kiệm', 'Projected remaining': 'Dự kiến còn lại', 'Total income': 'Tổng thu nhập', 'Total spending': 'Tổng chi tiêu tháng', 'Average per day': 'Trung bình mỗi ngày',
@@ -743,9 +743,9 @@ async function fillDays(box, items) {
     box.append(head, grp);
   }
 }
-function donut(by, total) {   // biểu đồ tròn theo hạng mục (chu vi = 100)
+function donut(by, total, colors) {   // biểu đồ tròn theo hạng mục (chu vi = 100)
   let cum = 0;
-  const segs = by.map(([k, v], i) => { const p = v / total * 100, o = 25 - cum; cum += p; return `<circle cx="21" cy="21" r="15.9155" fill="none" stroke="${PAL[i % PAL.length]}" stroke-width="6" stroke-dasharray="${p.toFixed(3)} ${(100 - p).toFixed(3)}" stroke-dashoffset="${o.toFixed(3)}"></circle>`; }).join('');
+  const segs = by.map(([k, v], i) => { const p = v / total * 100, o = 25 - cum; cum += p; return `<circle cx="21" cy="21" r="15.9155" fill="none" stroke="${(colors && colors[i]) || PAL[i % PAL.length]}" stroke-width="6" stroke-dasharray="${p.toFixed(3)} ${(100 - p).toFixed(3)}" stroke-dashoffset="${o.toFixed(3)}"></circle>`; }).join('');
   return `<svg class="donut" viewBox="0 0 42 42" role="img" aria-label="${tr('Spending chart')}"><circle cx="21" cy="21" r="15.9155" fill="none" stroke="var(--fill)" stroke-width="6"></circle>${segs}<text x="21" y="22.4" text-anchor="middle" class="dtx">${short(total)}</text></svg>`;
 }
 async function renderHome() {
@@ -796,7 +796,7 @@ async function renderTxn() {
   $('#txnList').hidden = mapMode; $('#txnMapBox').hidden = !mapMode;
   if (mapMode) {
     const n = items.filter(r => r.loc).length;
-    $('#txnHead').innerHTML = monthNav('') + `<div class="hl">${tr(txnDay ? 'Places on {0}' : 'Places in {0}', txnDay ? new Date(txnDay + 'T00:00').toLocaleDateString(DLOC(), { day: 'numeric', month: 'short' }) : monthLabel(viewYm))}</div><b class="total">${n}</b>`;
+    $('#txnHead').innerHTML = monthNav('') + `<div class="hl" data-info="places">${tr(txnDay ? 'Places on {0}' : 'Places in {0}', txnDay ? new Date(txnDay + 'T00:00').toLocaleDateString(DLOC(), { day: 'numeric', month: 'short' }) : monthLabel(viewYm))}</div><b class="total" data-info="places">${n}</b><div class="hl" data-info="places">${tr('Tap to see the list')} ›</div>`;
     renderMap(items); return;
   }
   $('#txnHead').innerHTML = monthNav('') +
@@ -816,10 +816,10 @@ document.querySelectorAll('#segTxn button').forEach(b => b.onclick = () => { txn
 // ---------- bản đồ các nơi đã thanh toán (Leaflet + OpenStreetMap; vị trí chỉ đọc từ dữ liệu trong máy) ----------
 let leaf = null, leafLayer = null;
 const hasEmoji = t => /^\p{Extended_Pictographic}/u.test(t);
-function pinHtml(r) {   // nhãn nhỏ: biểu tượng hạng mục + tên + số tiền + ghi chú ngắn
+function pinHtml(r, k = 0) {   // nhãn nhỏ: biểu tượng hạng mục + tên + số tiền + ghi chú ngắn; k = thứ tự khi nhiều giao dịch cùng một chỗ (xếp chồng lên trên)
   const inc = isInc(r), em = hasEmoji(r.category) ? r.category.split(' ')[0] : '📍', name = (hasEmoji(r.category) ? r.category.split(' ').slice(1).join(' ') : r.category) || r.category;
   const note = r.note ? ' · ' + (r.note.length > 18 ? r.note.slice(0, 17) + '…' : r.note) : '';
-  return `<div class="pin ${inc ? 'in' : 'out'}"><i>${esc(em)}</i><span>${esc(name)} ${inc ? '+' : '−'}${short(Number(r.amount))}${esc(note)}</span></div>`;
+  return `<div class="pin ${inc ? 'in' : 'out'}" style="margin-top:${-k * 30}px"><i>${esc(em)}</i><span>${esc(name)} ${inc ? '+' : '−'}${short(Number(r.amount))}${esc(note)}</span></div>`;
 }
 function renderMap(items) {
   const pts = [], withLoc = items.filter(r => r.loc && isFinite(r.loc.lat) && isFinite(r.loc.lng));
@@ -831,9 +831,10 @@ function renderMap(items) {
     leafLayer = L.layerGroup().addTo(leaf);
   }
   leafLayer.clearLayers();
+  const seen = {};   // các giao dịch cùng một chỗ (làm tròn ~10 m) được xếp chồng lên nhau để không che nhau
   withLoc.forEach(r => {
-    const p = [r.loc.lat, r.loc.lng]; pts.push(p);
-    L.marker(p, { icon: L.divIcon({ className: 'pinwrap', html: pinHtml(r), iconSize: [0, 0] }) }).on('click', () => openSheet(r)).addTo(leafLayer);
+    const p = [r.loc.lat, r.loc.lng], key = r.loc.lat.toFixed(4) + ',' + r.loc.lng.toFixed(4), k = seen[key] = (seen[key] ?? -1) + 1; pts.push(p);
+    L.marker(p, { icon: L.divIcon({ className: 'pinwrap', html: pinHtml(r, k), iconSize: [0, 0] }) }).on('click', () => openSheet(r)).addTo(leafLayer);
   });
   setTimeout(() => {
     leaf.invalidateSize();
@@ -901,6 +902,16 @@ async function showInfo(kind, arg, ymArg) {
       html = head(tr('Average per day'), fmt(avg)) + `<h3 class="ih">${tr('Daily spending')}</h3>` +
         Object.keys(byDay).map(Number).sort((a, b) => b - a).map(d => infoRow(new Date(yy, mm - 1, d).toLocaleDateString(DLOC(), { weekday: 'short', day: 'numeric', month: 'short' }), fmt(byDay[d]))).join('');
     }
+  } else if (kind === 'day') {
+    const items = all.filter(r => !isInc(r) && ymd(new Date(r.time)) === arg).sort((a, b) => a.time.localeCompare(b.time));
+    html = head(new Date(arg + 'T00:00').toLocaleDateString(DLOC(), { weekday: 'long', day: 'numeric', month: 'long' }), fmt(sum(items))) +
+      `<h3 class="ih">${items.length} ${tr(items.length > 1 ? 'transactions' : 'transaction')}</h3>` +
+      items.map(r => infoRow(r.category, fmt(r.amount), esc(new Date(r.time).toLocaleTimeString(DLOC(), { hour: '2-digit', minute: '2-digit' }) + (r.bank ? ' · ' + r.bank.replace(/^.*\((.+)\)$/, '$1') : '') + (r.note ? ' · ' + r.note : '')), 'neg', r.id)).join('');
+  } else if (kind === 'places') {   // danh sách các giao dịch có vị trí (cùng bộ lọc với bản đồ)
+    const items = all.filter(r => r.loc && ymOf(r.time) === viewYm && (!txnCat || r.category === txnCat) && (!txnDay || ymd(new Date(r.time)) === txnDay)).sort((a, b) => b.time.localeCompare(a.time));
+    html = head(tr('Payment places'), items.length) +
+      (items.map(r => infoRow(r.category, (isInc(r) ? '+' : '') + fmt(r.amount),
+        esc(new Date(r.time).toLocaleDateString(DLOC(), { day: 'numeric', month: 'short' }) + ' ' + new Date(r.time).toLocaleTimeString(DLOC(), { hour: '2-digit', minute: '2-digit' }) + (r.bank ? ' · ' + r.bank.replace(/^.*\((.+)\)$/, '$1') : '') + (r.note ? ' · ' + r.note : '')), isInc(r) ? 'pos' : 'neg', r.id)).join('') || `<p class="hint">${tr('No data yet')}</p>`);
   } else if (kind === 'bank' || kind === 'wallet') {
     const key = r => kind === 'bank' ? (r.bank || tr('Cash / no bank')) : (r.wallet || tr('No wallet'));
     const items = inM(viewYm, r => !isInc(r) && key(r) === arg).sort((a, b) => b.time.localeCompare(a.time));
@@ -999,28 +1010,21 @@ function renderDash(all) {
 
   const days = Array(dim).fill(0); m.forEach(r => days[new Date(r.time).getDate() - 1] += Number(r.amount));
   const dmax = Math.max(1, ...days);
-  const cntD = Array(dim).fill(0), catD = Array.from({ length: dim }, () => ({}));
-  m.forEach(r => { const i = new Date(r.time).getDate() - 1; cntD[i]++; catD[i][r.category] = (catD[i][r.category] || 0) + Number(r.amount); });
-  const todayIdx = isCur ? new Date().getDate() - 1 : -1;
-  dailyInfo = days.map((v, i) => {
-    const d = new Date(y, mo - 1, i + 1), tc = Object.entries(catD[i]).sort((p, q) => q[1] - p[1])[0];
-    return { v, n: cntD[i], cat: tc ? tc[0] : '', label: d.toLocaleDateString(DLOC(), { weekday: 'long', day: 'numeric', month: 'short' }) };
-  });
-  dailySel = days.indexOf(dmax);
-  if (todayIdx >= 0) { dailySel = todayIdx; while (dailySel > 0 && !days[dailySel]) dailySel--; if (!days[dailySel]) dailySel = days.indexOf(dmax); }   // mặc định: hôm nay, nếu chưa chi thì ngày gần nhất có chi
-  const peakDay = days.indexOf(dmax) + 1, active = cntD.filter(Boolean).length, avgActive = active ? total / active : 0;
-  const CH = 128, axD = niceAxis(dmax);   // trục Y theo mốc số tiền tròn
-  const bars = days.map((v, i) => {
-    const wd = new Date(y, mo - 1, i + 1).getDay();
-    const cls = ['dbar', v && v === dmax ? 'peak' : '', wd === 0 || wd === 6 ? 'we' : '', i === todayIdx ? 'tod' : '', todayIdx >= 0 && i > todayIdx ? 'fut' : ''].join(' ');
-    return `<div class="dc" data-i="${i}"><div class="${cls}" style="height:${v ? Math.max(5, Math.round(v / axD.top * CH)) : 0}px;animation-delay:${i * 12}ms"></div></div>`;
-  }).join('');
-  h += `<h2>${tr('Daily spending')}</h2><div class="card"><p class="hint dhelp">${tr('Each bar is one day of the month. Touch a bar to see that day.')}</p><div class="dread" id="dread"></div>` +
-    `<div class="dwrap" id="dwrap"><div class="dgrid">${axisLines(axD)}</div>` +
-    `<div class="dcols">${bars}</div></div>` +
-    `<div class="dax"><span>1</span><span>${Math.ceil(dim / 4)}</span><span>${Math.ceil(dim / 2)}</span><span>${Math.ceil(dim * 3 / 4)}</span><span>${dim}</span></div>` +
-    `<div class="dstats"><div><span>${tr('Peak day')}</span><b>${peakDay}</b></div><div><span>${tr('Active days')}</span><b>${active}/${elapsed}</b></div></div></div>`;
-  setTimeout(paintDaily, 0);
+  // Chi theo ngày dạng biểu đồ tròn: mỗi miếng là một ngày (6 ngày chi nhiều nhất + "ngày còn lại"); chạm vào ngày để xem chi tiết
+  const cntD = Array(dim).fill(0);
+  m.forEach(r => { cntD[new Date(r.time).getDate() - 1]++; });
+  const peakDay = days.indexOf(dmax) + 1, active = cntD.filter(Boolean).length;
+  const dayEntries = days.map((v, i) => [i + 1, v]).filter(x => x[1] > 0).sort((a, b) => b[1] - a[1]);
+  const topDays = dayEntries.slice(0, 6), otherDays = dayEntries.slice(6), otherSum = otherDays.reduce((a, x) => a + x[1], 0);
+  const dSlices = topDays.map(([d, v]) => [d, v]).concat(otherSum ? [['other', otherSum]] : []);
+  const dColors = [...PAL.slice(0, 6), '#9ca3af'];
+  const dLabel = d => new Date(y, mo - 1, d).toLocaleDateString(DLOC(), { weekday: 'short', day: 'numeric', month: 'short' });
+  const dYmd = d => `${y}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+  h += `<h2>${tr('Daily spending')}</h2><div class="card"><p class="hint dhelp">${tr('Each slice is one day: how much of the month spending happened that day. Tap a day for details.')}</p>` +
+    `<div class="chart">${donut(dSlices, total, dColors)}<div class="legend">${dSlices.map(([d, v], i) => d === 'other'
+      ? `<div class="lg"><i style="background:${dColors[i]}"></i><span>${tr('Other days')} (${otherDays.length})</span><b>${Math.round(v / total * 100)}%</b></div>`
+      : `<div class="lg" data-info="day" data-arg="${dYmd(d)}"><i style="background:${dColors[i]}"></i><span>${esc(dLabel(d))} · ${short(v)}</span><b>${Math.round(v / total * 100)}%</b></div>`).join('')}</div></div>` +
+    `<div class="dstats"><div><span>${tr('Peak day')}</span><b>${peakDay}/${mo}</b></div><div><span>${tr('Highest')}</span><b>${short(dmax)}</b></div><div><span>${tr('Active days')}</span><b>${active}/${elapsed}</b></div></div></div>`;
 
   const byBank = Object.entries(sumBy(m, r => r.bank || tr('Cash / no bank'))).sort((a, b) => b[1] - a[1]);
   const bmax = byBank[0][1];
