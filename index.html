@@ -20,6 +20,7 @@
 </header>
 <nav id="tabs" class="tabs" style="--i:0">
   <button data-tab="home" class="on">Overview</button>
+  <button data-tab="txn">Transactions</button>
   <button data-tab="jars">6 Jars</button>
   <button data-tab="cats">Categories</button>
 </nav>
@@ -35,14 +36,16 @@
 
   <section id="v-home">
     <div id="pending"></div>
+    <div id="balance" class="card bal"></div>
     <div id="stats" class="card hero"></div>
-    <h2>Transactions</h2>
-    <div id="recent"></div>
+    <div id="catChart"></div>
     <div id="dash"></div>
-    <button id="btnManual" class="fab-add" aria-label="Add manually">+</button>
-    <button id="btnScan" class="fab-scan" aria-label="Scan QR">
-      <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><rect x="8" y="8" width="3" height="3" rx=".5"/><rect x="13" y="8" width="3" height="3" rx=".5"/><rect x="8" y="13" width="3" height="3" rx=".5"/><path d="M13.5 14.5h2.5v2"/></svg>
-    </button>
+  </section>
+
+  <section id="v-txn" hidden>
+    <div class="seg" id="segTxn"><button data-v="out" class="on">Expense</button><button data-v="in">Income</button></div>
+    <div id="txnHead" class="card hero"></div>
+    <div id="txnList"></div>
   </section>
 
   <section id="v-scan" hidden>
@@ -106,6 +109,9 @@
         <select id="mRole" class="jsel wide" aria-label="Role"><option value="member">Member</option><option value="admin">Admin</option></select>
         <button id="addMember" class="big">Add member</button>
       </div>
+      <h2>Banks</h2>
+      <div id="bankList"></div>
+      <select id="bankPreset" class="jsel wide" aria-label="Add a bank"></select>
       <h2>Security</h2>
       <div class="card verrow"><span>PIN lock</span><b id="pinState"></b></div>
       <button id="pinSet" class="ghost">Set PIN</button>
@@ -129,15 +135,19 @@
         <label>Google Client ID<input id="gClientId" placeholder="123456789-abc….apps.googleusercontent.com"></label>
         <label>Google Apps Script link (Web App)<input id="sheetUrl" placeholder="https://script.google.com/macros/s/…/exec"></label>
         <button id="testSheet" class="ghost">Send a test row</button>
-        <label>Banks</label>
-        <textarea id="banksText" rows="10"></textarea>
-        <p class="hint">One per line: Name (Brand) | app link. Edit if an app does not open.</p>
         <button id="saveAdv" class="big">Save</button>
       </details>
     </div>
   </section>
 
 </main>
+
+<div id="fabs">
+  <button id="btnManual" class="fab-add" aria-label="Add manually">+</button>
+  <button id="btnScan" class="fab-scan" aria-label="Scan QR">
+    <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><rect x="8" y="8" width="3" height="3" rx=".5"/><rect x="13" y="8" width="3" height="3" rx=".5"/><rect x="8" y="13" width="3" height="3" rx=".5"/><path d="M13.5 14.5h2.5v2"/></svg>
+  </button>
+</div>
 
 <input id="qrFile" type="file" accept="image/*" hidden>
 

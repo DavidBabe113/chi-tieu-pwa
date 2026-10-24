@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.3.0';
+const VERSION = '2.4.0';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -34,7 +34,8 @@ const VI = {
   'Wrong username or password': 'Sai tên đăng nhập hoặc mật khẩu', 'Wrong current password': 'Sai mật khẩu hiện tại', 'Password must have at least 4 characters': 'Mật khẩu cần ít nhất 4 ký tự',
   'Passwords do not match': 'Hai mật khẩu không khớp', 'That username is already taken': 'Tên đăng nhập này đã có',
   'Add expenses': 'Thêm chi tiêu', 'Add income': 'Thêm khoản thu', "See everyone's transactions": 'Xem giao dịch của mọi người', 'See the Dashboard': 'Xem bảng tổng hợp',
-  'See 6 Jars': 'Xem 6 hũ', 'Edit jar percentages': 'Sửa tỷ lệ các hũ', 'Manage categories': 'Quản lý danh mục', 'Transactions': 'Giao dịch', 'Previous month': 'Tháng trước', 'Next month': 'Tháng sau',
+  'See 6 Jars': 'Xem 6 hũ', 'Edit jar percentages': 'Sửa tỷ lệ các hũ', 'Manage categories': 'Quản lý danh mục', 'Transactions': 'Giao dịch', 'Remaining': 'Còn lại', 'Total money': 'Tổng số tiền', 'Spent so far': 'Đã chi tổng cộng', 'Spent in {0}': 'Đã chi trong {0}', 'Income in {0}': 'Thu nhập trong {0}', 'Spending chart': 'Biểu đồ chi tiêu', 'Peak day': 'Ngày chi nhiều nhất',
+  'Bank name': 'Tên ngân hàng', 'App link': 'Liên kết mở app', 'Add a bank…': 'Thêm ngân hàng…', 'Custom bank': 'Ngân hàng khác (tự nhập)', 'Banks': 'Ngân hàng', 'Remove': 'Xoá', 'No data yet': 'Chưa có dữ liệu', 'Previous month': 'Tháng trước', 'Next month': 'Tháng sau',
   'Today': 'Hôm nay', 'Yesterday': 'Hôm qua', 'No transactions in this month.': 'Chưa có giao dịch trong tháng này.',
   '⏳ pending': '⏳ chờ đồng bộ', 'Did the transfer go through?': 'Giao dịch đã thành công?', 'Cancel': 'Huỷ', 'Done': 'Xong',
   // quét & nhập
@@ -227,13 +228,13 @@ function toast(msg, ms = 2600) {
 }
 
 // ---------- điều hướng (dùng lịch sử trình duyệt để vuốt cạnh trái = quay lại) ----------
-const TITLES = { home: 'Expenses', jars: '6 Jars', cats: 'Categories', scan: 'Scan QR', cat: 'Choose category', detail: 'Details', bank: 'Choose bank', settings: 'Settings' };
-const TOP = ['home', 'jars', 'cats'];
+const TITLES = { home: 'Expenses', txn: 'Transactions', jars: '6 Jars', cats: 'Categories', scan: 'Scan QR', cat: 'Choose category', detail: 'Details', bank: 'Choose bank', settings: 'Settings' };
+const TOP = ['home', 'txn', 'jars', 'cats'];
 let depth = 0, pendingTop = null, lastBack = 0, dir = 'fwd';
 try { history.replaceState({ v: 'home', d: 0 }, ''); } catch {}
 // mode: true = thêm vào lịch sử, false = không đụng lịch sử, 'replace' = thay mục hiện tại
 function show(v, mode = true) {
-  if ((v === 'jars' || v === 'cats') && !TABKEYS.includes(v)) v = 'home';
+  if (v !== 'home' && TOP.includes(v) && !TABKEYS.includes(v)) v = 'home';
   if (v !== 'scan') stopScan();
   const inner = !TOP.includes(v);
   try {
@@ -241,8 +242,12 @@ function show(v, mode = true) {
     else if (inner && mode === 'replace') history.replaceState({ v, d: depth }, '');
     else if (!inner && mode === true && depth === 0) history.replaceState({ v, d: 0 }, '');
   } catch {}
+  const pv = curView;
   curView = v;
-  document.body.dataset.dir = dir;
+  let dr = dir;
+  if (dr === 'fwd' && pv !== v && TOP.includes(pv) && TOP.includes(v)) dr = TOP.indexOf(v) > TOP.indexOf(pv) ? 'next' : 'prev';   // chuyển tab trượt theo chiều
+  document.body.dataset.dir = dr;
+  $('#fabs').hidden = !(v === 'home' || v === 'txn');
   document.querySelectorAll('main > section').forEach(s => s.hidden = s.id !== 'v-' + v);
   $('#title').textContent = tr(TITLES[v]);
   $('#back').hidden = !inner;
@@ -251,6 +256,7 @@ function show(v, mode = true) {
   document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === v));
   window.scrollTo(0, 0);
   if (v === 'home') renderHome();
+  if (v === 'txn') renderTxn();
   if (v === 'jars') renderJars();
   if (v === 'cats') renderCategories();
   if (v === 'settings') renderSettings();
@@ -285,6 +291,23 @@ addEventListener('touchend', e => {
   if (t.clientX - tx0 > 70 && Math.abs(t.clientY - ty0) < 60 && Date.now() - lastBack > 700) { lastBack = Date.now(); history.back(); }
 }, { passive: true });
 
+// Vuốt ngang giữa các tab (phải → tab trước, trái → tab sau); mép trái dành cho vuốt quay lại
+let sx0 = 0, sy0 = 0, st0 = 0, swipeOk = false;
+addEventListener('touchstart', e => {
+  const t = e.touches[0];
+  swipeOk = depth === 0 && TOP.includes(curView) && TABKEYS.length > 1 && $('#sheet').hidden && $('#lock').hidden && $('#login').hidden &&
+    t.clientX > 28 && !e.target.closest('input,textarea,select,.cols,.dcols,.hscroll');
+  sx0 = t.clientX; sy0 = t.clientY; st0 = Date.now();
+}, { passive: true });
+addEventListener('touchend', e => {
+  if (!swipeOk) return; swipeOk = false;
+  const t = e.changedTouches[0], dx = t.clientX - sx0, dy = t.clientY - sy0;
+  if (Math.abs(dx) < 60 || Math.abs(dy) > Math.abs(dx) * 0.6 || Date.now() - st0 > 900) return;
+  const n = TABKEYS.indexOf(curView) + (dx < 0 ? 1 : -1);
+  if (n < 0 || n >= TABKEYS.length) return;
+  show(TABKEYS[n], true);
+}, { passive: true });
+
 // ---------- quét QR ----------
 $('#btnScan').onclick = startScan;
 $('#btnManual').onclick = () => { cur = newRec(); renderCats(); show('cat'); };
@@ -293,25 +316,53 @@ function newRec() {
   return { type: 'expense', by: me ? me.id : '', fromQr: false, acc: '', bin: '', id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), time: new Date().toISOString(), category: '', amount: '', note: '', payee: '', bank: '', photo: '', status: 'draft', synced: false };
 }
 
+const scanCv = document.createElement('canvas'), scanCx = scanCv.getContext('2d', { willReadFrequently: true });
+function scanGrab(v, maxSide, crop) {   // lấy khung hình (có thể thu nhỏ / cắt giữa) thành ImageData
+  let sw = v.videoWidth, sh = v.videoHeight, sx = 0, sy = 0;
+  if (crop) { sx = sw * 0.2; sy = sh * 0.2; sw *= 0.6; sh *= 0.6; }
+  const k = Math.min(1, maxSide / Math.max(sw, sh));
+  scanCv.width = Math.max(1, Math.round(sw * k)); scanCv.height = Math.max(1, Math.round(sh * k));
+  scanCx.drawImage(v, sx, sy, sw, sh, 0, 0, scanCv.width, scanCv.height);
+  return scanCx.getImageData(0, 0, scanCv.width, scanCv.height);
+}
+const scanDec = (im, inv) => { const r = jsQR(im.data, im.width, im.height, { inversionAttempts: inv ? 'attemptBoth' : 'dontInvert' }); return r && r.data; };
+function scanFrame(v, n) {   // mỗi khung chỉ thử một cách để luôn mượt; xoay vòng: nhỏ nhanh → vừa → cắt giữa / độ phân giải cao
+  const k = n % 6;
+  if (k === 0 || k === 3) return scanDec(scanGrab(v, 640), false);
+  if (k === 1) return scanDec(scanGrab(v, 1280), false);
+  if (k === 2 || k === 4) return scanDec(scanGrab(v, 960, true), false);
+  return scanDec(scanGrab(v, 1920), true);
+}
 async function startScan() {
   show('scan');
   $('#scanMsg').textContent = tr('Point the camera at the QR code…');
+  const hi = { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30 } };
   try {
-    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+    stream = await navigator.mediaDevices.getUserMedia({ video: hi, audio: false });
   } catch {
-    $('#scanMsg').textContent = tr('Cannot open the camera. Allow camera access in iPhone Settings > Safari / this app.');
-    return;
+    try { stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false }); }
+    catch { $('#scanMsg').textContent = tr('Cannot open the camera. Allow camera access in iPhone Settings > Safari / this app.'); return; }
   }
+  try {   // lấy nét liên tục + phóng nhẹ nếu thiết bị hỗ trợ
+    const tk = stream.getVideoTracks()[0], caps = (tk.getCapabilities && tk.getCapabilities()) || {}, adv = [];
+    if (caps.focusMode && caps.focusMode.includes('continuous')) adv.push({ focusMode: 'continuous' });
+    if (caps.zoom) adv.push({ zoom: Math.min(caps.zoom.max, Math.max(caps.zoom.min, 1.5)) });
+    if (adv.length) await tk.applyConstraints({ advanced: adv });
+  } catch {}
   const v = $('#video'); v.srcObject = stream; await v.play();
   scanning = true;
-  const c = document.createElement('canvas'), x = c.getContext('2d', { willReadFrequently: true });
-  const tick = () => {
+  let det = null; try { if ('BarcodeDetector' in window) det = new BarcodeDetector({ formats: ['qr_code'] }); } catch {}
+  let n = 0;
+  const tick = async () => {
     if (!scanning) return;
-    if (v.videoWidth) {
-      c.width = v.videoWidth; c.height = v.videoHeight;
-      x.drawImage(v, 0, 0);
-      const code = jsQR(x.getImageData(0, 0, c.width, c.height).data, c.width, c.height);
-      if (code && code.data) return onQr(code.data);
+    if (v.videoWidth && v.readyState >= 2) {
+      n++;
+      try {
+        let data = null;
+        if (det) { const r = await det.detect(v); if (r.length && r[0].rawValue) data = r[0].rawValue; }
+        if (!data && scanning) data = scanFrame(v, n);
+        if (data) return onQr(data);
+      } catch {}
     }
     requestAnimationFrame(tick);
   };
@@ -521,7 +572,7 @@ async function renderPending() {
     box.append(d);
   });
 }
-document.addEventListener('visibilitychange', () => { if (!document.hidden && curView === 'home') renderHome(); });
+document.addEventListener('visibilitychange', () => { if (!document.hidden && curView === 'home') renderHome(); else if (!document.hidden && curView === 'txn') renderTxn(); });
 
 // ---------- đồng bộ ----------
 async function post(r) {
@@ -563,6 +614,7 @@ async function sync() {
     await flushJars();
   } finally { syncing = false; }
   if (curView === 'home') renderHome();
+  if (curView === 'txn') renderTxn();
 }
 window.addEventListener('online', sync);
 
@@ -608,7 +660,7 @@ function countTo(el) {
 const runCounts = root => root.querySelectorAll('[data-count]').forEach(countTo);
 const io = 'IntersectionObserver' in window ? new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { threshold: 0.06 }) : null;
 function reveal() {
-  document.querySelectorAll('main .card, main .kpi, main h2, main .item, main .dayh').forEach(el => {
+  document.querySelectorAll('main .card:not(.list), main .kpi, main h2').forEach(el => {
     if (el.classList.contains('rv')) return;
     el.classList.add('rv'); if (io) io.observe(el); else el.classList.add('in');
   });
@@ -616,7 +668,8 @@ function reveal() {
 let revealQueued = false;
 new MutationObserver(() => { if (!revealQueued) { revealQueued = true; requestAnimationFrame(() => { revealQueued = false; reveal(); }); } })
   .observe(document.querySelector('main'), { childList: true, subtree: true });
-addEventListener('scroll', () => $('header').classList.toggle('scrolled', scrollY > 24), { passive: true });
+let hdrOn = false;
+addEventListener('scroll', () => { const on = scrollY > 24; if (on !== hdrOn) { hdrOn = on; $('header').classList.toggle('scrolled', on); } }, { passive: true });
 
 // ---------- Tổng quan: đã chi tháng này + chi theo danh mục, giao dịch gần nhất, rồi Dashboard ở dưới ----------
 function dayLabel(d) {
@@ -625,24 +678,11 @@ function dayLabel(d) {
   if (d.toDateString() === y.toDateString()) return tr('Yesterday');
   return d.toLocaleDateString(DLOC(), { weekday: 'short', day: 'numeric', month: 'short' });
 }
-async function renderHome() {
-  await renderPending();
-  const all = await doneRecs();
-  const recs = [...all].sort((a, b) => b.time.localeCompare(a.time));
-  recs.forEach(r => recById[r.id] = r);
-  const monthAll = recs.filter(r => ymOf(r.time) === viewYm);
-  const exp = monthAll.filter(r => !isInc(r));
-  const spent = sum(exp);
-  const by = Object.entries(sumBy(exp, r => r.category)).sort((a, b) => b[1] - a[1]);
-  const mx = by.length ? by[0][1] : 1;
-  $('#stats').innerHTML = monthNav('') +
-    `<div class="hl">${tr('Spent this month')}</div><b class="total" data-key="home-spent" data-count="${spent}">${fmt(spent)}</b>` +
-    (by.length ? `<div class="catlist">${by.map(([k, v]) =>
-      `<div class="crow2"><span>${esc(k)}</span><div class="trk"><i style="width:${Math.max(3, Math.round(v / mx * 100))}%"></i></div><b>${fmt(v)}</b></div>`).join('')}</div>` : '');
-  runCounts($('#stats'));
-  const box = $('#recent'); box.innerHTML = '';
+// Danh sách giao dịch theo ngày (dùng cho tab Giao dịch)
+async function fillDays(box, items) {
+  box.innerHTML = '';
   let grp = null, lastDay = '';
-  for (const r of monthAll) {
+  for (const r of items) {
     const d = new Date(r.time);
     if (d.toDateString() !== lastDay) {
       lastDay = d.toDateString();
@@ -651,17 +691,60 @@ async function renderHome() {
     }
     const it = document.createElement('div'); it.className = 'item'; it.dataset.id = r.id;
     it.innerHTML = `<div class="t">${esc(r.category)}<small>${d.toLocaleTimeString(DLOC(), { hour: '2-digit', minute: '2-digit' })}${r.note ? ' · ' + esc(r.note) : ''}</small></div><div class="amt ${isInc(r) ? 'in' : ''}">${isInc(r) ? '+' : ''}${fmt(r.amount)}</div>`;
-    if (r.photo) { const b = await getPhoto(r.id); if (b) { const i = new Image(); i.src = URL.createObjectURL(b); it.prepend(i); } }
+    if (r.photo) { const b = await getPhoto(r.id); if (b) { const i = new Image(); i.decoding = 'async'; i.loading = 'lazy'; i.src = URL.createObjectURL(b); it.prepend(i); } }
     grp.append(it);
   }
-  if (!monthAll.length) box.innerHTML = `<p class="hint">${tr('No transactions in this month.')}</p>`;
+}
+function donut(by, total) {   // biểu đồ tròn theo hạng mục (chu vi = 100)
+  let cum = 0;
+  const segs = by.map(([k, v], i) => { const p = v / total * 100, o = 25 - cum; cum += p; return `<circle cx="21" cy="21" r="15.9155" fill="none" stroke="${PAL[i % PAL.length]}" stroke-width="6" stroke-dasharray="${p.toFixed(3)} ${(100 - p).toFixed(3)}" stroke-dashoffset="${o.toFixed(3)}"></circle>`; }).join('');
+  return `<svg class="donut" viewBox="0 0 42 42" role="img" aria-label="${tr('Spending chart')}"><circle cx="21" cy="21" r="15.9155" fill="none" stroke="var(--fill)" stroke-width="6"></circle>${segs}<text x="21" y="22.4" text-anchor="middle" class="dtx">${short(total)}</text></svg>`;
+}
+async function renderHome() {
+  await renderPending();
+  const all = await doneRecs();
+  all.forEach(r => recById[r.id] = r);
+  // Tổng số tiền (tất cả thu nhập) và số tiền còn lại: tính trên toàn bộ dữ liệu, không theo tháng
+  const totalInc = sum(all.filter(isInc)), totalExp = sum(all.filter(r => !isInc(r))), remain = totalInc - totalExp;
+  $('#balance').innerHTML = `<div class="hl">${tr('Remaining')}</div><b class="total ${remain < 0 ? 'neg' : ''}" data-key="home-remain" data-count="${remain}">${fmt(remain)}</b>` +
+    `<div class="duo"><div><span>${tr('Total money')}</span><b class="pos" data-key="home-total" data-count="${totalInc}">${fmt(totalInc)}</b></div><div><span>${tr('Spent so far')}</span><b data-key="home-all" data-count="${totalExp}">${fmt(totalExp)}</b></div></div>`;
+  // Phần dưới chỉ của tháng đang xem
+  const exp = all.filter(r => !isInc(r) && ymOf(r.time) === viewYm);
+  const spent = sum(exp);
+  const by = Object.entries(sumBy(exp, r => r.category)).sort((a, b) => b[1] - a[1]);
+  const mx = by.length ? by[0][1] : 1;
+  $('#stats').innerHTML = monthNav('') +
+    `<div class="hl">${tr('Spent in {0}', monthLabel(viewYm))}</div><b class="total" data-key="home-spent" data-count="${spent}">${fmt(spent)}</b>` +
+    (by.length ? `<div class="catlist">${by.map(([k, v]) =>
+      `<div class="crow2"><span>${esc(k)}</span><div class="trk"><i style="width:${Math.max(3, Math.round(v / mx * 100))}%"></i></div><b>${fmt(v)}</b></div>`).join('')}</div>` : '');
+  $('#catChart').innerHTML = by.length ? `<h2>${tr('Spending chart')}</h2><div class="card chart">${donut(by, spent)}<div class="legend">${by.map(([k, v], i) =>
+    `<div class="lg"><i style="background:${PAL[i % PAL.length]}"></i><span>${esc(k)}</span><b>${Math.round(v / spent * 100)}%</b></div>`).join('')}</div></div>` : '';
+  runCounts($('#balance')); runCounts($('#stats'));
   renderDash(all);
 }
 bindMonthNav($('#stats'), renderHome);
-$('#recent').onclick = e => {
-  const it = e.target.closest('.item');
-  if (it && recById[it.dataset.id]) openSheet(recById[it.dataset.id]);
-};
+
+// ---------- Giao dịch: lịch sử theo tháng, hai tab nhỏ Chi tiêu / Thu nhập ----------
+let txnType = 'out';
+async function renderTxn() {
+  const all = await doneRecs();
+  all.forEach(r => recById[r.id] = r);
+  const totalInc = sum(all.filter(isInc)), totalExp = sum(all.filter(r => !isInc(r)));
+  const inc = txnType === 'in';
+  const items = all.filter(r => ymOf(r.time) === viewYm && isInc(r) === inc).sort((a, b) => b.time.localeCompare(a.time));
+  const tot = sum(items);
+  document.querySelectorAll('#segTxn button').forEach(b => b.classList.toggle('on', b.dataset.v === txnType));
+  $('#txnHead').innerHTML = monthNav('') +
+    `<div class="hl">${tr(inc ? 'Income in {0}' : 'Spent in {0}', monthLabel(viewYm))}</div><b class="total" data-key="txn-sum" data-count="${tot}">${fmt(tot)}</b>` +
+    `<div class="duo w"><div><span>${tr('Remaining')}</span><b>${fmt(totalInc - totalExp)}</b></div><div><span>${tr(inc ? 'Income' : 'Expense')}</span><b>${items.length}</b></div></div>`;
+  runCounts($('#txnHead'));
+  await fillDays($('#txnList'), items);
+  if (!items.length) $('#txnList').innerHTML = `<p class="hint">${tr('No transactions in this month.')}</p>`;
+}
+bindMonthNav($('#txnHead'), renderTxn);
+$('#txnList').onclick = e => { const it = e.target.closest('.item'); if (it && recById[it.dataset.id]) openSheet(recById[it.dataset.id]); };
+document.querySelectorAll('#segTxn button').forEach(b => b.onclick = () => { txnType = b.dataset.v; renderTxn(); });
+$('#dash').onclick = e => { const it = e.target.closest('.item'); if (it && recById[it.dataset.id]) openSheet(recById[it.dataset.id]); };
 
 // ---------- Dashboard (nằm cuối tab Tổng quan): thu nhập, chênh lệch và phân tích ----------
 const PAL = ['#2f2fc4', '#14b8a6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16', '#ec4899'];
@@ -692,9 +775,9 @@ function renderDash(all) {
   // Đánh giá tổng quát
   const prevs = [-1, -2, -3].map(n => sum(inM(addMonths(viewYm, n)))).filter(v => v > 0);
   const avg3 = prevs.length ? prevs.reduce((a, b) => a + b, 0) / prevs.length : 0;
-  let rating = ['neutral', 'Not enough history yet'];
+  let rating = null;
   if (avg3) { const r = total / avg3; rating = r > 1.15 ? ['high', 'Above your recent average'] : r < 0.85 ? ['low', 'Below your recent average'] : ['mid', 'In line with your recent average']; }
-  h += `<div class="verdict card"><div class="rate ${rating[0]}">${tr(rating[1])}</div>` +
+  if (rating || pct !== null) h += `<div class="verdict card">${rating ? `<div class="rate ${rating[0]}">${tr(rating[1])}</div>` : ''}` +
     (pct === null ? '' : `<span class="delta ${pct > 0 ? 'up' : 'down'}">${pct > 0 ? '▲' : '▼'} ${Math.abs(pct).toFixed(0)}% ${tr('vs {0}', monthShort(prevYm))}</span>`) + '</div>';
 
   h += `<div class="kpis">
@@ -719,9 +802,11 @@ function renderDash(all) {
 
   const days = Array(dim).fill(0); m.forEach(r => days[new Date(r.time).getDate() - 1] += Number(r.amount));
   const dmax = Math.max(1, ...days);
-  h += `<h2>${tr('Daily spending')}</h2><div class="card"><div class="dcols">${days.map(v =>
-    `<div class="dc"><div class="dbar ${v === dmax && v ? 'peak' : ''}" style="height:${v ? Math.max(4, v / dmax * 100) : 0}%"></div></div>`).join('')}</div>
-    <div class="dax"><span>1</span><span>${Math.ceil(dim / 2)}</span><span>${dim}</span></div></div>`;
+  const peakDay = days.indexOf(dmax) + 1;
+  h += `<h2>${tr('Daily spending')}</h2><div class="card"><div class="dcols">${days.map((v, i) =>
+    `<div class="dc"><div class="dbar ${v === dmax && v ? 'peak' : ''}" style="height:${v ? Math.max(4, Math.round(v / dmax * 100)) : 0}px" title="${i + 1}: ${fmt(v)}"></div></div>`).join('')}</div>
+    <div class="dax"><span>1</span><span>${Math.ceil(dim / 2)}</span><span>${dim}</span></div>
+    <p class="hint dpk">${tr('Peak day')}: ${peakDay} · ${fmt(dmax)}</p></div>`;
 
   const byBank = Object.entries(sumBy(m, r => r.bank || tr('Cash / no bank'))).sort((a, b) => b[1] - a[1]);
   const bmax = byBank[0][1];
@@ -929,10 +1014,33 @@ function renderSettings() {
     $('#faceOnBtn').hidden = faceOn(); $('#faceOffBtn').hidden = !faceOn();
   });
   $('#sheetUrl').value = cfg.get('sheetUrl', '');
-  $('#banksText').value = cfg.get('banks', DEF_BANKS);
+  renderBankEditor();
   document.querySelectorAll('#segLang button').forEach(b => b.classList.toggle('on', b.dataset.v === lang));
   document.querySelectorAll('#segTheme button').forEach(b => b.classList.toggle('on', b.dataset.v === cfg.get('theme', 'auto')));
 }
+const parseBanks = txt => txt.split('\n').map(l => l.trim()).filter(Boolean).map(l => { const p = l.split('|'); return { n: (p[0] || '').trim(), l: p.slice(1).join('|').trim() }; });
+const bankRows = () => parseBanks(cfg.get('banks', DEF_BANKS));
+const saveBankRows = rows => cfg.set('banks', rows.filter(x => x.n).map(x => x.n + ' | ' + x.l).join('\n'));
+const readBankDom = () => [...document.querySelectorAll('#bankList .brow')].map(r => ({ n: r.querySelector('.bn').value.trim(), l: r.querySelector('.bl').value.trim() }));
+function renderBankEditor() {
+  const rows = bankRows(), have = new Set(rows.map(x => x.n.toLowerCase()));
+  $('#bankList').innerHTML = rows.map((b, i) => `<div class="card brow" data-i="${i}"><div class="bhead"><span class="bico">🏦</span><input class="bn" value="${esc(b.n)}" placeholder="${tr('Bank name')}" aria-label="${tr('Bank name')}"><button class="mini del" aria-label="${tr('Remove')}">✕</button></div>` +
+    `<label class="blab">${tr('App link')}<input class="bl" value="${esc(b.l)}" placeholder="mbbank://" autocapitalize="none" autocorrect="off" inputmode="url"></label></div>`).join('');
+  $('#bankPreset').innerHTML = `<option value="">${tr('Add a bank…')}</option>` +
+    parseBanks(DEF_BANKS).filter(x => !have.has(x.n.toLowerCase())).map(x => `<option value="${esc(x.n)}">${esc(x.n)}</option>`).join('') + `<option value="__custom">${tr('Custom bank')}</option>`;
+}
+$('#bankList').addEventListener('change', () => saveBankRows(readBankDom()));
+$('#bankList').addEventListener('click', e => {
+  const d = e.target.closest('.del'); if (!d) return;
+  const rows = readBankDom(); rows.splice(Number(d.closest('.brow').dataset.i), 1); saveBankRows(rows); renderBankEditor();
+});
+$('#bankPreset').onchange = () => {
+  const v = $('#bankPreset').value; if (!v) return;
+  const rows = readBankDom();
+  if (v === '__custom') rows.push({ n: ' ', l: '' }); else rows.push(parseBanks(DEF_BANKS).find(x => x.n === v) || { n: v, l: '' });
+  cfg.set('banks', rows.map(x => (x.n.trim() || 'New bank') + ' | ' + x.l).join('\n')); renderBankEditor();
+  if (v === '__custom') { const last = [...document.querySelectorAll('#bankList .bn')].pop(); if (last) { last.value = ''; last.focus(); } }
+};
 document.querySelectorAll('#segLang button').forEach(b => b.onclick = () => {
   lang = b.dataset.v; cfg.set('lang', lang); translateDom(); show(curView, false);
 });
@@ -943,7 +1051,6 @@ $('#saveAdv').onclick = () => {
   cfg.set('sheetFile', $('#sheetFile').value.trim() || SHEET_FILE);
   cfg.set('gClientId', $('#gClientId').value.trim());
   cfg.set('sheetUrl', $('#sheetUrl').value.trim());
-  cfg.set('banks', $('#banksText').value);
   markAllJars().then(sync); goTop('home');
 };
 $('#testSheet').onclick = async () => {
@@ -1068,7 +1175,7 @@ async function pwHash(pw, salt) {
 
 // Áp quyền của người đang đăng nhập lên giao diện
 function applyPermissions() {
-  TABKEYS = ['home'].concat(can('viewJars') ? ['jars'] : [], can('editCats') ? ['cats'] : []);
+  TABKEYS = ['home', 'txn'].concat(can('viewJars') ? ['jars'] : [], can('editCats') ? ['cats'] : []);
   document.querySelectorAll('#tabs button').forEach(b => b.hidden = !TABKEYS.includes(b.dataset.tab));
   $('#tabs').style.setProperty('--n', TABKEYS.length);
   $('#btnScan').hidden = !can('addExpense');
