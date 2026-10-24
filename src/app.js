@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.29.0';
+const VERSION = '2.31.0';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -96,7 +96,7 @@ const VI = {
   'Face ID failed, enter your PIN': 'Face ID không thành công, hãy nhập mã PIN', 'Face ID could not be turned on on this device': 'Không bật được Face ID trên thiết bị này',
   'To reset a forgotten PIN, delete the app icon and add it again from Safari. Data on this phone that is not synced yet is lost.': 'Quên mã PIN thì xoá icon app rồi thêm lại từ Safari. Dữ liệu trên máy chưa đồng bộ sẽ mất.',
   'Data': 'Dữ liệu', '📊 Open Google Sheet': '📊 Mở Google Sheet', 'Google Sheet file link': 'Link file Google Sheet',
-  'Google Apps Script link (Web App)': 'Link Google Apps Script (Web App)', 'Reset app': 'Đặt lại app', 'Goal reached': 'Đã đạt mục tiêu', 'Overdue': 'Quá hạn', 'Due today': 'Đến hạn hôm nay', '{0} days left': 'Còn {0} ngày', 'Completed': 'Hoàn thành', '{0} to go': 'Còn {0}', 'Set your first goal': 'Đặt mục tiêu đầu tiên', 'Save for a trip, a laptop, a rainy day…': 'Tiết kiệm cho chuyến đi, laptop, quỹ dự phòng…', 'Move to Trash': 'Chuyển vào thùng rác', 'Trash': 'Thùng rác', 'Restore': 'Khôi phục', 'Delete forever': 'Xoá vĩnh viễn', 'Deleted': 'Đã xoá', 'Goal': 'Mục tiêu', 'Empty Trash': 'Dọn sạch thùng rác', 'Trash is empty': 'Thùng rác trống', 'Delete everything in the Trash forever?': 'Xoá vĩnh viễn mọi thứ trong thùng rác?', 'Delete forever? This cannot be undone.': 'Xoá vĩnh viễn? Không thể hoàn tác.', 'Deadline (from today)': 'Hạn chót (tính từ hôm nay)', 'Years': 'Năm', 'Months': 'Tháng', 'Days': 'Ngày', 'Take from': 'Lấy từ', 'Outside money': 'Tiền bên ngoài (không trừ hũ)', 'Remaining in this jar: {0}': 'Còn lại trong hũ này: {0}', 'Added from outside, no jar is reduced': 'Nạp từ nguồn ngoài, không trừ hũ nào', 'Not enough in this jar. Remaining: {0}': 'Hũ này không đủ tiền. Còn lại: {0}', 'Export to Excel': 'Xuất ra Excel', 'Export': 'Xuất file', 'All': 'Tất cả', 'All months': 'Tất cả các tháng', 'Savings goals': 'Mục tiêu tiết kiệm', 'New goal': 'Mục tiêu mới', 'Due': 'Hạn chót', 'Saved': 'Đã tích lũy', 'Add money': 'Nạp thêm tiền', 'No goals yet': 'Chưa có mục tiêu nào', 'Goal name': 'Tên mục tiêu', 'e.g. Japan trip': 'vd: Du lịch Nhật Bản', 'Target': 'Số tiền cần đạt', 'Deadline': 'Hạn chót', '3 mo': '3 tháng', '6 mo': '6 tháng', '1 yr': '1 năm', '2 yr': '2 năm', 'None': 'Không', 'Create goal': 'Tạo mục tiêu', 'Delete this goal?': 'Xoá mục tiêu này?', 'Enter an amount first': 'Hãy nhập số tiền', 'Amount': 'Số tiền', 'Date': 'Ngày', 'Reset the app? All transactions, photos and settings on this phone are deleted. Your Google Sheet is not touched.': 'Đặt lại app? Toàn bộ giao dịch, ảnh và cài đặt trên điện thoại này sẽ bị xoá. Google Sheet không bị ảnh hưởng.', 'Banks': 'Ngân hàng',
+  'Google Apps Script link (Web App)': 'Link Google Apps Script (Web App)', 'Reset app': 'Đặt lại app', 'Choose an icon': 'Chọn biểu tượng', 'Icon': 'Biểu tượng', 'Less': 'Ít', 'More': 'Nhiều', 'Change': 'Đổi', 'Goal reached': 'Đã đạt mục tiêu', 'Overdue': 'Quá hạn', 'Due today': 'Đến hạn hôm nay', '{0} days left': 'Còn {0} ngày', 'Completed': 'Hoàn thành', '{0} to go': 'Còn {0}', 'Set your first goal': 'Đặt mục tiêu đầu tiên', 'Save for a trip, a laptop, a rainy day…': 'Tiết kiệm cho chuyến đi, laptop, quỹ dự phòng…', 'Move to Trash': 'Chuyển vào thùng rác', 'Trash': 'Thùng rác', 'Restore': 'Khôi phục', 'Delete forever': 'Xoá vĩnh viễn', 'Deleted': 'Đã xoá', 'Goal': 'Mục tiêu', 'Empty Trash': 'Dọn sạch thùng rác', 'Trash is empty': 'Thùng rác trống', 'Delete everything in the Trash forever?': 'Xoá vĩnh viễn mọi thứ trong thùng rác?', 'Delete forever? This cannot be undone.': 'Xoá vĩnh viễn? Không thể hoàn tác.', 'Deadline (from today)': 'Hạn chót (tính từ hôm nay)', 'Years': 'Năm', 'Months': 'Tháng', 'Days': 'Ngày', 'Take from': 'Lấy từ', 'Outside money': 'Tiền bên ngoài (không trừ hũ)', 'Remaining in this jar: {0}': 'Còn lại trong hũ này: {0}', 'Added from outside, no jar is reduced': 'Nạp từ nguồn ngoài, không trừ hũ nào', 'Not enough in this jar. Remaining: {0}': 'Hũ này không đủ tiền. Còn lại: {0}', 'Export to Excel': 'Xuất ra Excel', 'Export': 'Xuất file', 'All': 'Tất cả', 'All months': 'Tất cả các tháng', 'Savings goals': 'Mục tiêu tiết kiệm', 'New goal': 'Mục tiêu mới', 'Due': 'Hạn chót', 'Saved': 'Đã tích lũy', 'Add money': 'Nạp thêm tiền', 'No goals yet': 'Chưa có mục tiêu nào', 'Goal name': 'Tên mục tiêu', 'e.g. Japan trip': 'vd: Du lịch Nhật Bản', 'Target': 'Số tiền cần đạt', 'Deadline': 'Hạn chót', '3 mo': '3 tháng', '6 mo': '6 tháng', '1 yr': '1 năm', '2 yr': '2 năm', 'None': 'Không', 'Create goal': 'Tạo mục tiêu', 'Delete this goal?': 'Xoá mục tiêu này?', 'Enter an amount first': 'Hãy nhập số tiền', 'Amount': 'Số tiền', 'Date': 'Ngày', 'Reset the app? All transactions, photos and settings on this phone are deleted. Your Google Sheet is not touched.': 'Đặt lại app? Toàn bộ giao dịch, ảnh và cài đặt trên điện thoại này sẽ bị xoá. Google Sheet không bị ảnh hưởng.', 'Banks': 'Ngân hàng',
   'One per line: Name (Brand) | app link. Edit if an app does not open.': 'Mỗi dòng: Tên (Thương hiệu) | link mở app. Sửa lại nếu app không mở được.',
   'Sent. Check the ChiTieu tab in your Sheet': 'Đã gửi. Mở tab ChiTieu trong Sheet để kiểm tra', 'Send failed, check the link': 'Gửi lỗi, kiểm tra link',
   'Save': 'Lưu',
@@ -347,7 +347,15 @@ $('#btnManual').onclick = addMenu;
 $('#addMenu').onclick = e => {
   const b = e.target.closest('button'); if (!b) return;
   $('#addMenu').hidden = true;
-  cur = newRec(); cur.type = b.dataset.t; renderCats(); show('cat');
+  cur = newRec(); cur.type = b.dataset.t;
+  const list = cur.type === 'income' ? icats() : cats();
+  openPanel(`<h3 class="ih">${tr(cur.type === 'income' ? 'Income' : 'Expense')}</h3><div class="cpick">${list.map((c, i) => { const [e, ...rest] = c.split(' '); return `<button data-ci="${i}"><span class="e">${esc(e)}</span>${esc(rest.join(' ') || e)}</button>`; }).join('')}</div>`);
+  $('#sheet').classList.add('center');
+  $('#sheetBody').querySelectorAll('[data-ci]').forEach(x => x.onclick = () => {
+    cur.category = list[Number(x.dataset.ci)];
+    hideSheet(); try { history.back(); } catch {}
+    setTimeout(openDetail, 140);
+  });
 };
 document.addEventListener('click', e => { if (!$('#addMenu').hidden && !e.target.closest('#addMenu,#btnManual')) $('#addMenu').hidden = true; });
 
@@ -577,11 +585,15 @@ function renderBanks() {
     const m = b.name.match(/^(.*?)\s*\((.+)\)$/);   // "Tên đầy đủ (Viết tắt)"
     el.innerHTML = m ? `<span class="bk1">${esc(m[2])}</span><small class="bk2">${esc(m[1])}</small>` : `<span class="bk1">${esc(b.name)}</span>`;
     if (payPick && payPick.name === b.name) el.className = 'on';
-    el.onclick = () => { payPick = payPick && payPick.name === b.name ? null : b; renderBanks(); };
+    el.onclick = () => { payPick = b; renderBanks(); setTimeout(() => $('#toBank').scrollIntoView({ behavior: 'smooth', block: 'center' }), 60); };
     $('#banks').append(el);
   });
   if (!n) $('#banks').innerHTML = `<p class="hint">${tr('Nothing found')}</p>`;
+  $('#payBox').classList.toggle('picked', !!payPick);   // đã chọn: thu gọn danh sách, chỉ hiện phương thức đã chọn + nút Đổi
+  $('#payPicked').hidden = !payPick;
+  if (payPick) $('#payPicked').innerHTML = `<span>✓ ${esc(payPick.name.replace(/^.*\((.+)\)$/, '$1'))}</span><button id="payChange" type="button">${tr('Change')}</button>`;
 }
+document.addEventListener('click', e => { if (e.target.closest('#payChange')) { payPick = null; renderBanks(); } });
 $('#bankSearchBtn').onclick = () => {
   const q = $('#bankQ'); q.hidden = !q.hidden;
   if (q.hidden) { q.value = ''; renderBanks(); } else q.focus();
@@ -861,8 +873,9 @@ $('#dash').onclick = e => { const it = e.target.closest('.item'); if (it && recB
 // ---------- mục tiêu tiết kiệm: tên, số tiền cần đạt, hạn chót; nạp thêm tiền để theo dõi tiến độ ----------
 const goals = () => getJSON('goals', []);
 const saveGoals = a => cfg.set('goals', JSON.stringify(a));
-const GOAL_ICONS = ['🎯', '✈️', '🏠', '💻', '🚗', '🎓', '💍', '🌴', '📱', '🎁'];
-const goalIcon = g => GOAL_ICONS[[...g.id].reduce((a, ch) => a + ch.charCodeAt(0), 0) % GOAL_ICONS.length];
+const GOAL_ICONS = ['🎯', '✈️', '🏠', '💻', '🚗', '🎓', '💍', '🌴', '📱', '🎁', '🏍️', '👶', '🏥', '🐷', '💰', '🎮', '📷', '🛋️', '⌚', '🎸'];
+const goalIcon = g => g.icon || GOAL_ICONS[[...g.id].reduce((a, ch) => a + ch.charCodeAt(0), 0) % GOAL_ICONS.length];
+const iconGrid = (sel, attr) => `<div class="gicons">${GOAL_ICONS.map(e => `<button ${attr}="${e}" class="${e === sel ? 'on' : ''}">${e}</button>`).join('')}</div>`;
 function renderGoals() {
   const list = goals(), C = 2 * Math.PI * 28;
   $('#goals').innerHTML = `<div class="gtop"><h2>${tr('Savings goals')}</h2><button class="gnew" data-g="new" aria-label="${tr('New goal')}">+</button></div>` +
@@ -874,33 +887,43 @@ function renderGoals() {
         const days = Math.ceil((new Date(g.due + 'T00:00') - new Date(ymd(new Date()) + 'T00:00')) / 864e5);
         chip = `<span class="gchip ${days < 0 ? 'late' : days <= 30 ? 'soon' : ''}">${days < 0 ? tr('Overdue') : days === 0 ? tr('Due today') : tr('{0} days left', days)}</span>`;
       }
-      return `<div class="card goal ${done ? 'done' : ''}" style="animation-delay:${i * 60}ms"><div class="gring"><svg viewBox="0 0 64 64" width="72" height="72"><circle cx="32" cy="32" r="28" class="gbg"/><circle cx="32" cy="32" r="28" class="gfg" style="stroke-dasharray:${C.toFixed(1)};--off:${(C * (1 - p / 100)).toFixed(1)};--full:${C.toFixed(1)}"/></svg><span class="gem">${done ? '🏆' : goalIcon(g)}</span></div>` +
+      return `<div class="card goal ${done ? 'done' : ''}" style="animation-delay:${i * 60}ms"><div class="gring" data-g="icon" data-id="${g.id}"><svg viewBox="0 0 64 64" width="72" height="72"><circle cx="32" cy="32" r="28" class="gbg"/><circle cx="32" cy="32" r="28" class="gfg" style="stroke-dasharray:${C.toFixed(1)};--off:${(C * (1 - p / 100)).toFixed(1)};--full:${C.toFixed(1)}"/></svg><span class="gem">${done ? '🏆' : goalIcon(g)}</span></div>` +
         `<div class="gbody"><div class="gh"><div class="gn"><b>${esc(g.name)}</b>${chip}</div><button class="gdel" data-g="del" data-id="${g.id}" aria-label="${tr('Delete')}">🗑</button></div>` +
         `<div class="gv"><b>${fmt(g.saved)}</b><small> / ${fmt(g.target)}</small></div>` +
         `<div class="gbar"><i style="width:${p}%"></i></div>` +
         `<div class="gfoot"><span><b>${Math.round(p)}%</b> · ${done ? tr('Completed') : tr('{0} to go', fmt(left))}</span><button class="gadd" data-g="add" data-id="${g.id}">+ ${tr('Add money')}</button></div></div></div>`;
     }).join('') + `</div>` : `<div class="card gempty" data-g="new"><span class="gem big">🎯</span><div><b>${tr('Set your first goal')}</b><small>${tr('Save for a trip, a laptop, a rainy day…')}</small></div></div>`);
 }
-let goalDue = 12, goalJars = [];
+let goalDue = 12, goalJars = [], goalEmoji = '🎯';
 const goalNote = () => { const i = Number($('#gSrc').value); $('#gRem').textContent = i < 0 ? tr('Added from outside, no jar is reduced') : tr('Remaining in this jar: {0}', fmt(goalJars[i].remaining)); };
 async function goalForm(id) {
   const g = id ? goals().find(x => x.id === id) : null;
-  goalDue = 12;
+  goalDue = 12; goalEmoji = '🎯';
   if (g) goalJars = computeJars(nowYm(), await doneRecs(), pctFor(nowYm())).jars;
   openPanel(`<h3 class="ih">${tr(g ? 'Add money' : 'New goal')}</h3>` + (g
     ? `<p class="gname">${esc(g.name)}</p><label>${tr('Amount')} (₫)<input id="gAmt" inputmode="numeric" placeholder="0"></label>` +
       `<label>${tr('Take from')}</label><select id="gSrc" class="jsel wide">${goalJars.map((j, i) => `<option value="${i}" ${i === 1 ? 'selected' : ''}>${esc(jarName(i))} · ${fmt(j.remaining)}</option>`).join('')}<option value="-1">${tr('Outside money')}</option></select>` +
       `<p class="hint" id="gRem"></p><button class="big" id="gSave" data-id="${g.id}">${tr('Add money')}</button>`
-    : `<label>${tr('Goal name')}<input id="gName" placeholder="${tr('e.g. Japan trip')}"></label><label>${tr('Target')} (₫)<input id="gAmt" inputmode="numeric" placeholder="0"></label>` +
+    : `<label>${tr('Goal name')}<input id="gName" placeholder="${tr('e.g. Japan trip')}"></label><label>${tr('Icon')}</label><div id="gIconPick">${iconGrid(goalEmoji, 'data-gi')}</div><label>${tr('Target')} (₫)<input id="gAmt" inputmode="numeric" placeholder="0"></label>` +
       `<label>${tr('Deadline (from today)')}</label><div class="gdl"><label>${tr('Years')}<input id="gY" inputmode="numeric" placeholder="0"></label><label>${tr('Months')}<input id="gM" inputmode="numeric" placeholder="0"></label><label>${tr('Days')}<input id="gD" inputmode="numeric" placeholder="0"></label></div>` +
       `<button class="big" id="gSave">${tr('Create goal')}</button>`));
   if (g) goalNote();
 }
 document.addEventListener('change', e => { if (e.target.id === 'gSrc') goalNote(); });
+document.addEventListener('click', e => {
+  const set = e.target.closest('[data-gi-set]');
+  if (set) { const l = goals(), g = l.find(x => x.id === set.dataset.giSet); if (g) { g.icon = set.dataset.e; saveGoals(l); } closeSheet(); renderGoals(); return; }
+  const pk = e.target.closest('[data-gi]');
+  if (pk) { goalEmoji = pk.dataset.gi; document.querySelectorAll('#gIconPick [data-gi]').forEach(x => x.classList.toggle('on', x === pk)); }
+});
 $('#goals').addEventListener('click', e => {
   const b = e.target.closest('[data-g]'); if (!b) return;
   if (b.dataset.g === 'new') goalForm();
   else if (b.dataset.g === 'add') goalForm(b.dataset.id);
+  else if (b.dataset.g === 'icon') {
+    const g = goals().find(x => x.id === b.dataset.id); if (!g) return;
+    openPanel(`<h3 class="ih">${tr('Choose an icon')}</h3>` + iconGrid(goalIcon(g), `data-gi-set="${g.id}" data-e`));
+  }
   else if (b.dataset.g === 'del') {
     const g = goals().find(x => x.id === b.dataset.id); if (!g) return;
     cfg.set('goalsTrash', JSON.stringify([...getJSON('goalsTrash', []), { ...g, deletedAt: new Date().toISOString() }]));
@@ -920,7 +943,7 @@ document.addEventListener('click', e => {
   else {
     const name = $('#gName').value.trim(); if (!name) { toast(tr('Enter a name first')); return; }
     const v = k => Number(($(k).value || '').replace(/\D/g, '')) || 0, n = new Date(), due = v('#gY') || v('#gM') || v('#gD') ? ymd(new Date(n.getFullYear() + v('#gY'), n.getMonth() + v('#gM'), n.getDate() + v('#gD'))) : '';
-    list.push({ id: Date.now().toString(36), name, target: amt, saved: 0, due });
+    list.push({ id: Date.now().toString(36), name, target: amt, saved: 0, due, icon: goalEmoji });
   }
   saveGoals(list); closeSheet(); renderGoals();
 });
@@ -1033,6 +1056,7 @@ document.addEventListener('click', async e => {
 // ---------- bấm vào một ô tổng hợp để xem chi tiết (theo tháng / hạng mục / giao dịch) ----------
 function openPanel(html) {
   $('#sheetBody').innerHTML = html;
+  $('#sheet').classList.remove('center');
   const was = $('#sheet').hidden;
   $('#sheet').hidden = false;
   document.body.classList.add('noscroll');
@@ -1205,11 +1229,15 @@ function renderDash(all) {
   const dmax = Math.max(1, ...days);
   const peakDay = days.indexOf(dmax) + 1, active = days.filter(Boolean).length;
   const dYmd = d => `${y}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-  const axD = niceAxis(dmax), pxD = v => v ? Math.max(3, Math.round(v / axD.top * 150)) : 0;
-  h += `<h2>${tr('Daily spending')}</h2><div class="card"><div class="ychart"><div class="ygrid">${axisLines(axD)}</div><div class="ycols dcols">` +
-    days.map((v, i) => `<div class="ycol ${v ? '' : 'z'}"${v ? ` data-info="day" data-arg="${dYmd(i + 1)}"` : ''}><div class="ypair"><div class="yb exp" style="height:${pxD(v)}px"></div></div>` +
-      (i === 0 || (i + 1) % 5 === 0 ? `<span class="ycl">${i + 1}</span>` : '') + `</div>`).join('') +
-    `</div></div><div class="dstats"><div><span>${tr('Peak day')}</span><b>${peakDay}/${mo}</b></div><div><span>${tr('Highest')}</span><b>${short(dmax)}</b></div><div><span>${tr('Active days')}</span><b>${active}/${elapsed}</b></div></div></div>`;
+  const lead = (new Date(y, mo - 1, 1).getDay() + 6) % 7, today = ymd(new Date());
+  const wdh = Array.from({ length: 7 }, (_, i) => `<span>${new Date(2024, 0, 1 + i).toLocaleDateString(LOC(), { weekday: 'narrow' })}</span>`).join('');
+  const cells = Array(lead).fill('<i></i>').concat(days.map((v, i) => {
+    const lv = v ? 0.16 + 0.74 * v / dmax : 0, dd = dYmd(i + 1);
+    return `<div class="hc ${v ? 'has' : ''} ${dd === today ? 'now' : ''} ${lv > .55 ? 'hot' : ''}"${v ? ` data-info="day" data-arg="${dd}"` : ''} style="${v ? `background:rgba(224,68,62,${lv.toFixed(2)})` : ''}"><b>${i + 1}</b>${v ? `<small>${short(v)}</small>` : ''}</div>`;
+  })).join('');
+  h += `<h2>${tr('Daily spending')}</h2><div class="card"><div class="hwd">${wdh}</div><div class="hmap">${cells}</div>` +
+    `<div class="hlg"><span>${tr('Less')}</span><i style="background:rgba(224,68,62,.18)"></i><i style="background:rgba(224,68,62,.4)"></i><i style="background:rgba(224,68,62,.65)"></i><i style="background:rgba(224,68,62,.9)"></i><span>${tr('More')}</span></div>` +
+    `<div class="dstats"><div><span>${tr('Peak day')}</span><b>${peakDay}/${mo}</b></div><div><span>${tr('Highest')}</span><b>${short(dmax)}</b></div><div><span>${tr('Active days')}</span><b>${active}/${elapsed}</b></div></div></div>`;
 
   $('#dash').innerHTML = h;
   runCounts($('#dash'));
@@ -1398,7 +1426,7 @@ function editTx(r) {
     sync();
   };
 }
-function hideSheet() { $('#sheet').hidden = true; document.body.classList.remove('noscroll'); }
+function hideSheet() { $('#sheet').hidden = true; $('#sheet').classList.remove('center'); document.body.classList.remove('noscroll'); }
 const closeSheet = () => { if (!$('#sheet').hidden) history.back(); };
 // Chạm vào tháng/năm trên thanh chuyển tháng → bảng lịch chọn tháng khác
 let pickYear = 0;

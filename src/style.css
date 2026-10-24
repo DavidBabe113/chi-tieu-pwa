@@ -3,24 +3,24 @@
 :root{
   --font:ui-rounded,"SF Pro Rounded",-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Helvetica Neue",Helvetica,Arial,sans-serif;
   --font-d:ui-rounded,"SF Pro Rounded",-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Helvetica Neue",Helvetica,Arial,sans-serif;
-  --bg:#fffaea;--fg:#123a22;--muted:#5b7d66;--card:#fffffc;--line:rgba(20,70,35,.12);
+  --bg:#ffffff;--fg:#10241a;--muted:#62786a;--card:#f4f7f4;--line:rgba(16,36,26,.1);
   --fill:rgba(20,57,31,.07);--thumb:#fff;
-  --accent:#1fa85a;--accent2:#3cc477;--on-accent:#fff;--link:#16934c;--cta:#ffc83d;--on-cta:#123a22;
-  --ok:#16934c;--warn:#b45309;--danger:#e0443e;
+  --accent:#22b455;--accent2:#4ed07f;--on-accent:#fff;--link:#16a34a;--cta:#ffc83d;--on-cta:#123a22;
+  --ok:#16a34a;--warn:#b45309;--danger:#e0443e;
   --shadow:0 1px 1px rgba(18,58,34,.04),0 2px 4px rgba(18,58,34,.04),0 8px 22px rgba(18,58,34,.07);
   --r:22px;--ease:cubic-bezier(.28,.11,.32,1);
 }
 :root[data-theme="dark"]{
-  --bg:#183225;--fg:#fdfaea;--muted:#b9d3c1;--card:#234638;--line:rgba(253,250,234,.16);
-  --fill:rgba(253,250,234,.11);--thumb:#386050;
-  --accent:#4fe08f;--accent2:#7aeaa9;--on-accent:#0b2c18;--link:#7aeaa9;--cta:#ffc83d;--on-cta:#123a22;
+  --bg:#000000;--fg:#f5f7f5;--muted:#a3b3a8;--card:#141a16;--line:rgba(245,247,245,.14);
+  --fill:rgba(245,247,245,.1);--thumb:#2a352d;
+  --accent:#3ddc7a;--accent2:#6df0a0;--on-accent:#04210f;--link:#5eeb94;--cta:#ffc83d;--on-cta:#123a22;
   --ok:#4fe08f;--warn:#ffc83d;--danger:#ff7a72;
   --shadow:0 1px 1px rgba(0,0,0,.2),0 3px 8px rgba(0,0,0,.22),0 10px 26px rgba(0,0,0,.2);
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#183225;--fg:#fdfaea;--muted:#b9d3c1;--card:#234638;--line:rgba(253,250,234,.16);
-  --fill:rgba(253,250,234,.11);--thumb:#386050;
-  --accent:#4fe08f;--accent2:#7aeaa9;--on-accent:#0b2c18;--link:#7aeaa9;--cta:#ffc83d;--on-cta:#123a22;
+  --bg:#000000;--fg:#f5f7f5;--muted:#a3b3a8;--card:#141a16;--line:rgba(245,247,245,.14);
+  --fill:rgba(245,247,245,.1);--thumb:#2a352d;
+  --accent:#3ddc7a;--accent2:#6df0a0;--on-accent:#04210f;--link:#5eeb94;--cta:#ffc83d;--on-cta:#123a22;
   --ok:#4fe08f;--warn:#ffc83d;--danger:#ff7a72;
   --shadow:0 1px 1px rgba(0,0,0,.2),0 3px 8px rgba(0,0,0,.22),0 10px 26px rgba(0,0,0,.2);
 }}
@@ -76,7 +76,7 @@ h2{font:700 24px/1.15 var(--font-d);letter-spacing:-.025em;margin:36px 4px 14px}
 a.linkbtn{text-decoration:none}
 
 /* ---------- tổng quan ---------- */
-.hero,.incbox{background:linear-gradient(150deg,#138a4a,#22b062 60%,#46cf84);color:#fff;padding:22px}
+.hero,.incbox{background:linear-gradient(150deg,#16a34a,#2fc766 60%,#5ddc8b);color:#fff;padding:22px}
 .hl{font:600 13px var(--font);opacity:.72;letter-spacing:.01em;margin-top:6px}
 .total{display:block;font:700 48px/1.05 var(--font-d);letter-spacing:-.04em;margin:2px 0 14px}
 .sub{font-size:14px;opacity:.75;margin:-6px 0 14px}
@@ -255,7 +255,7 @@ details.adv[open] summary::after{transform:rotate(90deg)}
 @keyframes zoomUp{from{transform:translateY(60px) scale(.96);opacity:0}to{transform:none;opacity:1}}
 
 /* ---------- khoá PIN ---------- */
-.lock{position:fixed;inset:0;z-index:60;background:linear-gradient(160deg,#138a4a,#22b062 60%,#46cf84);display:flex;align-items:center;justify-content:center;padding:24px}
+.lock{position:fixed;inset:0;z-index:60;background:linear-gradient(160deg,#16a34a,#2fc766 60%,#5ddc8b);display:flex;align-items:center;justify-content:center;padding:24px}
 .lock-card{width:100%;max-width:320px;text-align:center;color:#fff}
 .lock-ic{font-size:40px;margin-bottom:6px}
 .lock-card h2{color:#fff;font:600 21px var(--font-d);letter-spacing:-.02em;margin:6px 0 20px}
@@ -689,3 +689,35 @@ header .logo{width:36px;height:36px;border-radius:10px;flex:none;box-shadow:0 2p
   #v-home>#goals{grid-column:1/-1}
   .glist{grid-template-columns:repeat(auto-fill,minmax(340px,1fr))}
 }
+
+/* ---------- v2.31: logo mục tiêu, lịch nhiệt chi theo ngày, danh sách hạng mục giữa màn hình, thu gọn chọn thanh toán ---------- */
+.gicons{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:6px 0 12px}
+.gicons button{aspect-ratio:1;border:0;border-radius:14px;background:var(--fill);font-size:26px;padding:0}
+.gicons button.on{box-shadow:0 0 0 2.5px var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--card))}
+.gring{cursor:pointer}
+.hwd,.hmap{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.hwd{margin-bottom:5px;text-align:center}
+.hwd span{font:600 11px var(--font);color:var(--muted)}
+.hc{aspect-ratio:1;border-radius:10px;background:var(--fill);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-width:0;overflow:hidden}
+.hc b{font:600 12px var(--font);color:var(--muted)}
+.hc small{font:700 10px var(--font);color:var(--fg)}
+.hc.has{cursor:pointer}
+.hc.hot b,.hc.hot small{color:#fff}
+.hc.now{box-shadow:inset 0 0 0 2px var(--accent)}
+.hc.has:active{transform:scale(.92)}
+.hlg{display:flex;align-items:center;justify-content:center;gap:5px;margin:12px 0 4px;font-size:11px;color:var(--muted)}
+.hlg i{width:16px;height:16px;border-radius:5px}
+.sheet.center{align-items:center;padding:20px}
+.sheet.center .sheet-card{border-radius:26px;max-width:340px;max-height:72vh;padding-bottom:22px}
+.cpick{display:grid;gap:8px;margin-top:6px}
+.cpick button{display:flex;align-items:center;gap:12px;width:100%;padding:13px 14px;border:0;border-radius:16px;background:var(--fill);color:var(--fg);font:600 16px var(--font);text-align:left}
+.cpick button:active{transform:scale(.97)}
+.cpick .e{font-size:24px}
+#payPicked{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-radius:16px;background:color-mix(in srgb,var(--accent) 12%,var(--card));box-shadow:inset 0 0 0 2px var(--accent);margin:4px 0 10px}
+#payPicked[hidden]{display:none}
+#payPicked span{font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#payPicked button{border:0;border-radius:980px;padding:7px 14px;background:var(--cta);color:var(--on-cta);font:700 13px var(--font)}
+#payBox.picked #segPay,#payBox.picked .bsearch,#payBox.picked #banks{display:none}
+
+.card,.kpi{border:.5px solid var(--line)}
+header{background:color-mix(in srgb,var(--bg) 78%,transparent)}
