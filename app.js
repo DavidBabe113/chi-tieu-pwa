@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.5.0';
+const VERSION = '2.5.1';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -483,7 +483,7 @@ function openDetail() {
   $('#amount').value = cur.amount ? Number(cur.amount).toLocaleString(LOC()) : '';
   $('#note').value = cur.note;
   $('#dateIn').value = ymd(new Date(cur.time));
-  $('#preview').hidden = true; $('#photoSave').hidden = true; $('#photoAlbum').hidden = true; curPhoto = null;
+  $('#preview').hidden = true; curPhoto = null;
   const inc = cur.type === 'income';   // khoản thu: không ảnh, không ngân hàng
   $('.photo').hidden = inc; $('#toBank').hidden = inc; $('#saveOnly').hidden = inc; $('#saveIncome').hidden = !inc;
   show('detail');
@@ -496,9 +496,8 @@ $('#photoIn').onchange = async e => {
   const f = e.target.files[0]; if (!f) return;
   curPhoto = await shrink(f);
   $('#preview').src = URL.createObjectURL(curPhoto); $('#preview').hidden = false;
-  $('#photoSave').hidden = false; $('#photoAlbum').hidden = false;
   e.target.value = '';
-  toAlbum(true);   // thử tự lưu; nếu iOS không cho thì nút bên dưới dùng được
+  toAlbum(true);   // tự lưu vào album "Quản lý chi tiêu" qua Phím tắt
 };
 // Lưu vào album riêng: copy ảnh vào clipboard rồi chạy Phím tắt "LuuAnhChiTieu" (Lấy clipboard > Lưu vào album).
 async function toAlbum(silent) {
@@ -516,9 +515,6 @@ async function toAlbum(silent) {
   } catch { if (!silent) toast(tr('Could not copy the photo, try again')); return; }
   location.href = 'shortcuts://run-shortcut?name=' + encodeURIComponent('LuuAnhChiTieu');
 }
-$('#photoAlbum').onclick = () => toAlbum(false);
-// iOS không cho web tự ghi vào album Ảnh: mở Share Sheet, bạn chọn "Lưu hình ảnh"
-$('#photoSave').onclick = () => savePhoto(curPhoto, `Expense_${Date.now()}.jpg`);
 function shrink(file, max = 1280) {
   return new Promise(res => {
     const img = new Image();
@@ -798,14 +794,6 @@ function renderDash(all) {
   const biggest = m.reduce((a, b) => Number(b.amount) > Number(a.amount) ? b : a);
   const pct = pTotal ? (total - pTotal) / pTotal * 100 : null;
 
-  // Đánh giá tổng quát
-  const prevs = [-1, -2, -3].map(n => sum(inM(addMonths(viewYm, n)))).filter(v => v > 0);
-  const avg3 = prevs.length ? prevs.reduce((a, b) => a + b, 0) / prevs.length : 0;
-  let rating = null;
-  if (avg3) { const r = total / avg3; rating = r > 1.15 ? ['high', 'Above your recent average'] : r < 0.85 ? ['low', 'Below your recent average'] : ['mid', 'In line with your recent average']; }
-  if (rating || pct !== null) h += `<div class="verdict card">${rating ? `<div class="rate ${rating[0]}">${tr(rating[1])}</div>` : ''}` +
-    (pct === null ? '' : `<span class="delta ${pct > 0 ? 'up' : 'down'}">${pct > 0 ? '▲' : '▼'} ${Math.abs(pct).toFixed(0)}% ${tr('vs {0}', monthShort(prevYm))}</span>`) + '</div>';
-
   h += `<div class="kpis">
     <div class="kpi"><div class="l">${tr('Daily average')}</div><div class="v sm">${fmt(avgDay)}</div></div>
     <div class="kpi"><div class="l">${tr('Largest expense')}</div><div class="v sm">${fmt(biggest.amount)}</div><div class="sub2">${esc(biggest.category)}</div></div>
@@ -842,18 +830,6 @@ function renderDash(all) {
   h += `<h2>${tr('Top expenses')}</h2><div class="card list">${[...m].sort((a, b) => Number(b.amount) - Number(a.amount)).slice(0, 5).map((r, i) =>
     `<div class="item" data-id="${r.id}"><div class="rank">${i + 1}</div><div class="t">${esc(r.category)}<small>${new Date(r.time).toLocaleDateString(DLOC())}${r.note ? ' · ' + esc(r.note) : ''}</small></div><div class="amt">${fmt(r.amount)}</div></div>`).join('')}</div>`;
 
-  const byCat = Object.entries(sumBy(m, r => r.category)).sort((a, b) => b[1] - a[1]);
-  const wd = Array(7).fill(0); m.forEach(r => wd[new Date(r.time).getDay()] += Number(r.amount));
-  const wdTop = wd.indexOf(Math.max(...wd));
-  const tips = [];
-  if (pct !== null) tips.push(tr('Spending is <b>{0}% {1}</b> than {2} ({3}).', Math.abs(pct).toFixed(0), tr(pct > 0 ? 'higher' : 'lower'), monthLabel(prevYm), fmt(pTotal)));
-  tips.push(tr('<b>{0}</b> is your biggest category: {1}% of the month ({2}).', esc(byCat[0][0]), Math.round(byCat[0][1] / total * 100), fmt(byCat[0][1])));
-  if (byCat.length > 1) tips.push(tr('The top 2 categories together make up {0}% of spending.', Math.round((byCat[0][1] + byCat[1][1]) / total * 100)));
-  tips.push(tr('You spend about <b>{0}</b> per day.', fmt(avgDay)));
-  tips.push(tr('Spending peaks on <b>{0}</b> ({1}).', weekdayName(wdTop) + (lang === 'en' ? 's' : ''), fmt(wd[wdTop])));
-  tips.push(tr('Largest single expense: <b>{0}</b> ({1}) on {2}.', fmt(biggest.amount), esc(biggest.category), new Date(biggest.time).toLocaleDateString(DLOC())));
-  if (incNow) tips.push(incNow >= total ? tr('You saved <b>{0}%</b> of your income this month.', Math.round(net / incNow * 100)) : tr('Spending is higher than income by <b>{0}</b> this month.', fmt(total - incNow)));
-  h += `<h2>${tr('Assessment')}</h2><div class="card"><ul class="tips">${tips.map(t => `<li>${t}</li>`).join('')}</ul></div>`;
   $('#dash').innerHTML = h;
   runCounts($('#dash'));
 }
@@ -1001,9 +977,7 @@ async function openSheet(r) {
     const b = await getPhoto(r.id);
     if (b) {
       const i = new Image(); i.src = URL.createObjectURL(b); i.className = 'd-photo';
-      i.onclick = () => savePhoto(b, r.photo);
       $('#sheetPhoto').append(i);
-      $('#sheetPhoto').insertAdjacentHTML('beforeend', `<p class="hint">${tr('Tap the photo to save it to your iPhone Photos.')}</p>`);
     }
   }
 }
@@ -1011,15 +985,6 @@ function hideSheet() { $('#sheet').hidden = true; document.body.classList.remove
 const closeSheet = () => { if (!$('#sheet').hidden) history.back(); };
 $('#sheetClose').onclick = closeSheet;
 $('#sheet').onclick = e => { if (e.target.id === 'sheet') closeSheet(); };
-
-// ---------- lưu ảnh ra album Ảnh (từ cửa sổ chi tiết giao dịch) ----------
-// iOS không cho web tự ghi vào Photos: dùng Share Sheet// iOS không cho web tự ghi vào Photos: dùng Share Sheet > "Lưu hình ảnh"
-async function savePhoto(blob, name) {
-  const f = new File([blob], name, { type: 'image/jpeg' });
-  if (navigator.canShare && navigator.canShare({ files: [f] })) {
-    try { await navigator.share({ files: [f] }); } catch {}
-  } else toast(tr('Press and hold the photo to save it'));
-}
 
 // ---------- cài đặt: ngôn ngữ, giao diện, bảo mật, dữ liệu, phiên bản (+ nâng cao thu gọn) ----------
 function renderSettings() {
