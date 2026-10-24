@@ -1,10 +1,12 @@
 'use strict';
-const VERSION = '2.35.1';
+const VERSION = '2.36.0';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
 
 // ---------- cấu hình cục bộ ----------
+const loaded = {};
+const loadJS = src => loaded[src] || (loaded[src] = new Promise((res, rej) => { const e = document.createElement('script'); e.src = src; e.onload = res; e.onerror = () => { delete loaded[src]; rej(); }; document.head.append(e); }));
 const cfg = {
   get: (k, d) => { try { return localStorage.getItem(k) ?? d; } catch { return d; } },
   set: (k, v) => { try { localStorage.setItem(k, v); } catch {} },
@@ -376,6 +378,7 @@ async function startScan() {
         if (det) { const r = await det.detect(v); if (r.length && r[0].rawValue) return found(r[0].rawValue); }
         const im = scanGrab(v, side, crop);
         if (scanWorker) { busy = true; scanWorker.postMessage({ buf: im.data.buffer, w: im.width, h: im.height, inv }, [im.data.buffer]); }
+        else if (typeof jsQR === 'undefined') loadJS('vendor/jsQR.js').catch(() => {});
         else { const d = jsQR(im.data, im.width, im.height, { inversionAttempts: inv ? 'attemptBoth' : 'dontInvert' }); if (d && d.data) return found(d.data); }
       } catch { busy = false; }
     }
@@ -413,6 +416,7 @@ async function decodeQrFile(file) {
   let bmp;
   try { bmp = await createImageBitmap(file); }
   catch { bmp = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = URL.createObjectURL(file); }); }
+  await loadJS('vendor/jsQR.js');
   const w0 = bmp.width, h0 = bmp.height;
   for (const maxSide of [1600, 1000, 2400, 600]) {
     const k = Math.min(1, maxSide / Math.max(w0, h0)), w = Math.round(w0 * k), h = Math.round(h0 * k);
@@ -819,10 +823,13 @@ function pinHtml(r, k = 0) {   // nhãn nhỏ: biểu tượng hạng mục + t�
   return `<div class="pin ${inc ? 'in' : 'out'}" style="margin-top:${-k * 30}px"><i>${esc(em)}</i><span>${esc(name)} ${inc ? '+' : '−'}${short(Number(r.amount))}${esc(note)}</span></div>`;
 }
 const locKeyOf = r => r.loc.lat.toFixed(4) + ',' + r.loc.lng.toFixed(4), locKey = locKeyOf;
-function renderMap(items) {
+async function renderMap(items) {
   const pts = [], withLoc = items.filter(r => r.loc && isFinite(r.loc.lat) && isFinite(r.loc.lng));
   $('#mapNote').textContent = withLoc.length ? '' : tr('No locations yet');
-  if (typeof L === 'undefined') { $('#mapNote').textContent = tr('The map could not load. Check your connection.'); return; }
+  if (typeof L === 'undefined') {
+    try { if (!document.querySelector('link[href$="leaflet.css"]')) document.head.insertAdjacentHTML('beforeend', '<link rel="stylesheet" href="vendor/leaflet.css">'); await loadJS('vendor/leaflet.js'); }
+    catch { $('#mapNote').textContent = tr('The map could not load. Check your connection.'); return; }
+  }
   if (!leaf) {
     leaf = L.map('map', { zoomControl: true, attributionControl: true }).setView([16.05, 108.2], 5);
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(leaf);
