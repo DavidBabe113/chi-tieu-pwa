@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.7.0';
+const VERSION = '2.7.1';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -58,7 +58,7 @@ const VI = {
   'No transactions in this month yet.': 'Tháng này chưa có giao dịch.', 'Daily average': 'Trung bình mỗi ngày', 'Largest expense': 'Khoản chi lớn nhất',
   'Month-end estimate': 'Dự kiến cuối tháng', 'Savings rate': 'Tỷ lệ tiết kiệm', 'vs {0}': 'so với {0}',
   'By category': 'Theo danh mục', 'Last 6 months': '6 tháng gần nhất', 'Daily spending': 'Chi theo ngày', 'By bank': 'Theo ngân hàng',
-  'Top expenses': 'Chi lớn nhất', 'Assessment': 'Đánh giá', 'Cash / no bank': 'Tiền mặt / không qua ngân hàng', 'Others': 'Khác',
+  'Top expenses': 'Chi lớn nhất', 'Top category': 'Hạng mục chi nhiều nhất', 'Assessment': 'Đánh giá', 'Cash / no bank': 'Tiền mặt / không qua ngân hàng', 'Others': 'Khác',
   'Above your recent average': 'Cao hơn mức trung bình gần đây', 'Below your recent average': 'Thấp hơn mức trung bình gần đây',
   'In line with your recent average': 'Ngang mức trung bình gần đây', 'Not enough history yet': 'Chưa đủ dữ liệu lịch sử',
   '(3-month avg {0})': '(TB 3 tháng {0})', 'higher': 'cao hơn', 'lower': 'thấp hơn',
@@ -907,12 +907,12 @@ function renderDash(all) {
   if (!m.length) { $('#dash').innerHTML = h; runCounts($('#dash')); return; }
 
   const avgDay = total / Math.max(1, elapsed);
-  const biggest = m.reduce((a, b) => Number(b.amount) > Number(a.amount) ? b : a);
+  const topCat = Object.entries(sumBy(m, r => r.category)).sort((a, b) => b[1] - a[1])[0];   // hạng mục chi nhiều nhất (tổng các giao dịch trong hạng mục)
   const pct = pTotal ? (total - pTotal) / pTotal * 100 : null;
 
   h += `<div class="kpis">
     <div class="kpi" data-info="avg"><div class="l">${tr('Daily average')}</div><div class="v sm">${fmt(avgDay)}</div></div>
-    <div class="kpi" data-info="big" data-id="${biggest.id}"><div class="l">${tr('Largest expense')}</div><div class="v sm">${fmt(biggest.amount)}</div><div class="sub2">${esc(biggest.category)}</div></div>
+    <div class="kpi" data-info="month"><div class="l">${tr('Top category')}</div><div class="v sm">${fmt(topCat[1])}</div><div class="sub2">${esc(topCat[0])} · ${Math.round(topCat[1] / total * 100)}%</div></div>
     ${incNow ? `<div class="kpi" data-info="rate"><div class="l">${tr('Savings rate')}</div><div class="v sm">${Math.round(net / incNow * 100)}%</div></div>` : ''}
     ${isCur && elapsed < dim ? `<div class="kpi" data-info="est"><div class="l">${tr('Month-end estimate')}</div><div class="v sm">${fmt(avgDay * dim)}</div></div>` : ''}
   </div>`;
@@ -959,9 +959,6 @@ function renderDash(all) {
   const bmax = byBank[0][1];
   h += `<h2>${tr('By bank')}</h2><div class="card">${byBank.map(([k, v]) =>
     `<div class="hbar"><span>${esc(k.replace(/^.*\((.+)\)$/, '$1'))}</span><div class="ht"><i style="width:${Math.round(v / bmax * 100)}%"></i></div><b>${fmt(v)}</b></div>`).join('')}</div>`;
-
-  h += `<h2>${tr('Top expenses')}</h2><div class="card list">${[...m].sort((a, b) => Number(b.amount) - Number(a.amount)).slice(0, 5).map((r, i) =>
-    `<div class="item" data-id="${r.id}"><div class="rank">${i + 1}</div><div class="t">${esc(r.category)}<small>${new Date(r.time).toLocaleDateString(DLOC())}${r.note ? ' · ' + esc(r.note) : ''}</small></div><div class="amt">${fmt(r.amount)}</div></div>`).join('')}</div>`;
 
   $('#dash').innerHTML = h;
   runCounts($('#dash'));
