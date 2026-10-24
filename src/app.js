@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.32.1';
+const VERSION = '2.34.0';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -15,90 +15,56 @@ const getJSON = (k, d) => { try { return JSON.parse(cfg.get(k, '')) ?? d; } catc
 // ---------- ngôn ngữ (English / Tiếng Việt) ----------
 let lang = cfg.get('lang', 'en') === 'vi' ? 'vi' : 'en';
 const VI = {
-  // tab & tiêu đề
-  'Expenses': 'Chi tiêu', 'Overview': 'Tổng quan', 'Statistics': 'Thống kê', '6 Jars': '6 hũ', 'Categories': 'Danh mục',
-  'Choose from Photos': 'Chọn từ thư viện ảnh', 'No QR code found in this photo': 'Không tìm thấy mã QR trong ảnh này', 'Scan QR from a photo': 'Quét QR từ ảnh',
-  'Scan QR': 'Quét QR', 'Choose category': 'Chọn danh mục', 'Details': 'Chi tiết', 'Choose bank': 'Chọn ngân hàng', 'Payment method': 'Lựa chọn thanh toán', 'Continue to pay': 'Tiếp tục thanh toán', 'Save only': 'Chỉ lưu', 'Choose a payment method': 'Hãy chọn phương thức thanh toán', 'Not in any jar: <b>{0}</b>': 'Chưa thuộc hũ nào: <b>{0}</b>', 'No locations yet': 'Chưa có vị trí nào', 'Each slice is one day: how much of the month spending happened that day. Tap a day for details.': 'Mỗi miếng là một ngày: ngày đó chiếm bao nhiêu phần chi của tháng. Chạm vào ngày để xem chi tiết.', 'Other days': 'Các ngày còn lại', 'Highest': 'Cao nhất', 'Tap to see the list': 'Chạm để xem danh sách', 'Payment places': 'Các nơi thanh toán', 'Next: payment method': 'Tiếp: lựa chọn thanh toán', 'Banks': 'Ngân hàng', 'Nothing found': 'Không tìm thấy', 'Search': 'Tìm kiếm', 'Choose how you pay. The app opens and you confirm as usual. Enter the amount there yourself.': 'Chọn cách thanh toán. App sẽ mở, bạn xác nhận như bình thường và tự nhập số tiền ở đó.', 'By payment method': 'Theo hình thức thanh toán',
-  'Photo library': 'Thư viện ảnh', 'Settings': 'Cài đặt', 'Back': 'Quay lại', 'Close': 'Đóng', 'Add manually': 'Nhập tay',
-  // tổng quan
-  'Spent this month': 'Đã chi tháng này', 'Dashboard': 'Bảng tổng hợp', 'Monthly summary': 'Tổng hợp theo tháng', 'Each bar is one day of the month. Touch a bar to see that day.': 'Mỗi cột là một ngày trong tháng. Chạm vào cột để xem ngày đó.', 'Places in {0}': 'Số nơi thanh toán trong {0}', 'Places on {0}': 'Số nơi thanh toán ngày {0}', 'Map': 'Bản đồ', 'Wallet': 'Ví', 'Wallets': 'Ví', 'Payments': 'Thanh toán', '+ Add wallet': '+ Thêm ví', 'No wallet': 'Chưa chọn ví', 'By wallet': 'Theo ví', 'Wallet name': 'Tên ví', 'Savings rate': 'Tỷ lệ thiết kiệm', 'Projected remaining': 'Dự kiến còn lại', 'Total income': 'Tổng thu nhập', 'Total spending': 'Tổng chi tiêu tháng', 'Average per day': 'Trung bình mỗi ngày',
-  'Link my Google account': 'Liên kết tài khoản Google của tôi', 'Google Client ID': 'Google Client ID', 'Google email or username': 'Email Google hoặc tên đăng nhập',
-  'Password (leave empty for a Google email)': 'Mật khẩu (bỏ trống nếu dùng email Google)', 'This Google account is not on the member list': 'Tài khoản Google này chưa có trong danh sách thành viên',
-  'Google sign-in failed': 'Đăng nhập Google không thành công', 'or': 'hoặc',
-  'Account': 'Tài khoản', 'Signed in as': 'Đăng nhập với', 'Change password': 'Đổi mật khẩu', 'Log out': 'Đăng xuất', 'Members': 'Thành viên', 'Username': 'Tên đăng nhập', 'Password': 'Mật khẩu',
-  'Member': 'Thành viên', 'Admin': 'Quản trị viên', 'Role': 'Vai trò', 'Add member': 'Thêm thành viên', 'You': 'Bạn', 'Reset password': 'Đặt lại mật khẩu',
-  'Administrators can do everything.': 'Quản trị viên có mọi quyền.', 'Remove this member? Their transactions stay.': 'Xoá thành viên này? Giao dịch của họ vẫn được giữ.',
-  'New password for {0}': 'Mật khẩu mới cho {0}', 'Sign in': 'Đăng nhập', 'Create your admin account': 'Tạo tài khoản quản trị', 'Create account': 'Tạo tài khoản',
-  'This account will be the administrator. Choose a password you will remember.': 'Tài khoản này sẽ là quản trị viên. Hãy chọn mật khẩu bạn nhớ được.',
-  'Save password': 'Lưu mật khẩu', 'New password': 'Mật khẩu mới', 'Current password': 'Mật khẩu hiện tại', 'Confirm password': 'Nhập lại mật khẩu',
-  'Wrong username or password': 'Sai tên đăng nhập hoặc mật khẩu', 'Wrong current password': 'Sai mật khẩu hiện tại', 'Password must have at least 4 characters': 'Mật khẩu cần ít nhất 4 ký tự',
-  'Passwords do not match': 'Hai mật khẩu không khớp', 'That username is already taken': 'Tên đăng nhập này đã có',
-  'Add expenses': 'Thêm chi tiêu', 'Add income': 'Thêm khoản thu', "See everyone's transactions": 'Xem giao dịch của mọi người', 'See the Dashboard': 'Xem bảng tổng hợp',
-  'See 6 Jars': 'Xem 6 hũ', 'Edit jar percentages': 'Sửa tỷ lệ các hũ', 'Manage categories': 'Quản lý danh mục', 'Transactions': 'Giao dịch', 'Remaining': 'Còn lại', 'Payment map': 'Bản đồ thanh toán', '{0} places with a saved location. Tap a pin for details.': '{0} nơi có vị trí đã lưu. Chạm vào ghim để xem chi tiết.', 'No locations saved yet. A location is saved when you enter an amount (allow location access).': 'Chưa có vị trí nào. Vị trí được lưu khi bạn nhập số tiền (hãy cho phép truy cập vị trí).', 'The map could not load. Check your connection.': 'Không tải được bản đồ. Kiểm tra kết nối mạng.', 'All categories': 'Tất cả hạng mục', 'Location': 'Vị trí', 'Open in Maps': 'Mở bản đồ', 'Open in Google Maps': 'Mở Google Maps', 'Save payment location': 'Lưu vị trí khi thanh toán', 'Privacy': 'Quyền riêng tư', 'Financial Tracking': 'Theo dõi tài chính', 'By month': 'Theo tháng', 'Balance': 'Số dư', 'Days elapsed': 'Số ngày đã qua', 'Category': 'Hạng mục', 'Edit': 'Sửa', 'Save changes': 'Lưu thay đổi', 'Time': 'Giờ', 'Enter an amount': 'Nhập số tiền', 'Active days': 'Ngày có chi', 'Per active day': 'TB ngày có chi', 'No spending': 'Không chi', 'transactions': 'giao dịch', 'transaction': 'giao dịch', 'No bank found': 'Không tìm thấy ngân hàng', 'Search bank': 'Tìm ngân hàng', 'Total money': 'Tổng số tiền', 'Spent so far': 'Đã chi tổng cộng', 'Spent in {0}': 'Đã chi trong {0}', 'Income in {0}': 'Thu nhập trong {0}', 'Spending chart': 'Biểu đồ chi tiêu', 'Peak day': 'Ngày chi nhiều nhất',
-  'Bank name': 'Tên ngân hàng', 'App link': 'Liên kết mở app', 'Add a bank…': 'Thêm ngân hàng…', 'Custom bank': 'Ngân hàng khác (tự nhập)', 'Banks': 'Ngân hàng', 'Remove': 'Xoá', 'No data yet': 'Chưa có dữ liệu', 'Previous month': 'Tháng trước', 'Next month': 'Tháng sau',
-  'Today': 'Hôm nay', 'Yesterday': 'Hôm qua', 'No transactions in this month.': 'Chưa có giao dịch trong tháng này.',
-  '⏳ pending': '⏳ chờ đồng bộ', 'Did the transfer go through?': 'Giao dịch đã thành công?', 'Cancel': 'Huỷ', 'Done': 'Xong',
-  // quét & nhập
-  'Point the camera at the QR code…': 'Đưa mã QR vào khung hình…',
+  'Expenses': 'Chi tiêu', 'Overview': 'Tổng quan', '6 Jars': '6 hũ', 'Categories': 'Danh mục', 'Choose from Photos': 'Chọn từ thư viện ảnh',
+  'No QR code found in this photo': 'Không tìm thấy mã QR trong ảnh này', 'Scan QR': 'Quét QR', 'Choose category': 'Chọn danh mục', 'Details': 'Chi tiết',
+  'Payment method': 'Lựa chọn thanh toán', 'Continue to pay': 'Tiếp tục thanh toán', 'Save only': 'Chỉ lưu', 'Choose a payment method': 'Hãy chọn phương thức thanh toán',
+  'Not in any jar: <b>{0}</b>': 'Chưa thuộc hũ nào: <b>{0}</b>', 'No locations yet': 'Chưa có vị trí nào', 'Highest': 'Cao nhất', 'Payment places': 'Các nơi thanh toán',
+  'Banks': 'Ngân hàng', 'Nothing found': 'Không tìm thấy', 'Search': 'Tìm kiếm', 'Settings': 'Cài đặt', 'Back': 'Quay lại', 'Close': 'Đóng', 'Add manually': 'Nhập tay',
+  'Dashboard': 'Bảng tổng hợp', 'Monthly summary': 'Tổng hợp theo tháng', 'Places in {0}': 'Số nơi thanh toán trong {0}', 'Places on {0}': 'Số nơi thanh toán ngày {0}', 'Map': 'Bản đồ',
+  'Wallet': 'Ví', 'Wallets': 'Ví', 'No wallet': 'Chưa chọn ví', 'Savings rate': 'Tỷ lệ tiết kiệm', 'Projected remaining': 'Dự kiến còn lại', 'Total income': 'Tổng thu nhập',
+  'Total spending': 'Tổng chi tiêu tháng', 'Average per day': 'Trung bình mỗi ngày', 'or': 'hoặc', 'Account': 'Tài khoản', 'Member': 'Thành viên', 'Admin': 'Quản trị viên', 'You': 'Bạn',
+  'Transactions': 'Giao dịch', 'Remaining': 'Còn lại', 'The map could not load. Check your connection.': 'Không tải được bản đồ. Kiểm tra kết nối mạng.',
+  'All categories': 'Tất cả hạng mục', 'Location': 'Vị trí', 'Open in Google Maps': 'Mở Google Maps', 'Save payment location': 'Lưu vị trí khi thanh toán', 'Privacy': 'Quyền riêng tư',
+  'Financial Tracking': 'Theo dõi tài chính', 'By month': 'Theo tháng', 'Balance': 'Số dư', 'Days elapsed': 'Số ngày đã qua', 'Category': 'Hạng mục', 'Edit': 'Sửa',
+  'Save changes': 'Lưu thay đổi', 'Time': 'Giờ', 'Enter an amount': 'Nhập số tiền', 'Active days': 'Ngày có chi', 'transactions': 'giao dịch', 'transaction': 'giao dịch',
+  'Total money': 'Tổng số tiền', 'Spent so far': 'Đã chi tổng cộng', 'Spent in {0}': 'Đã chi trong {0}', 'Income in {0}': 'Thu nhập trong {0}', 'Spending chart': 'Biểu đồ chi tiêu',
+  'Peak day': 'Ngày chi nhiều nhất', 'Remove': 'Xoá', 'No data yet': 'Chưa có dữ liệu', 'Previous month': 'Tháng trước', 'Next month': 'Tháng sau', 'Today': 'Hôm nay',
+  'Yesterday': 'Hôm qua', 'No transactions in this month.': 'Chưa có giao dịch trong tháng này.', 'Did the transfer go through?': 'Giao dịch đã thành công?', 'Cancel': 'Huỷ',
+  'Done': 'Xong',
   'Cannot open the camera. Allow camera access in iPhone Settings > Safari / this app.': 'Không mở được camera. Vào Cài đặt iPhone > Safari / ứng dụng > Camera để cấp quyền.',
-  'Payee: {0}': 'Người nhận: {0}', 'Amount (₫)': 'Số tiền (₫)', 'Date': 'Ngày', 'Note': 'Ghi chú', 'e.g. coffee with a client': 'Ví dụ: cà phê với khách',
-  '📸 Take a receipt photo': '📸 Chụp ảnh hoá đơn', '📁 Save to the expense album': '📁 Lưu vào album chi tiêu',
-  'Save manually via the share sheet': 'Lưu thủ công qua bảng chia sẻ', 'Next: choose bank': 'Tiếp: chọn ngân hàng',
-  'Save only, do not open a bank': 'Chỉ lưu, không mở ngân hàng', 'Save income': 'Lưu khoản thu',
-  'Choose a bank. Its app opens and you confirm with Face ID as usual. Enter the amount there yourself.': 'Chọn ngân hàng. App ngân hàng sẽ mở, bạn xác thực khuôn mặt như bình thường và tự nhập số tiền ở đó.',
-  "This is the app's own photo storage. Tap a photo and choose \"Save Image\" to put it into your iPhone Photos.": 'Đây là kho ảnh riêng của app. Chạm vào ảnh rồi chọn "Lưu hình ảnh" để đưa vào album Ảnh của iPhone.',
-  'Enter an amount first': 'Hãy nhập số tiền trước', 'Could not copy the photo, try again': 'Không copy được ảnh, thử lại',
-  'No app link for this bank. Set one in Settings': 'Chưa có link app cho ngân hàng này. Thêm trong Cài đặt',
-  'Could not open the app. Check the link in Settings.': 'Không mở được app. Kiểm tra link trong Cài đặt.',
-  'No photos yet.': 'Chưa có ảnh nào.', 'Press and hold the photo to save it': 'Giữ lâu vào ảnh để lưu',
-  // chi tiết giao dịch
-  'Bank': 'Ngân hàng', 'Payee': 'Người nhận', 'Type': 'Loại', 'Sync': 'Đồng bộ', 'Synced': 'Đã đồng bộ', 'Pending': 'Đang chờ',
-  'Tap the photo to save it to your iPhone Photos.': 'Chạm vào ảnh để lưu vào album Ảnh của iPhone.',
-  // thống kê
-  'No transactions in this month yet.': 'Tháng này chưa có giao dịch.', 'Daily average': 'Trung bình mỗi ngày', 'Largest expense': 'Khoản chi lớn nhất',
-  'Month-end estimate': 'Dự kiến cuối tháng', 'Savings rate': 'Tỷ lệ tiết kiệm', 'vs {0}': 'so với {0}',
-  'By category': 'Theo danh mục', 'Last 6 months': '6 tháng gần nhất', 'Daily spending': 'Chi theo ngày', 'By bank': 'Theo ngân hàng',
-  'Top expenses': 'Chi lớn nhất', 'Top category': 'Hạng mục chi nhiều nhất', 'Assessment': 'Đánh giá', 'Cash / no bank': 'Tiền mặt / không qua ngân hàng', 'Others': 'Khác',
-  'Above your recent average': 'Cao hơn mức trung bình gần đây', 'Below your recent average': 'Thấp hơn mức trung bình gần đây',
-  'In line with your recent average': 'Ngang mức trung bình gần đây', 'Not enough history yet': 'Chưa đủ dữ liệu lịch sử',
-  '(3-month avg {0})': '(TB 3 tháng {0})', 'higher': 'cao hơn', 'lower': 'thấp hơn',
-  'Spending is <b>{0}% {1}</b> than {2} ({3}).': 'Chi tiêu <b>{1} {0}%</b> so với {2} ({3}).',
-  '<b>{0}</b> is your biggest category: {1}% of the month ({2}).': '<b>{0}</b> là danh mục lớn nhất: {1}% trong tháng ({2}).',
-  'The top 2 categories together make up {0}% of spending.': '2 danh mục lớn nhất chiếm {0}% tổng chi.',
-  'You spend about <b>{0}</b> per day.': 'Bạn chi khoảng <b>{0}</b> mỗi ngày.',
-  'Spending peaks on <b>{0}</b> ({1}).': 'Chi nhiều nhất vào <b>{0}</b> ({1}).',
-  'Largest single expense: <b>{0}</b> ({1}) on {2}.': 'Khoản chi lớn nhất: <b>{0}</b> ({1}) ngày {2}.',
-  'You saved <b>{0}%</b> of your income this month.': 'Bạn đã tiết kiệm <b>{0}%</b> thu nhập tháng này.',
-  'Spending is higher than income by <b>{0}</b> this month.': 'Chi tiêu vượt thu nhập <b>{0}</b> trong tháng này.',
-  'Income vs spending': 'Thu nhập và chi tiêu', 'Net': 'Chênh lệch', 'Income': 'Thu nhập', 'Spending': 'Chi tiêu', 'Expense': 'Chi tiêu',
-  // 6 hũ
-  'Necessities': 'Thiết yếu', 'Long-term savings': 'Tiết kiệm dài hạn', 'Education': 'Giáo dục', 'Play': 'Hưởng thụ', 'Financial freedom': 'Tự do tài chính', 'Give': 'Cho đi',
-  'Income this month': 'Thu nhập tháng này', '{0} income entries': '{0} khoản thu', '{0} income entry': '{0} khoản thu',
-  'Jars fill automatically from your income and spending.': 'Các hũ tự cập nhật theo thu nhập và chi tiêu của bạn.',
-  'Add income': 'Thêm khoản thu', 'Jars': 'Các hũ', 'Total': 'Tổng', 'Save {0}': 'Lưu {0}', 'Saved for {0}': 'Đã lưu cho {0}',
-  'Percentages must add up to 100': 'Tổng phần trăm phải bằng 100',
-  'Percentages can differ every month. Save to keep them for {0}.': 'Tỷ lệ có thể khác nhau mỗi tháng. Bấm lưu để giữ cho {0}.',
-  'Spent {0}': 'Đã chi {0}', 'Over by {0}': 'Vượt {0}', '{0} left': 'Còn {0}',
-  'Not in any jar: <b>{0}</b>. Assign those categories to a jar in the Categories tab.': 'Chưa thuộc hũ nào: <b>{0}</b>. Gán các danh mục đó vào hũ ở tab Danh mục.',
-  // danh mục
-  'Your categories and the jar each one belongs to. Spending in a category is deducted from its jar.': 'Danh mục của bạn và hũ tương ứng. Chi tiêu của danh mục sẽ được trừ vào hũ đó.',
-  '{0} this month': '{0} trong tháng', 'No jar': 'Không thuộc hũ', 'Add a category': 'Thêm danh mục', 'Name': 'Tên', 'Icon': 'Biểu tượng', 'Add': 'Thêm',
+  'Payee: {0}': 'Người nhận: {0}', 'Amount (₫)': 'Số tiền (₫)', 'Date': 'Ngày', 'Note': 'Ghi chú', 'e.g. coffee with a client': 'Ví dụ: cà phê với khách', 'Save income': 'Lưu khoản thu',
+  'Enter an amount first': 'Hãy nhập số tiền', 'No app link for this bank. Set one in Settings': 'Chưa có link app cho ngân hàng này. Thêm trong Cài đặt',
+  'Could not open the app. Check the link in Settings.': 'Không mở được app. Kiểm tra link trong Cài đặt.', 'Press and hold the photo to save it': 'Giữ lâu vào ảnh để lưu',
+  'Bank': 'Ngân hàng', 'Payee': 'Người nhận', 'Type': 'Loại', 'Pending': 'Đang chờ', 'Month-end estimate': 'Dự kiến cuối tháng', 'By category': 'Theo danh mục',
+  'Last 6 months': '6 tháng gần nhất', 'Daily spending': 'Chi theo ngày', 'Cash / no bank': 'Tiền mặt / không qua ngân hàng', 'Income vs spending': 'Thu nhập và chi tiêu',
+  'Net': 'Chênh lệch', 'Income': 'Thu nhập', 'Spending': 'Chi tiêu', 'Expense': 'Chi tiêu', 'Necessities': 'Thiết yếu', 'Long-term savings': 'Tiết kiệm dài hạn', 'Education': 'Giáo dục',
+  'Play': 'Hưởng thụ', 'Financial freedom': 'Tự do tài chính', 'Give': 'Cho đi', 'Income this month': 'Thu nhập tháng này', '{0} income entries': '{0} khoản thu',
+  '{0} income entry': '{0} khoản thu', 'Jars fill automatically from your income and spending.': 'Các hũ tự cập nhật theo thu nhập và chi tiêu của bạn.', 'Jars': 'Các hũ', 'Total': 'Tổng',
+  'Save {0}': 'Lưu {0}', 'Saved for {0}': 'Đã lưu cho {0}', 'Percentages must add up to 100': 'Tổng phần trăm phải bằng 100', 'Spent {0}': 'Đã chi {0}', 'Over by {0}': 'Vượt {0}',
+  '{0} left': 'Còn {0}', '{0} this month': '{0} trong tháng', 'No jar': 'Không thuộc hũ', 'Add a category': 'Thêm danh mục', 'Name': 'Tên', 'Icon': 'Biểu tượng', 'Add': 'Thêm',
   'e.g. Pets': 'Ví dụ: Thú cưng', 'That category already exists': 'Danh mục này đã có', 'Enter a name first': 'Hãy nhập tên trước',
-  'Remove this category? Past expenses keep it.': 'Xoá danh mục này? Các khoản đã chi vẫn giữ nguyên.', 'Remove': 'Xoá',
-  'Income categories': 'Danh mục thu nhập', 'Add an income category': 'Thêm danh mục thu nhập', 'e.g. Rental': 'Ví dụ: Cho thuê',
-  // cài đặt & bảo mật
-  'Language': 'Ngôn ngữ', 'Appearance': 'Giao diện', 'Light': 'Sáng', 'Dark': 'Tối', 'Auto': 'Tự động', 'About': 'Thông tin', 'Version': 'Phiên bản',
-  'Check for updates': 'Kiểm tra cập nhật', 'Advanced': 'Nâng cao',
-  'Security': 'Bảo mật', 'PIN lock': 'Khoá bằng mã PIN', 'Set PIN': 'Đặt mã PIN', 'Change PIN': 'Đổi mã PIN', 'Turn off PIN': 'Tắt mã PIN',
-  'On': 'Bật', 'Off': 'Tắt', 'Enter PIN': 'Nhập mã PIN', 'Create a 4-digit PIN': 'Tạo mã PIN 4 số', 'Confirm PIN': 'Nhập lại mã PIN',
-  'PINs do not match': 'Hai mã PIN không khớp', 'Wrong PIN': 'Sai mã PIN', 'Too many attempts. Wait {0}s': 'Nhập sai nhiều lần. Chờ {0} giây',
+  'Remove this category? Past expenses keep it.': 'Xoá danh mục này? Các khoản đã chi vẫn giữ nguyên.', 'Income categories': 'Danh mục thu nhập',
+  'Add an income category': 'Thêm danh mục thu nhập', 'e.g. Rental': 'Ví dụ: Cho thuê', 'Language': 'Ngôn ngữ', 'Appearance': 'Giao diện', 'Light': 'Sáng', 'Dark': 'Tối', 'Auto': 'Tự động',
+  'About': 'Thông tin', 'Version': 'Phiên bản', 'Check for updates': 'Kiểm tra cập nhật', 'Advanced': 'Nâng cao', 'Security': 'Bảo mật', 'PIN lock': 'Khoá bằng mã PIN',
+  'Set PIN': 'Đặt mã PIN', 'Change PIN': 'Đổi mã PIN', 'Turn off PIN': 'Tắt mã PIN', 'On': 'Bật', 'Off': 'Tắt', 'Enter PIN': 'Nhập mã PIN', 'Create a 4-digit PIN': 'Tạo mã PIN 4 số',
+  'Confirm PIN': 'Nhập lại mã PIN', 'PINs do not match': 'Hai mã PIN không khớp', 'Wrong PIN': 'Sai mã PIN', 'Too many attempts. Wait {0}s': 'Nhập sai nhiều lần. Chờ {0} giây',
   'Forgot PIN?': 'Quên mã PIN?', 'Face ID': 'Face ID', 'Turn on Face ID': 'Bật Face ID', 'Turn off Face ID': 'Tắt Face ID', 'Use Face ID': 'Dùng Face ID',
   'Face ID failed, enter your PIN': 'Face ID không thành công, hãy nhập mã PIN', 'Face ID could not be turned on on this device': 'Không bật được Face ID trên thiết bị này',
   'To reset a forgotten PIN, delete the app icon and add it again from Safari. Data on this phone that is not synced yet is lost.': 'Quên mã PIN thì xoá icon app rồi thêm lại từ Safari. Dữ liệu trên máy chưa đồng bộ sẽ mất.',
   'Data': 'Dữ liệu', '📊 Open Google Sheet': '📊 Mở Google Sheet', 'Google Sheet file link': 'Link file Google Sheet',
-  'Google Apps Script link (Web App)': 'Link Google Apps Script (Web App)', 'Reset app': 'Đặt lại app', 'Good': 'Tốt', 'Moderate': 'Trung bình', 'Exceeded': 'Vượt quá', 'Choose an icon': 'Chọn biểu tượng', 'Icon': 'Biểu tượng', 'Less': 'Ít', 'More': 'Nhiều', 'Change': 'Đổi', 'Goal reached': 'Đã đạt mục tiêu', 'Overdue': 'Quá hạn', 'Due today': 'Đến hạn hôm nay', '{0} days left': 'Còn {0} ngày', 'Completed': 'Hoàn thành', '{0} to go': 'Còn {0}', 'Set your first goal': 'Đặt mục tiêu đầu tiên', 'Save for a trip, a laptop, a rainy day…': 'Tiết kiệm cho chuyến đi, laptop, quỹ dự phòng…', 'Move to Trash': 'Chuyển vào thùng rác', 'Trash': 'Thùng rác', 'Restore': 'Khôi phục', 'Delete forever': 'Xoá vĩnh viễn', 'Deleted': 'Đã xoá', 'Goal': 'Mục tiêu', 'Empty Trash': 'Dọn sạch thùng rác', 'Trash is empty': 'Thùng rác trống', 'Delete everything in the Trash forever?': 'Xoá vĩnh viễn mọi thứ trong thùng rác?', 'Delete forever? This cannot be undone.': 'Xoá vĩnh viễn? Không thể hoàn tác.', 'Deadline (from today)': 'Hạn chót (tính từ hôm nay)', 'Years': 'Năm', 'Months': 'Tháng', 'Days': 'Ngày', 'Take from': 'Lấy từ', 'Outside money': 'Tiền bên ngoài (không trừ hũ)', 'Remaining in this jar: {0}': 'Còn lại trong hũ này: {0}', 'Added from outside, no jar is reduced': 'Nạp từ nguồn ngoài, không trừ hũ nào', 'Not enough in this jar. Remaining: {0}': 'Hũ này không đủ tiền. Còn lại: {0}', 'Export to Excel': 'Xuất ra Excel', 'Export': 'Xuất file', 'All': 'Tất cả', 'All months': 'Tất cả các tháng', 'Savings goals': 'Mục tiêu tiết kiệm', 'New goal': 'Mục tiêu mới', 'Due': 'Hạn chót', 'Saved': 'Đã tích lũy', 'Add money': 'Nạp thêm tiền', 'No goals yet': 'Chưa có mục tiêu nào', 'Goal name': 'Tên mục tiêu', 'e.g. Japan trip': 'vd: Du lịch Nhật Bản', 'Target': 'Số tiền cần đạt', 'Deadline': 'Hạn chót', '3 mo': '3 tháng', '6 mo': '6 tháng', '1 yr': '1 năm', '2 yr': '2 năm', 'None': 'Không', 'Create goal': 'Tạo mục tiêu', 'Delete this goal?': 'Xoá mục tiêu này?', 'Enter an amount first': 'Hãy nhập số tiền', 'Amount': 'Số tiền', 'Date': 'Ngày', 'Reset the app? All transactions, photos and settings on this phone are deleted. Your Google Sheet is not touched.': 'Đặt lại app? Toàn bộ giao dịch, ảnh và cài đặt trên điện thoại này sẽ bị xoá. Google Sheet không bị ảnh hưởng.', 'Banks': 'Ngân hàng',
-  'One per line: Name (Brand) | app link. Edit if an app does not open.': 'Mỗi dòng: Tên (Thương hiệu) | link mở app. Sửa lại nếu app không mở được.',
-  'Sent. Check the ChiTieu tab in your Sheet': 'Đã gửi. Mở tab ChiTieu trong Sheet để kiểm tra', 'Send failed, check the link': 'Gửi lỗi, kiểm tra link',
+  'Google Apps Script link (Web App)': 'Link Google Apps Script (Web App)', 'Reset app': 'Đặt lại app', '{0} exceeded': '{0} hũ vượt quá', '{0} to watch': '{0} hũ cần chú ý',
+  'All good': 'Tất cả đều tốt', 'Good': 'Tốt', 'Moderate': 'Trung bình', 'Exceeded': 'Vượt quá', 'Choose an icon': 'Chọn biểu tượng', 'Less': 'Ít', 'More': 'Nhiều', 'Change': 'Đổi',
+  'Goal reached': 'Đã đạt mục tiêu', 'Overdue': 'Quá hạn', 'Due today': 'Đến hạn hôm nay', '{0} days left': 'Còn {0} ngày', 'Completed': 'Hoàn thành', '{0} to go': 'Còn {0}',
+  'Set your first goal': 'Đặt mục tiêu đầu tiên', 'Save for a trip, a laptop, a rainy day…': 'Tiết kiệm cho chuyến đi, laptop, quỹ dự phòng…', 'Move to Trash': 'Chuyển vào thùng rác',
+  'Trash': 'Thùng rác', 'Restore': 'Khôi phục', 'Delete forever': 'Xoá vĩnh viễn', 'Deleted': 'Đã xoá', 'Goal': 'Mục tiêu', 'Empty Trash': 'Dọn sạch thùng rác',
+  'Trash is empty': 'Thùng rác trống', 'Delete everything in the Trash forever?': 'Xoá vĩnh viễn mọi thứ trong thùng rác?',
+  'Delete forever? This cannot be undone.': 'Xoá vĩnh viễn? Không thể hoàn tác.', 'Deadline (from today)': 'Hạn chót (tính từ hôm nay)', 'Years': 'Năm', 'Months': 'Tháng', 'Days': 'Ngày',
+  'Take from': 'Lấy từ', 'Outside money': 'Tiền bên ngoài (không trừ hũ)', 'Remaining in this jar: {0}': 'Còn lại trong hũ này: {0}',
+  'Added from outside, no jar is reduced': 'Nạp từ nguồn ngoài, không trừ hũ nào', 'Not enough in this jar. Remaining: {0}': 'Hũ này không đủ tiền. Còn lại: {0}',
+  'Export to Excel': 'Xuất ra Excel', 'Export': 'Xuất file', 'All': 'Tất cả', 'All months': 'Tất cả các tháng', 'Savings goals': 'Mục tiêu tiết kiệm', 'New goal': 'Mục tiêu mới',
+  'Due': 'Hạn chót', 'Saved': 'Đã tích lũy', 'Add money': 'Nạp thêm tiền', 'Goal name': 'Tên mục tiêu', 'e.g. Japan trip': 'vd: Du lịch Nhật Bản', 'Target': 'Số tiền cần đạt',
+  'Deadline': 'Hạn chót', '6 mo': '6 tháng', 'Create goal': 'Tạo mục tiêu', 'Amount': 'Số tiền',
+  'Reset the app? All transactions, photos and settings on this phone are deleted. Your Google Sheet is not touched.': 'Đặt lại app? Toàn bộ giao dịch, ảnh và cài đặt trên điện thoại này sẽ bị xoá. Google Sheet không bị ảnh hưởng.',
   'Save': 'Lưu',
 };
 const tr = (s, ...a) => { let r = (lang === 'vi' && VI[s]) || s; a.forEach((v, i) => r = r.replace('{' + i + '}', v)); return r; };
@@ -153,8 +119,6 @@ const DEF_BANKS = [
 const OLD_BANKS = 'Vietcombank | vietcombankmobile://\nMB Bank | mbbank://\nTechcombank | tcb://\nVPBank | vpbankneo://\nACB | acbone://\nBIDV | bidv.smartbanking.partner://\nTPBank | hydro://\nVietinBank | vietinbankipay://\nAgribank | agribankmobile://\nOCB | newomni-app://';
 // File Google Sheet chứa dữ liệu (chỉ mở được khi đăng nhập đúng tài khoản Google, Sheet không chia sẻ cho ai)
 const SHEET_FILE = 'https://docs.google.com/spreadsheets/d/1h6gpLCcJoevkHnPB9yo8R86ALhcuY2pb5Bjd_H8fLhw/edit';
-// Cài đặt cũ chưa chỉnh tay thì tự đổi sang mặc định mới
-if (cfg.get('cats', '').startsWith('⛽ Tiền xăng')) cfg.del('cats');
 if (/vcbdigibank|dl\.vietqr\.io|techcombank:\/\//.test(cfg.get('banks', '')) || cfg.get('banks', '') === OLD_BANKS) cfg.del('banks');
 
 // ---------- 6 hũ: dữ liệu ----------
@@ -217,7 +181,6 @@ let stream = null, scanning = false, curView = 'home';
 
 const cats = () => cfg.get('cats', DEF_CATS).split('\n').map(s => s.trim()).filter(Boolean);
 const icats = () => cfg.get('icats', DEF_ICATS).split('\n').map(s => s.trim()).filter(Boolean);
-{ const sc = cfg.get('cats', ''); if (/Home bills/i.test(sc)) cfg.set('cats', sc.split('\n').filter(l => !/Home bills/i.test(l)).join('\n')); }   // đã bỏ hạng mục Home bills
 const DEF_WALLETS = '💵 Cash\n🟣 MoMo\n🔵 ZaloPay';
 const wallets = () => cfg.get('wallets', DEF_WALLETS).split('\n').map(s => s.trim()).filter(Boolean);
 const isInc = r => r.type === 'income';       // bản ghi cũ không có type = chi tiêu
@@ -689,7 +652,6 @@ const addMonths = (ym, n) => { const [y, m] = ym.split('-').map(Number); return 
 const shiftMonth = n => { viewYm = addMonths(viewYm, n); };
 const monthLabel = ym => { const [y, m] = ym.split('-').map(Number); return new Date(y, m - 1, 1).toLocaleString(LOC(), { month: 'long', year: 'numeric' }); };
 const monthShort = ym => { const [y, m] = ym.split('-').map(Number); return new Date(y, m - 1, 1).toLocaleString(LOC(), { month: 'short' }); };
-const weekdayName = i => new Date(2024, 0, 7 + i).toLocaleDateString(LOC(), { weekday: 'long' });
 const catName = c => (c.split(' ').slice(1).join(' ') || c).toLowerCase();
 const recById = {};
 // Thanh chuyển tháng: ‹ tháng › và nút nhỏ "Today" (chỉ hiện khi đang xem tháng khác) để về tháng hiện tại
@@ -757,11 +719,23 @@ function donut(by, total, colors) {   // biểu đồ tròn theo hạng mục (c
   const segs = by.map(([k, v], i) => { const p = v / total * 100, o = 25 - cum; cum += p; return `<circle cx="21" cy="21" r="15.9155" fill="none" stroke="${(colors && colors[i]) || PAL[i % PAL.length]}" stroke-width="6" stroke-dasharray="${p.toFixed(3)} ${(100 - p).toFixed(3)}" stroke-dashoffset="${o.toFixed(3)}"></circle>`; }).join('');
   return `<svg class="donut" viewBox="0 0 42 42" role="img" aria-label="${tr('Spending chart')}"><circle cx="21" cy="21" r="15.9155" fill="none" stroke="var(--fill)" stroke-width="6"></circle>${segs}<text x="21" y="22.4" text-anchor="middle" class="dtx">${short(total)}</text></svg>`;
 }
+// Cảnh báo 6 hũ ngay ở Tổng quan: tốt < 70% · trung bình 70–100% · vượt quá > 100%
+function renderJarWatch(all) {
+  const c = computeJars(viewYm, all, pctFor(viewYm)), box = $('#jarWatch');
+  if (!c.income && !c.jars.some(j => j.spent)) { box.innerHTML = ''; return; }
+  const lvOf = j => { const raw = j.allocated ? j.spent / j.allocated * 100 : (j.spent > 0 ? 101 : 0); return [raw > 100 ? 'bad' : raw >= 70 ? 'mid' : 'good', raw]; };
+  const bad = c.jars.filter(j => lvOf(j)[0] === 'bad'), mid = c.jars.filter(j => lvOf(j)[0] === 'mid');
+  box.innerHTML = `<div class="card jwatch" data-go="jars"><div class="jwh"><b>${tr('6 Jars')}</b><small>${bad.length ? `🔴 ${tr('{0} exceeded', bad.length)}` : mid.length ? `🟡 ${tr('{0} to watch', mid.length)}` : `🟢 ${tr('All good')}`}</small></div>` +
+    `<div class="jwg">${c.jars.map((j, i) => { const [lv, raw] = lvOf(j); return `<div class="jw ${lv}"><span>${JAR_ICONS[i]}</span><b>${j.allocated ? Math.round(raw) + '%' : '–'}</b><small>${esc(jarName(i))}</small></div>`; }).join('')}</div>` +
+    (bad.length ? `<div class="jwa">${bad.map(j => `${esc(jarName(JAR_KEYS.indexOf(j.key)))}: ${tr('Over by {0}', fmt(-j.remaining))}`).join(' · ')}</div>` : '') + `</div>`;
+}
+$('#jarWatch').onclick = e => { if (e.target.closest('[data-go="jars"]')) goTop('jars'); };
 async function renderHome() {
   renderGoals();
   await renderPending();
   const all = await doneRecs();
   all.forEach(r => recById[r.id] = r);
+  renderJarWatch(all);
   // Tổng số tiền (tất cả thu nhập) và số tiền còn lại: tính trên toàn bộ dữ liệu, không theo tháng
   const totalInc = sum(all.filter(isInc)), totalExp = sum(all.filter(r => !isInc(r))), remain = totalInc - totalExp;
   $('#balance').innerHTML = `<div class="hl">${tr('Remaining')}</div><b class="total ${remain < 0 ? 'neg' : ''}" data-key="home-remain" data-count="${remain}">${fmt(remain)}</b>` +
@@ -845,7 +819,6 @@ function pinHtml(r, k = 0) {   // nhãn nhỏ: biểu tượng hạng mục + t�
   return `<div class="pin ${inc ? 'in' : 'out'}" style="margin-top:${-k * 30}px"><i>${esc(em)}</i><span>${esc(name)} ${inc ? '+' : '−'}${short(Number(r.amount))}${esc(note)}</span></div>`;
 }
 const locKeyOf = r => r.loc.lat.toFixed(4) + ',' + r.loc.lng.toFixed(4), locKey = locKeyOf;
-const _lk = r => r.loc.lat.toFixed(4) + ',' + r.loc.lng.toFixed(4);
 function renderMap(items) {
   const pts = [], withLoc = items.filter(r => r.loc && isFinite(r.loc.lat) && isFinite(r.loc.lng));
   $('#mapNote').textContent = withLoc.length ? '' : tr('No locations yet');
@@ -1154,28 +1127,6 @@ document.addEventListener('click', e => {
 const PAL = ['#2563eb', '#14b8a6', '#f59e0b', '#ef4444', '#0ea5e9', '#06b6d4', '#84cc16', '#ec4899'];
 const short = n => n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 0 : 1).replace(/\.0$/, '') + 'M' : n >= 1e3 ? Math.round(n / 1e3) + 'k' : String(Math.round(n));
 function sumBy(arr, f) { const o = {}; arr.forEach(r => { const k = f(r); o[k] = (o[k] || 0) + Number(r.amount); }); return o; }
-
-// Biểu đồ chi theo ngày: chạm hoặc kéo ngón tay qua các cột để xem từng ngày
-let dailyInfo = [], dailySel = 0;
-function paintDaily() {
-  const rd = $('#dread'); if (!rd || !dailyInfo[dailySel]) return;
-  const d = dailyInfo[dailySel];
-  rd.innerHTML = `<b>${esc(d.label)}</b><span>${d.v ? fmt(d.v) : tr('No spending')}</span>` + (d.n ? `<small>${d.n} ${tr(d.n > 1 ? 'transactions' : 'transaction')} · ${esc(d.cat)}</small>` : '');
-  document.querySelectorAll('#dwrap .dc').forEach((el, i) => el.classList.toggle('sel', i === dailySel));
-}
-function pickDaily(e) {
-  const w = $('#dwrap'); if (!w) return;
-  const r = w.getBoundingClientRect(), n = dailyInfo.length;
-  const i = Math.max(0, Math.min(n - 1, Math.floor((e.clientX - r.left) / r.width * n)));
-  if (i !== dailySel) { dailySel = i; paintDaily(); }
-}
-{
-  let down = false;
-  $('#dash').addEventListener('pointerdown', e => { if (e.target.closest('#dwrap')) { down = true; pickDaily(e); } });
-  $('#dash').addEventListener('pointermove', e => { if (down) pickDaily(e); });
-  addEventListener('pointerup', () => { down = false; });
-  addEventListener('pointercancel', () => { down = false; });
-}
 
 // Trục Y: chọn bước tròn (1/2/5 × 10^k) để các mốc dễ đọc, tối đa khoảng 4 mức
 function niceAxis(max) {
@@ -1591,10 +1542,8 @@ document.addEventListener('visibilitychange', () => {
 let TABKEYS = ['home', 'txn', 'jars', 'cats'];
 const legacyAdmin = () => (getJSON('users', []).find(u => u.role === 'admin') || {}).id;   // dữ liệu cũ gắn với tài khoản admin trước đây
 const me = { id: legacyAdmin() || 'local', name: 'Member', role: 'member' };
-const isAdmin = () => false;
 const can = () => true;
 const mine = () => true;
-const adminId = () => me.id;
 function applyPermissions() {
   document.querySelectorAll('#tabs button').forEach(b => b.hidden = false);
   $('#tabs').style.setProperty('--n', TABKEYS.length);
