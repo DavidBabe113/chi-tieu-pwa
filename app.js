@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.5.1';
+const VERSION = '2.6.1';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -34,7 +34,7 @@ const VI = {
   'Wrong username or password': 'Sai tên đăng nhập hoặc mật khẩu', 'Wrong current password': 'Sai mật khẩu hiện tại', 'Password must have at least 4 characters': 'Mật khẩu cần ít nhất 4 ký tự',
   'Passwords do not match': 'Hai mật khẩu không khớp', 'That username is already taken': 'Tên đăng nhập này đã có',
   'Add expenses': 'Thêm chi tiêu', 'Add income': 'Thêm khoản thu', "See everyone's transactions": 'Xem giao dịch của mọi người', 'See the Dashboard': 'Xem bảng tổng hợp',
-  'See 6 Jars': 'Xem 6 hũ', 'Edit jar percentages': 'Sửa tỷ lệ các hũ', 'Manage categories': 'Quản lý danh mục', 'Transactions': 'Giao dịch', 'Remaining': 'Còn lại', 'Total money': 'Tổng số tiền', 'Spent so far': 'Đã chi tổng cộng', 'Spent in {0}': 'Đã chi trong {0}', 'Income in {0}': 'Thu nhập trong {0}', 'Spending chart': 'Biểu đồ chi tiêu', 'Peak day': 'Ngày chi nhiều nhất',
+  'See 6 Jars': 'Xem 6 hũ', 'Edit jar percentages': 'Sửa tỷ lệ các hũ', 'Manage categories': 'Quản lý danh mục', 'Transactions': 'Giao dịch', 'Remaining': 'Còn lại', 'Category': 'Hạng mục', 'Edit': 'Sửa', 'Save changes': 'Lưu thay đổi', 'Time': 'Giờ', 'Enter an amount': 'Nhập số tiền', 'Active days': 'Ngày có chi', 'Per active day': 'TB ngày có chi', 'No spending': 'Không chi', 'transactions': 'giao dịch', 'transaction': 'giao dịch', 'No bank found': 'Không tìm thấy ngân hàng', 'Search bank': 'Tìm ngân hàng', 'Total money': 'Tổng số tiền', 'Spent so far': 'Đã chi tổng cộng', 'Spent in {0}': 'Đã chi trong {0}', 'Income in {0}': 'Thu nhập trong {0}', 'Spending chart': 'Biểu đồ chi tiêu', 'Peak day': 'Ngày chi nhiều nhất',
   'Bank name': 'Tên ngân hàng', 'App link': 'Liên kết mở app', 'Add a bank…': 'Thêm ngân hàng…', 'Custom bank': 'Ngân hàng khác (tự nhập)', 'Banks': 'Ngân hàng', 'Remove': 'Xoá', 'No data yet': 'Chưa có dữ liệu', 'Previous month': 'Tháng trước', 'Next month': 'Tháng sau',
   'Today': 'Hôm nay', 'Yesterday': 'Hôm qua', 'No transactions in this month.': 'Chưa có giao dịch trong tháng này.',
   '⏳ pending': '⏳ chờ đồng bộ', 'Did the transfer go through?': 'Giao dịch đã thành công?', 'Cancel': 'Huỷ', 'Done': 'Xong',
@@ -248,9 +248,11 @@ function show(v, mode = true) {
   if (dr === 'fwd' && pv !== v && TOP.includes(pv) && TOP.includes(v)) dr = TOP.indexOf(v) > TOP.indexOf(pv) ? 'next' : 'prev';   // chuyển tab trượt theo chiều
   document.body.dataset.dir = dr;
   $('#fabs').hidden = !(v === 'home' || v === 'txn');
+  if (v !== 'jars') $('#saveMonth').hidden = true;
   document.querySelectorAll('main > section').forEach(s => s.hidden = s.id !== 'v-' + v);
   $('#title').textContent = tr(TITLES[v]);
   $('#back').hidden = !inner;
+  $('#openSettings').hidden = inner;
   $('#tabs').hidden = inner || TABKEYS.length < 2;
   if (!inner) $('#tabs').style.setProperty('--i', Math.max(0, TABKEYS.indexOf(v)));
   document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === v));
@@ -298,7 +300,7 @@ addEventListener('touchstart', e => {
   sw = null;
   if (!(depth === 0 && TOP.includes(curView) && TABKEYS.length > 1 && $('#sheet').hidden && $('#lock').hidden && $('#login').hidden)) return;
   const t = e.touches[0];
-  if (t.clientX < 28 || e.target.closest('input,textarea,select,.cols,.dcols')) return;
+  if (t.clientX < 28 || e.target.closest('input,textarea,select,.cols,.dwrap')) return;
   sw = { x: t.clientX, y: t.clientY, t: Date.now(), axis: '', dx: 0, raf: 0, el: $('#v-' + curView) };
 }, { passive: true });
 addEventListener('touchmove', e => {
@@ -555,19 +557,31 @@ $('#saveIncome').onclick = async () => {
   cur.type = 'income'; cur.status = 'done'; await putRec(cur); sync();
   goTop('home');
 };
-$('#toBank').onclick = () => { if (can('addExpense') && collectDetail()) { renderBanks(); show('bank'); } };
+$('#toBank').onclick = () => { if (can('addExpense') && collectDetail()) { $('#bankQ').value = ''; $('#bankQ').hidden = true; $('#bankQ').placeholder = tr('Search bank'); renderBanks(); show('bank'); } };
 
 // ---------- chọn ngân hàng ----------
+// Chọn ngân hàng: tên viết tắt (thương hiệu) ở trên, tên đầy đủ ở dưới; có ô tìm nhanh
+const fold = t => t.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd').toLowerCase();
 function renderBanks() {
+  const q = fold(($('#bankQ').value || '').trim());
   $('#banks').innerHTML = '';
+  let n = 0;
   banks().forEach(b => {
+    if (q && !fold(b.name).includes(q)) return;
+    n++;
     const el = document.createElement('button');
-    const m = b.name.match(/^(.*?)\s*\((.+)\)$/);   // "Tên đầy đủ (Thương hiệu)" → tên đầy đủ + dòng nhỏ thương hiệu
-    el.innerHTML = m ? `<span class="bn">${esc(m[1])}</span><small>${esc(m[2])}</small>` : esc(b.name);
+    const m = b.name.match(/^(.*?)\s*\((.+)\)$/);   // "Tên đầy đủ (Viết tắt)"
+    el.innerHTML = m ? `<span class="bk1">${esc(m[2])}</span><small class="bk2">${esc(m[1])}</small>` : `<span class="bk1">${esc(b.name)}</span>`;
     el.onclick = () => openBank(b);
     $('#banks').append(el);
   });
+  if (!n) $('#banks').innerHTML = `<p class="hint">${tr('No bank found')}</p>`;
 }
+$('#bankSearchBtn').onclick = () => {
+  const q = $('#bankQ'); q.hidden = !q.hidden;
+  if (q.hidden) { q.value = ''; renderBanks(); } else q.focus();
+};
+$('#bankQ').oninput = renderBanks;
 async function openBank(b) {
   await stash();
   cur.bank = b.name; cur.status = 'done';   // đã nhập số tiền + chọn ngân hàng = lưu luôn
@@ -601,7 +615,12 @@ async function post(r) {
   const url = cfg.get('sheetUrl', '');
   if (!url) return false;
   try {
-    await fetch(url, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(r) });
+    let body = r;
+    if (r.time && r.type !== 'jars') {   // ngày và giờ thành hai cột riêng trong Sheet
+      const d = new Date(r.time);
+      body = { ...r, date: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`, clock: `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` };
+    }
+    await fetch(url, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(body) });
     return true;
   } catch { return false; }
 }
@@ -700,21 +719,28 @@ function dayLabel(d) {
   if (d.toDateString() === y.toDateString()) return tr('Yesterday');
   return d.toLocaleDateString(DLOC(), { weekday: 'short', day: 'numeric', month: 'short' });
 }
-// Danh sách giao dịch theo ngày (dùng cho tab Giao dịch)
+// Danh sách giao dịch theo ngày (dùng cho tab Giao dịch): mỗi ngày có tiêu đề + tổng của ngày
 async function fillDays(box, items) {
   box.innerHTML = '';
-  let grp = null, lastDay = '';
-  for (const r of items) {
-    const d = new Date(r.time);
-    if (d.toDateString() !== lastDay) {
-      lastDay = d.toDateString();
-      box.insertAdjacentHTML('beforeend', `<div class="dayh">${dayLabel(d)}</div>`);
-      grp = document.createElement('div'); grp.className = 'card list'; box.append(grp);
+  const groups = [], todayKey = new Date().toDateString();
+  items.forEach(r => {
+    const d = new Date(r.time), k = d.toDateString();
+    let g = groups[groups.length - 1];
+    if (!g || g.k !== k) { g = { k, d, items: [], sum: 0 }; groups.push(g); }
+    g.items.push(r); g.sum += Number(r.amount);
+  });
+  for (const g of groups) {
+    const head = document.createElement('div'); head.className = 'dayh'; if (g.k === todayKey) head.dataset.today = '1';
+    head.innerHTML = `<span>${dayLabel(g.d)}</span><b>${fmt(g.sum)}</b>`;
+    const grp = document.createElement('div'); grp.className = 'card list';
+    for (const r of g.items) {
+      const d = new Date(r.time);
+      const it = document.createElement('div'); it.className = 'item'; it.dataset.id = r.id;
+      it.innerHTML = `<div class="t">${esc(r.category)}<small>${d.toLocaleTimeString(DLOC(), { hour: '2-digit', minute: '2-digit' })}${r.note ? ' · ' + esc(r.note) : ''}</small></div><div class="amt ${isInc(r) ? 'in' : ''}">${isInc(r) ? '+' : ''}${fmt(r.amount)}</div>`;
+      if (r.photo) { const b = await getPhoto(r.id); if (b) { const i = new Image(); i.decoding = 'async'; i.loading = 'lazy'; i.src = URL.createObjectURL(b); it.prepend(i); } }
+      grp.append(it);
     }
-    const it = document.createElement('div'); it.className = 'item'; it.dataset.id = r.id;
-    it.innerHTML = `<div class="t">${esc(r.category)}<small>${d.toLocaleTimeString(DLOC(), { hour: '2-digit', minute: '2-digit' })}${r.note ? ' · ' + esc(r.note) : ''}</small></div><div class="amt ${isInc(r) ? 'in' : ''}">${isInc(r) ? '+' : ''}${fmt(r.amount)}</div>`;
-    if (r.photo) { const b = await getPhoto(r.id); if (b) { const i = new Image(); i.decoding = 'async'; i.loading = 'lazy'; i.src = URL.createObjectURL(b); it.prepend(i); } }
-    grp.append(it);
+    box.append(head, grp);
   }
 }
 function donut(by, total) {   // biểu đồ tròn theo hạng mục (chu vi = 100)
@@ -765,6 +791,11 @@ async function renderTxn() {
 }
 bindMonthNav($('#txnHead'), renderTxn);
 $('#txnList').onclick = e => { const it = e.target.closest('.item'); if (it && recById[it.dataset.id]) openSheet(recById[it.dataset.id]); };
+$('#txnToday').onclick = async () => {
+  viewYm = nowYm(); await renderTxn();
+  const t = $('#txnList .dayh[data-today]');
+  if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' }); else window.scrollTo({ top: 0, behavior: 'smooth' });
+};
 document.querySelectorAll('#segTxn button').forEach(b => b.onclick = () => { txnType = b.dataset.v; renderTxn(); });
 $('#dash').onclick = e => { const it = e.target.closest('.item'); if (it && recById[it.dataset.id]) openSheet(recById[it.dataset.id]); };
 
@@ -772,6 +803,28 @@ $('#dash').onclick = e => { const it = e.target.closest('.item'); if (it && recB
 const PAL = ['#2f2fc4', '#14b8a6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16', '#ec4899'];
 const short = n => n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 0 : 1).replace(/\.0$/, '') + 'M' : n >= 1e3 ? Math.round(n / 1e3) + 'k' : String(Math.round(n));
 function sumBy(arr, f) { const o = {}; arr.forEach(r => { const k = f(r); o[k] = (o[k] || 0) + Number(r.amount); }); return o; }
+
+// Biểu đồ chi theo ngày: chạm hoặc kéo ngón tay qua các cột để xem từng ngày
+let dailyInfo = [], dailySel = 0;
+function paintDaily() {
+  const rd = $('#dread'); if (!rd || !dailyInfo[dailySel]) return;
+  const d = dailyInfo[dailySel];
+  rd.innerHTML = `<b>${esc(d.label)}</b><span>${d.v ? fmt(d.v) : tr('No spending')}</span>` + (d.n ? `<small>${d.n} ${tr(d.n > 1 ? 'transactions' : 'transaction')} · ${esc(d.cat)}</small>` : '');
+  document.querySelectorAll('#dwrap .dc').forEach((el, i) => el.classList.toggle('sel', i === dailySel));
+}
+function pickDaily(e) {
+  const w = $('#dwrap'); if (!w) return;
+  const r = w.getBoundingClientRect(), n = dailyInfo.length;
+  const i = Math.max(0, Math.min(n - 1, Math.floor((e.clientX - r.left) / r.width * n)));
+  if (i !== dailySel) { dailySel = i; paintDaily(); }
+}
+{
+  let down = false;
+  $('#dash').addEventListener('pointerdown', e => { if (e.target.closest('#dwrap')) { down = true; pickDaily(e); } });
+  $('#dash').addEventListener('pointermove', e => { if (down) pickDaily(e); });
+  addEventListener('pointerup', () => { down = false; });
+  addEventListener('pointercancel', () => { down = false; });
+}
 
 function renderDash(all) {
   const recs = all.filter(r => !isInc(r));   // biểu đồ chi tiêu chỉ tính khoản chi
@@ -816,11 +869,28 @@ function renderDash(all) {
 
   const days = Array(dim).fill(0); m.forEach(r => days[new Date(r.time).getDate() - 1] += Number(r.amount));
   const dmax = Math.max(1, ...days);
-  const peakDay = days.indexOf(dmax) + 1;
-  h += `<h2>${tr('Daily spending')}</h2><div class="card"><div class="dcols">${days.map((v, i) =>
-    `<div class="dc"><div class="dbar ${v === dmax && v ? 'peak' : ''}" style="height:${v ? Math.max(4, Math.round(v / dmax * 100)) : 0}px" title="${i + 1}: ${fmt(v)}"></div></div>`).join('')}</div>
-    <div class="dax"><span>1</span><span>${Math.ceil(dim / 2)}</span><span>${dim}</span></div>
-    <p class="hint dpk">${tr('Peak day')}: ${peakDay} · ${fmt(dmax)}</p></div>`;
+  const cntD = Array(dim).fill(0), catD = Array.from({ length: dim }, () => ({}));
+  m.forEach(r => { const i = new Date(r.time).getDate() - 1; cntD[i]++; catD[i][r.category] = (catD[i][r.category] || 0) + Number(r.amount); });
+  const todayIdx = isCur ? new Date().getDate() - 1 : -1;
+  dailyInfo = days.map((v, i) => {
+    const d = new Date(y, mo - 1, i + 1), tc = Object.entries(catD[i]).sort((p, q) => q[1] - p[1])[0];
+    return { v, n: cntD[i], cat: tc ? tc[0] : '', label: d.toLocaleDateString(DLOC(), { weekday: 'long', day: 'numeric', month: 'short' }) };
+  });
+  dailySel = days.indexOf(dmax);
+  if (todayIdx >= 0) { dailySel = todayIdx; while (dailySel > 0 && !days[dailySel]) dailySel--; if (!days[dailySel]) dailySel = days.indexOf(dmax); }   // mặc định: hôm nay, nếu chưa chi thì ngày gần nhất có chi
+  const peakDay = days.indexOf(dmax) + 1, active = cntD.filter(Boolean).length, avgActive = active ? total / active : 0;
+  const CH = 128, ay = Math.round(avgDay / dmax * CH);
+  const bars = days.map((v, i) => {
+    const wd = new Date(y, mo - 1, i + 1).getDay();
+    const cls = ['dbar', v && v === dmax ? 'peak' : '', wd === 0 || wd === 6 ? 'we' : '', i === todayIdx ? 'tod' : '', todayIdx >= 0 && i > todayIdx ? 'fut' : ''].join(' ');
+    return `<div class="dc" data-i="${i}"><div class="${cls}" style="height:${v ? Math.max(5, Math.round(v / dmax * CH)) : 0}px;animation-delay:${i * 12}ms"></div></div>`;
+  }).join('');
+  h += `<h2>${tr('Daily spending')}</h2><div class="card"><div class="dread" id="dread"></div>` +
+    `<div class="dwrap" id="dwrap"><div class="dgrid"><div class="gl" style="bottom:100%"><em>${short(dmax)}</em></div><div class="gl" style="bottom:50%"><em>${short(dmax / 2)}</em></div><div class="gl" style="bottom:0"><em>0</em></div></div>` +
+    `<div class="davg" style="bottom:${ay}px"><span>${tr('Daily average')}</span></div><div class="dcols">${bars}</div></div>` +
+    `<div class="dax"><span>1</span><span>${Math.ceil(dim / 4)}</span><span>${Math.ceil(dim / 2)}</span><span>${Math.ceil(dim * 3 / 4)}</span><span>${dim}</span></div>` +
+    `<div class="dstats"><div><span>${tr('Peak day')}</span><b>${peakDay}</b></div><div><span>${tr('Active days')}</span><b>${active}/${elapsed}</b></div><div><span>${tr('Per active day')}</span><b>${short(avgActive)}</b></div></div></div>`;
+  setTimeout(paintDaily, 0);
 
   const byBank = Object.entries(sumBy(m, r => r.bank || tr('Cash / no bank'))).sort((a, b) => b[1] - a[1]);
   const bmax = byBank[0][1];
@@ -860,8 +930,7 @@ async function renderJars() {
       `<label class="pct"><input type="number" inputmode="decimal" step="0.5" min="0" max="100" data-pct="${i}" value="${draftPct[i]}" ${can('editJars') ? '' : 'disabled'}><span>%</span></label></div>` +
       `<div class="jbar"><i data-bar></i></div><div class="jsub"><span data-spent></span><b data-left></b></div></div>`;
   });
-  h += `<div class="card totrow"><span>${tr('Total')}</span><b id="pctTotal"></b></div>` +
-    `<button id="saveMonth" class="big"></button><p class="hint">${tr('Percentages can differ every month. Save to keep them for {0}.', monthLabel(viewYm))}</p><div id="jarNote"></div>`;
+  h += `<div id="jarNote"></div>`;
   $('#jarsBody').innerHTML = h;
   runCounts($('#jarsBody'));
   paintJars();
@@ -881,11 +950,11 @@ function paintJars() {
   });
   const total = Math.round(draftPct.reduce((s, v) => s + (Number(v) || 0), 0) * 100) / 100;
   const ok = total === 100;
-  const tEl = $('#pctTotal'); tEl.textContent = total + '%'; tEl.className = ok ? 'pos' : 'neg';
   const saved = pctSaved()[viewYm], isSame = !!saved && sameArr(saved, draftPct);
   const btn = $('#saveMonth');
-  btn.textContent = !ok ? tr('Percentages must add up to 100') : isSame ? '✓ ' + tr('Saved for {0}', monthLabel(viewYm)) : tr('Save {0}', monthLabel(viewYm));
-  btn.disabled = !ok || isSame; btn.hidden = !can('editJars');
+  btn.className = 'fab-save ' + (!ok ? 'bad' : isSame ? 'done' : '');   // nút tròn dấu tích: đỏ = tổng chưa đủ 100%, xanh lá = đã lưu
+  btn.title = !ok ? tr('Percentages must add up to 100') : isSame ? tr('Saved for {0}', monthLabel(viewYm)) : tr('Save {0}', monthLabel(viewYm));
+  btn.disabled = !ok || isSame; btn.hidden = !(can('editJars') && curView === 'jars');
   $('#jarNote').innerHTML = c.unassigned > 0 ? `<div class="card jsub">${tr('Not in any jar: <b>{0}</b>. Assign those categories to a jar in the Categories tab.', fmt(c.unassigned))}</div>` : '';
 }
 $('#jarsBody').addEventListener('input', e => {
@@ -893,13 +962,12 @@ $('#jarsBody').addEventListener('input', e => {
   draftPct[Number(i)] = Math.max(0, Math.min(100, Number(e.target.value) || 0));
   paintJars();
 });
-$('#jarsBody').addEventListener('click', e => {
-  if (monthClick(e)) { renderJars(); return; }
-  if (can('editJars') && e.target.closest('#saveMonth') && !$('#saveMonth').disabled) {
-    const s = pctSaved(); s[viewYm] = draftPct.slice(); cfg.set('jarpct', JSON.stringify(s));
-    markJars(viewYm); sync(); paintJars();
-  }
-});
+$('#jarsBody').addEventListener('click', e => { if (monthClick(e)) renderJars(); });
+$('#saveMonth').onclick = () => {
+  if (!can('editJars') || $('#saveMonth').disabled) return;
+  const s = pctSaved(); s[viewYm] = draftPct.slice(); cfg.set('jarpct', JSON.stringify(s));
+  markJars(viewYm); sync(); paintJars();
+};
 
 // ---------- tab Danh mục: xem, thêm, xoá, gán hũ ----------
 async function renderCategories() {
@@ -967,9 +1035,11 @@ async function openSheet(r) {
   const row = (k, v) => v ? `<div class="drow"><span>${tr(k)}</span><b>${esc(v)}</b></div>` : '';
   $('#sheetBody').innerHTML =
     `<div class="d-cat">${esc(r.category)}</div><div class="d-amt ${isInc(r) ? 'in' : ''}">${isInc(r) ? '+' : ''}${fmt(r.amount)}</div>` +
-    row('Type', isInc(r) ? tr('Income') : tr('Expense')) + row('Date', new Date(r.time).toLocaleString(DLOC())) + row('Bank', r.bank) + row('Payee', r.payee) +
+    row('Category', r.category) + row('Type', isInc(r) ? tr('Income') : tr('Expense')) + row('Date', new Date(r.time).toLocaleDateString(DLOC())) + row('Time', new Date(r.time).toLocaleTimeString(DLOC(), { hour: '2-digit', minute: '2-digit' })) + row('Bank', r.bank) + row('Payee', r.payee) +
     row('Note', r.note) +
-    '<div id="sheetPhoto"></div>';
+    '<div id="sheetPhoto"></div>' +
+    (r.status === 'done' && (isAdmin() || !r.by || (me && r.by === me.id)) ? `<button id="editTx" class="ghost">${tr('Edit')}</button>` : '');
+  const et = $('#editTx'); if (et) et.onclick = () => editTx(r);
   $('#sheet').hidden = false;
   document.body.classList.add('noscroll');
   try { history.pushState({ v: curView, d: depth, sheet: 1 }, ''); } catch {}   // vuốt quay lại sẽ đóng cửa sổ này
@@ -980,6 +1050,36 @@ async function openSheet(r) {
       $('#sheetPhoto').append(i);
     }
   }
+}
+// Sửa lại giao dịch đã nhập sai: hạng mục, số tiền, ngày, giờ, ghi chú
+const pad2 = n => String(n).padStart(2, '0');
+function editTx(r) {
+  const d = new Date(r.time);
+  const list = (isInc(r) ? icats() : cats()).slice(); if (r.category && !list.includes(r.category)) list.unshift(r.category);
+  let pick = r.category;
+  $('#sheetBody').innerHTML = `<div class="d-cat">${tr('Edit')}</div>` +
+    `<div class="chips">${list.map((c, i) => `<button class="chip ${c === pick ? 'on' : ''}" data-i="${i}">${esc(c)}</button>`).join('')}</div>` +
+    `<label>${tr('Amount (₫)')}<input id="eAmt" inputmode="numeric" value="${esc(String(r.amount))}"></label>` +
+    `<label>${tr('Date')}<input id="eDate" type="date" value="${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}"></label>` +
+    `<label>${tr('Time')}<input id="eTime" type="time" value="${pad2(d.getHours())}:${pad2(d.getMinutes())}"></label>` +
+    `<label>${tr('Note')}<input id="eNote" value="${esc(r.note || '')}"></label>` +
+    `<button id="eSave" class="big">${tr('Save changes')}</button>`;
+  document.querySelectorAll('#sheetBody .chip').forEach(b => b.onclick = () => {
+    pick = list[Number(b.dataset.i)];
+    document.querySelectorAll('#sheetBody .chip').forEach(x => x.classList.toggle('on', x === b));
+  });
+  $('#eSave').onclick = async () => {
+    const amt = $('#eAmt').value.replace(/\D/g, '');
+    if (!amt || !Number(amt)) { toast(tr('Enter an amount')); return; }
+    const t = new Date(($('#eDate').value || `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`) + 'T' + ($('#eTime').value || '00:00'));
+    if (isNaN(t)) return;
+    markJars(ymOf(r.time));   // tháng cũ cũng cần cập nhật bảng 6 hũ
+    Object.assign(r, { category: pick, amount: amt, time: t.toISOString(), note: $('#eNote').value.trim(), synced: false });
+    await putRec(r);
+    closeSheet();
+    if (curView === 'home') renderHome(); else if (curView === 'txn') renderTxn();
+    sync();
+  };
 }
 function hideSheet() { $('#sheet').hidden = true; document.body.classList.remove('noscroll'); }
 const closeSheet = () => { if (!$('#sheet').hidden) history.back(); };
