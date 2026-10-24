@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.27.0';
+const VERSION = '2.28.0';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -96,7 +96,7 @@ const VI = {
   'Face ID failed, enter your PIN': 'Face ID không thành công, hãy nhập mã PIN', 'Face ID could not be turned on on this device': 'Không bật được Face ID trên thiết bị này',
   'To reset a forgotten PIN, delete the app icon and add it again from Safari. Data on this phone that is not synced yet is lost.': 'Quên mã PIN thì xoá icon app rồi thêm lại từ Safari. Dữ liệu trên máy chưa đồng bộ sẽ mất.',
   'Data': 'Dữ liệu', '📊 Open Google Sheet': '📊 Mở Google Sheet', 'Google Sheet file link': 'Link file Google Sheet',
-  'Google Apps Script link (Web App)': 'Link Google Apps Script (Web App)', 'Reset app': 'Đặt lại app', 'Deadline (from today)': 'Hạn chót (tính từ hôm nay)', 'Years': 'Năm', 'Months': 'Tháng', 'Days': 'Ngày', 'Take from': 'Lấy từ', 'Outside money': 'Tiền bên ngoài (không trừ hũ)', 'Remaining in this jar: {0}': 'Còn lại trong hũ này: {0}', 'Added from outside, no jar is reduced': 'Nạp từ nguồn ngoài, không trừ hũ nào', 'Not enough in this jar. Remaining: {0}': 'Hũ này không đủ tiền. Còn lại: {0}', 'Export to Excel': 'Xuất ra Excel', 'Export': 'Xuất file', 'All': 'Tất cả', 'All months': 'Tất cả các tháng', 'Savings goals': 'Mục tiêu tiết kiệm', 'New goal': 'Mục tiêu mới', 'Due': 'Hạn chót', 'Saved': 'Đã tích lũy', 'Add money': 'Nạp thêm tiền', 'No goals yet': 'Chưa có mục tiêu nào', 'Goal name': 'Tên mục tiêu', 'e.g. Japan trip': 'vd: Du lịch Nhật Bản', 'Target': 'Số tiền cần đạt', 'Deadline': 'Hạn chót', '3 mo': '3 tháng', '6 mo': '6 tháng', '1 yr': '1 năm', '2 yr': '2 năm', 'None': 'Không', 'Create goal': 'Tạo mục tiêu', 'Delete this goal?': 'Xoá mục tiêu này?', 'Enter an amount first': 'Hãy nhập số tiền', 'Amount': 'Số tiền', 'Date': 'Ngày', 'Reset the app? All transactions, photos and settings on this phone are deleted. Your Google Sheet is not touched.': 'Đặt lại app? Toàn bộ giao dịch, ảnh và cài đặt trên điện thoại này sẽ bị xoá. Google Sheet không bị ảnh hưởng.', 'Banks': 'Ngân hàng',
+  'Google Apps Script link (Web App)': 'Link Google Apps Script (Web App)', 'Reset app': 'Đặt lại app', 'Move to Trash': 'Chuyển vào thùng rác', 'Trash': 'Thùng rác', 'Restore': 'Khôi phục', 'Delete forever': 'Xoá vĩnh viễn', 'Deleted': 'Đã xoá', 'Goal': 'Mục tiêu', 'Empty Trash': 'Dọn sạch thùng rác', 'Trash is empty': 'Thùng rác trống', 'Delete everything in the Trash forever?': 'Xoá vĩnh viễn mọi thứ trong thùng rác?', 'Delete forever? This cannot be undone.': 'Xoá vĩnh viễn? Không thể hoàn tác.', 'Deadline (from today)': 'Hạn chót (tính từ hôm nay)', 'Years': 'Năm', 'Months': 'Tháng', 'Days': 'Ngày', 'Take from': 'Lấy từ', 'Outside money': 'Tiền bên ngoài (không trừ hũ)', 'Remaining in this jar: {0}': 'Còn lại trong hũ này: {0}', 'Added from outside, no jar is reduced': 'Nạp từ nguồn ngoài, không trừ hũ nào', 'Not enough in this jar. Remaining: {0}': 'Hũ này không đủ tiền. Còn lại: {0}', 'Export to Excel': 'Xuất ra Excel', 'Export': 'Xuất file', 'All': 'Tất cả', 'All months': 'Tất cả các tháng', 'Savings goals': 'Mục tiêu tiết kiệm', 'New goal': 'Mục tiêu mới', 'Due': 'Hạn chót', 'Saved': 'Đã tích lũy', 'Add money': 'Nạp thêm tiền', 'No goals yet': 'Chưa có mục tiêu nào', 'Goal name': 'Tên mục tiêu', 'e.g. Japan trip': 'vd: Du lịch Nhật Bản', 'Target': 'Số tiền cần đạt', 'Deadline': 'Hạn chót', '3 mo': '3 tháng', '6 mo': '6 tháng', '1 yr': '1 năm', '2 yr': '2 năm', 'None': 'Không', 'Create goal': 'Tạo mục tiêu', 'Delete this goal?': 'Xoá mục tiêu này?', 'Enter an amount first': 'Hãy nhập số tiền', 'Amount': 'Số tiền', 'Date': 'Ngày', 'Reset the app? All transactions, photos and settings on this phone are deleted. Your Google Sheet is not touched.': 'Đặt lại app? Toàn bộ giao dịch, ảnh và cài đặt trên điện thoại này sẽ bị xoá. Google Sheet không bị ảnh hưởng.', 'Banks': 'Ngân hàng',
   'One per line: Name (Brand) | app link. Edit if an app does not open.': 'Mỗi dòng: Tên (Thương hiệu) | link mở app. Sửa lại nếu app không mở được.',
   'Sent. Check the ChiTieu tab in your Sheet': 'Đã gửi. Mở tab ChiTieu trong Sheet để kiểm tra', 'Send failed, check the link': 'Gửi lỗi, kiểm tra link',
   'Save': 'Lưu',
@@ -892,7 +892,11 @@ $('#goals').addEventListener('click', e => {
   const b = e.target.closest('[data-g]'); if (!b) return;
   if (b.dataset.g === 'new') goalForm();
   else if (b.dataset.g === 'add') goalForm(b.dataset.id);
-  else if (b.dataset.g === 'del' && confirm(tr('Delete this goal?'))) { saveGoals(goals().filter(x => x.id !== b.dataset.id)); renderGoals(); }
+  else if (b.dataset.g === 'del') {
+    const g = goals().find(x => x.id === b.dataset.id); if (!g) return;
+    cfg.set('goalsTrash', JSON.stringify([...getJSON('goalsTrash', []), { ...g, deletedAt: new Date().toISOString() }]));
+    saveGoals(goals().filter(x => x.id !== g.id)); renderGoals();
+  }
 });
 document.addEventListener('click', e => {
   const sv = e.target.closest('#gSave'); if (!sv) return;
@@ -977,6 +981,44 @@ document.addEventListener('click', async e => {
 document.addEventListener('change', e => {
   if (e.target.id === 'xMonth') { exp.ym = e.target.value; paintExport(); }
   else if (e.target.id === 'xCat') { exp.cat = e.target.value; paintExport(); }
+});
+
+// ---------- thùng rác: giao dịch và mục tiêu đã xoá, khôi phục được; tự dọn sau 30 ngày ----------
+const TRASH_DAYS = 30;
+async function paintTrash() {
+  const cut = Date.now() - TRASH_DAYS * 864e5;
+  const recs = (await allRecs()).filter(r => r.status === 'trash');
+  for (const r of recs.filter(r => new Date(r.deletedAt || 0).getTime() < cut)) { await delRec(r.id); await delPhoto(r.id); }
+  const items = recs.filter(r => new Date(r.deletedAt || 0).getTime() >= cut).sort((a, b) => (b.deletedAt || '').localeCompare(a.deletedAt || ''));
+  const gt = getJSON('goalsTrash', []).filter(g => new Date(g.deletedAt || 0).getTime() >= cut);
+  cfg.set('goalsTrash', JSON.stringify(gt));
+  const when = t => new Date(t).toLocaleDateString(DLOC(), { day: 'numeric', month: 'short' });
+  const row = (kind, id, title, sub, val) => `<div class="irow trow"><div class="il">${esc(title)}<small>${esc(sub)}</small></div><b>${val}</b><button class="mini" data-tr="restore" data-k="${kind}" data-id="${id}">${tr('Restore')}</button><button class="cdel" data-tr="purge" data-k="${kind}" data-id="${id}" aria-label="${tr('Delete forever')}">✕</button></div>`;
+  $('#sheetBody').innerHTML = `<h3 class="ih">${tr('Trash')}</h3>` +
+    (items.length + gt.length ? items.map(r => row('rec', r.id, r.category, `${tr('Deleted')} ${when(r.deletedAt)} · ${new Date(r.time).toLocaleDateString(DLOC(), { day: 'numeric', month: 'short' })}${r.note ? ' · ' + r.note : ''}`, (isInc(r) ? '+' : '') + fmt(r.amount))).join('') +
+      gt.map(g => row('goal', g.id, g.name, `${tr('Goal')} · ${tr('Deleted')} ${when(g.deletedAt)}`, fmt(g.saved))).join('') +
+      `<button class="ghost danger" data-tr="empty">${tr('Empty Trash')}</button>` : `<p class="hint">${tr('Trash is empty')}</p>`);
+}
+$('#openTrash').onclick = () => { openPanel(''); paintTrash(); };
+document.addEventListener('click', async e => {
+  const b = e.target.closest('#sheet [data-tr]'); if (!b) return;
+  const k = b.dataset.k, id = b.dataset.id, act = b.dataset.tr;
+  if (act === 'empty') {
+    if (!confirm(tr('Delete everything in the Trash forever?'))) return;
+    for (const r of (await allRecs()).filter(r => r.status === 'trash')) { await delRec(r.id); await delPhoto(r.id); }
+    cfg.set('goalsTrash', '[]');
+  } else if (k === 'rec') {
+    const r = (await allRecs()).find(x => x.id === id); if (!r) return;
+    if (act === 'restore') { r.status = 'done'; delete r.deletedAt; r.synced = false; await putRec(r); markJars(ymOf(r.time)); sync(); }
+    else { if (!confirm(tr('Delete forever? This cannot be undone.'))) return; await delRec(id); await delPhoto(id); }
+  } else {
+    const gt = getJSON('goalsTrash', []), g = gt.find(x => x.id === id); if (!g) return;
+    if (act === 'restore') { delete g.deletedAt; saveGoals([...goals(), g]); renderGoals(); }
+    else if (!confirm(tr('Delete forever? This cannot be undone.'))) return;
+    cfg.set('goalsTrash', JSON.stringify(gt.filter(x => x.id !== id)));
+  }
+  paintTrash();
+  if (curView === 'home') renderHome(); else if (curView === 'txn') renderTxn(); else if (curView === 'jars') renderJars();
 });
 
 // ---------- bấm vào một ô tổng hợp để xem chi tiết (theo tháng / hạng mục / giao dịch) ----------
@@ -1160,11 +1202,6 @@ function renderDash(all) {
       (i === 0 || (i + 1) % 5 === 0 ? `<span class="ycl">${i + 1}</span>` : '') + `</div>`).join('') +
     `</div></div><div class="dstats"><div><span>${tr('Peak day')}</span><b>${peakDay}/${mo}</b></div><div><span>${tr('Highest')}</span><b>${short(dmax)}</b></div><div><span>${tr('Active days')}</span><b>${active}/${elapsed}</b></div></div></div>`;
 
-  const byBank = Object.entries(sumBy(m, r => r.bank || tr('Cash / no bank'))).sort((a, b) => b[1] - a[1]);
-  const bmax = byBank[0][1];
-  h += `<h2>${tr('By payment method')}</h2><div class="card">${byBank.map(([k, v]) =>
-    `<div class="hbar" data-info="bank" data-arg="${esc(k)}"><span>${esc(k.replace(/^.*\((.+)\)$/, '$1'))}</span><div class="ht"><i style="width:${Math.round(v / bmax * 100)}%"></i></div><b>${fmt(v)}</b></div>`).join('')}</div>`;
-
   $('#dash').innerHTML = h;
   runCounts($('#dash'));
 }
@@ -1308,8 +1345,14 @@ async function openSheet(r) {
     row('Note', r.note) +
     (r.loc ? `<div class="drow"><span>${tr('Location')}</span><b><a href="https://www.google.com/maps/search/?api=1&query=${r.loc.lat},${r.loc.lng}" target="_blank" rel="noopener">${tr('Open in Google Maps')}</a></b></div>` : '') +
     '<div id="sheetPhoto"></div>' +
-    (r.status === 'done' && true ? `<button id="editTx" class="ghost">${tr('Edit')}</button>` : '');
+    (r.status === 'done' ? `<button id="editTx" class="ghost">${tr('Edit')}</button><button id="delTx" class="ghost danger">${tr('Move to Trash')}</button>` : '');
   const et = $('#editTx'); if (et) et.onclick = () => editTx(r);
+  const dt = $('#delTx'); if (dt) dt.onclick = async () => {   // vào thùng rác (khôi phục được), chưa xoá hẳn
+    Object.assign(r, { status: 'trash', deletedAt: new Date().toISOString() });
+    await putRec(r); markJars(ymOf(r.time)); closeSheet();
+    if (curView === 'home') renderHome(); else if (curView === 'txn') renderTxn();
+    sync();
+  };
   const wasHidden = $('#sheet').hidden;
   $('#sheet').hidden = false;
   document.body.classList.add('noscroll');
