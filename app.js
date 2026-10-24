@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.9.0';
+const VERSION = '2.10.0';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -21,7 +21,7 @@ const VI = {
   'Scan QR': 'Quét QR', 'Choose category': 'Chọn danh mục', 'Details': 'Chi tiết', 'Choose bank': 'Chọn ngân hàng',
   'Photo library': 'Thư viện ảnh', 'Settings': 'Cài đặt', 'Back': 'Quay lại', 'Close': 'Đóng', 'Add manually': 'Nhập tay',
   // tổng quan
-  'Spent this month': 'Đã chi tháng này', 'Dashboard': 'Bảng tổng hợp', 'Monthly summary': 'Tổng hợp theo tháng', 'Wallet': 'Ví', 'Wallets': 'Ví', 'Payments': 'Thanh toán', '+ Add wallet': '+ Thêm ví', 'No wallet': 'Chưa chọn ví', 'By wallet': 'Theo ví', 'Wallet name': 'Tên ví', 'Savings rate': 'Tỷ lệ thiết kiệm', 'Projected remaining': 'Dự kiến còn lại', 'Total income': 'Tổng thu nhập', 'Total spending': 'Tổng chi tiêu tháng', 'Average per day': 'Trung bình mỗi ngày',
+  'Spent this month': 'Đã chi tháng này', 'Dashboard': 'Bảng tổng hợp', 'Monthly summary': 'Tổng hợp theo tháng', 'Each bar is one day of the month. Touch a bar to see that day.': 'Mỗi cột là một ngày trong tháng. Chạm vào cột để xem ngày đó.', 'Wallet': 'Ví', 'Wallets': 'Ví', 'Payments': 'Thanh toán', '+ Add wallet': '+ Thêm ví', 'No wallet': 'Chưa chọn ví', 'By wallet': 'Theo ví', 'Wallet name': 'Tên ví', 'Savings rate': 'Tỷ lệ thiết kiệm', 'Projected remaining': 'Dự kiến còn lại', 'Total income': 'Tổng thu nhập', 'Total spending': 'Tổng chi tiêu tháng', 'Average per day': 'Trung bình mỗi ngày',
   'Link my Google account': 'Liên kết tài khoản Google của tôi', 'Google Client ID': 'Google Client ID', 'Google email or username': 'Email Google hoặc tên đăng nhập',
   'Password (leave empty for a Google email)': 'Mật khẩu (bỏ trống nếu dùng email Google)', 'This Google account is not on the member list': 'Tài khoản Google này chưa có trong danh sách thành viên',
   'Google sign-in failed': 'Đăng nhập Google không thành công', 'or': 'hoặc',
@@ -149,6 +149,8 @@ const DEF_BANKS = [
   'Vietnam Joint Stock Commercial Bank for Industry and Trade (VietinBank) | vietinbankipay://',
   'Vietnam Bank for Agriculture and Rural Development (Agribank) | agribankmobile://',
   'Orient Commercial Joint Stock Bank (OCB) | newomni-app://',
+  'MoMo (MoMo) | momo://',
+  'ZaloPay (ZaloPay) | zalopay://',
 ].join('\n');
 const OLD_BANKS = 'Vietcombank | vietcombankmobile://\nMB Bank | mbbank://\nTechcombank | tcb://\nVPBank | vpbankneo://\nACB | acbone://\nBIDV | bidv.smartbanking.partner://\nTPBank | hydro://\nVietinBank | vietinbankipay://\nAgribank | agribankmobile://\nOCB | newomni-app://';
 // File Google Sheet chứa dữ liệu (chỉ mở được khi đăng nhập đúng tài khoản Google, Sheet không chia sẻ cho ai)
@@ -224,6 +226,7 @@ const wallets = () => cfg.get('wallets', DEF_WALLETS).split('\n').map(s => s.tri
 const isInc = r => r.type === 'income';       // bản ghi cũ không có type = chi tiêu
 const banks = () => cfg.get('banks', DEF_BANKS).split('\n').map(l => l.split('|').map(s => s.trim()))
   .filter(a => a[0]).map(a => ({ name: a[0], url: a[1] || '' }));
+{ const sb = cfg.get('banks', ''); if (sb) { let t = sb; if (!/momo/i.test(t)) t += '\nMoMo (MoMo) | momo://'; if (!/zalopay/i.test(t)) t += '\nZaloPay (ZaloPay) | zalopay://'; if (t !== sb) cfg.set('banks', t); } }
 
 function toast(msg, ms = 2600) {
   const t = $('#toast'); t.textContent = msg; t.hidden = false;
@@ -488,8 +491,6 @@ const ymd = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0
 function openDetail() {
   $('#amount').value = cur.amount ? Number(cur.amount).toLocaleString(LOC()) : '';
   $('#note').value = cur.note;
-  const wl = wallets(), wsel = wl.includes(cur.wallet) ? cur.wallet : wl.includes(cfg.get('lastWallet', '')) ? cfg.get('lastWallet', '') : wl[0] || '';
-  $('#walletIn').innerHTML = wl.map(w => `<option value="${esc(w)}"${w === wsel ? ' selected' : ''}>${esc(w)}</option>`).join('');
   $('#dateIn').value = ymd(new Date(cur.time));
   $('#preview').hidden = true; curPhoto = null;
   const inc = cur.type === 'income';   // khoản thu: không ảnh, không ngân hàng
@@ -544,7 +545,6 @@ function shrink(file, max = 1280) {
 function collectDetail() {
   cur.amount = $('#amount').value.replace(/\D/g, '');
   cur.note = $('#note').value.trim();
-  cur.wallet = $('#walletIn').value || ''; if (cur.wallet) cfg.set('lastWallet', cur.wallet);
   if (!cur.amount) { toast(tr('Enter an amount first')); return false; }
   const dv = $('#dateIn').value;   // ngày giao dịch (mặc định hôm nay); giữ giờ hiện tại
   if (dv) { const [y, m, d] = dv.split('-').map(Number), n = new Date(); cur.time = new Date(y, m - 1, d, n.getHours(), n.getMinutes(), n.getSeconds()).toISOString(); }
@@ -736,7 +736,7 @@ async function fillDays(box, items) {
     for (const r of g.items) {
       const d = new Date(r.time);
       const it = document.createElement('div'); it.className = 'item'; it.dataset.id = r.id;
-      it.innerHTML = `<div class="t">${esc(r.category)}<small>${d.toLocaleTimeString(DLOC(), { hour: '2-digit', minute: '2-digit' })}${r.wallet ? ' · ' + esc(r.wallet) : ''}${r.bank ? ' · ' + esc(r.bank.replace(/^.*\((.+)\)$/, '$1')) : ''}</small>${r.note ? `<span class="nt">${esc(r.note)}</span>` : ''}</div><div class="amt ${isInc(r) ? 'in' : ''}">${isInc(r) ? '+' : ''}${fmt(r.amount)}</div>`;
+      it.innerHTML = `<div class="t">${esc(r.category)}<small>${d.toLocaleTimeString(DLOC(), { hour: '2-digit', minute: '2-digit' })}${r.bank ? ' · ' + esc(r.bank.replace(/^.*\((.+)\)$/, '$1')) : ''}</small>${r.note ? `<span class="nt">${esc(r.note)}</span>` : ''}</div><div class="amt ${isInc(r) ? 'in' : ''}">${isInc(r) ? '+' : ''}${fmt(r.amount)}</div>`;
       if (r.photo) { const b = await getPhoto(r.id); if (b) { const i = new Image(); i.decoding = 'async'; i.loading = 'lazy'; i.src = URL.createObjectURL(b); it.prepend(i); } }
       grp.append(it);
     }
@@ -863,9 +863,7 @@ async function showInfo(kind, arg, ymArg) {
       ([...months].reverse().map(ym => infoRow(monthLabel(ym), fmt(f(ym)), '', kind === 'income' ? 'pos' : 'neg')).join('') || `<p class="hint">${tr('No data yet')}</p>`);
   } else if (kind === 'remain') {
     let cum = 0; const rows = months.map(ym => { const n = incOf(ym) - expOf(ym); cum += n; return infoRow(monthLabel(ym), (n >= 0 ? '+' : '') + fmt(n), `${tr('Balance')} ${fmt(cum)}`, n < 0 ? 'neg' : 'pos'); }).reverse();
-    const wb = {}; all.forEach(r => { const k = r.wallet || tr('No wallet'); wb[k] = (wb[k] || 0) + (isInc(r) ? 1 : -1) * Number(r.amount); });
-    const wrows = Object.entries(wb).sort((a, b) => b[1] - a[1]).map(([k, v]) => infoRow(k, fmt(v), '', v < 0 ? 'neg' : 'pos')).join('');
-    html = head(tr('Remaining'), fmt(cum)) + (wrows ? `<h3 class="ih">${tr('By wallet')}</h3>` + wrows : '') + `<h3 class="ih">${tr('By month')}</h3>` + (rows.join('') || `<p class="hint">${tr('No data yet')}</p>`);
+    html = head(tr('Remaining'), fmt(cum)) + `<h3 class="ih">${tr('By month')}</h3>` + (rows.join('') || `<p class="hint">${tr('No data yet')}</p>`);
   } else if (kind === 'month') {
     const exp = inM(viewYm, r => !isInc(r)), tot = sum(exp), by = Object.entries(sumBy(exp, r => r.category)).sort((a, b) => b[1] - a[1]);
     html = head(tr('Spent in {0}', monthLabel(viewYm)), fmt(tot)) + `<h3 class="ih">${tr('By category')}</h3>` +
@@ -966,18 +964,16 @@ function renderDash(all) {
   const prevYm = addMonths(viewYm, -1), pTotal = sum(inM(prevYm));
 
   // Thu nhập và chênh lệch nằm ở đây (không còn trong thẻ tóm tắt)
-  let h = `<h2>${tr('Monthly summary')} <span class="h2m">${monthLabel(viewYm)}</span></h2><div class="kpis">` +
+  let h = `<h2>${tr('Monthly summary')}</h2><div class="kpis">` +
     `<div class="kpi" data-info="inc"><div class="l">${tr('Total income')}</div><div class="v sm pos" data-key="d-inc" data-count="${incNow}">${fmt(incNow)}</div></div>` +
     `<div class="kpi" data-info="month"><div class="l">${tr('Total spending')}</div><div class="v sm neg" data-key="d-exp" data-count="${total}">${fmt(total)}</div></div></div>`;
   if (!m.length) { $('#dash').innerHTML = h; runCounts($('#dash')); return; }
 
   const avgDay = total / Math.max(1, elapsed);
-  const topCat = Object.entries(sumBy(m, r => r.category)).sort((a, b) => b[1] - a[1])[0];   // hạng mục chi nhiều nhất (tổng các giao dịch trong hạng mục)
   const pct = pTotal ? (total - pTotal) / pTotal * 100 : null;
 
   h += `<div class="kpis">
     <div class="kpi" data-info="avg"><div class="l">${tr('Average per day')}</div><div class="v sm">${fmt(avgDay)}</div></div>
-    <div class="kpi" data-info="month"><div class="l">${tr('Top category')}</div><div class="v sm">${fmt(topCat[1])}</div><div class="sub2">${esc(topCat[0])} · ${Math.round(topCat[1] / total * 100)}%</div></div>
     ${incNow ? `<div class="kpi" data-info="rate"><div class="l">${tr('Savings rate')}</div><div class="v sm">${Math.round(net / incNow * 100)}%</div></div>` : ''}
     ${isCur && elapsed < dim ? (incNow
       ? `<div class="kpi" data-info="est"><div class="l">${tr('Projected remaining')}</div><div class="v sm ${incNow - avgDay * dim < 0 ? 'neg' : 'pos'}">${fmt(incNow - avgDay * dim)}</div></div>`
@@ -1006,26 +1002,23 @@ function renderDash(all) {
   dailySel = days.indexOf(dmax);
   if (todayIdx >= 0) { dailySel = todayIdx; while (dailySel > 0 && !days[dailySel]) dailySel--; if (!days[dailySel]) dailySel = days.indexOf(dmax); }   // mặc định: hôm nay, nếu chưa chi thì ngày gần nhất có chi
   const peakDay = days.indexOf(dmax) + 1, active = cntD.filter(Boolean).length, avgActive = active ? total / active : 0;
-  const CH = 128, axD = niceAxis(dmax), ay = Math.round(avgDay / axD.top * CH);   // trục Y theo mốc số tiền tròn
+  const CH = 128, axD = niceAxis(dmax);   // trục Y theo mốc số tiền tròn
   const bars = days.map((v, i) => {
     const wd = new Date(y, mo - 1, i + 1).getDay();
     const cls = ['dbar', v && v === dmax ? 'peak' : '', wd === 0 || wd === 6 ? 'we' : '', i === todayIdx ? 'tod' : '', todayIdx >= 0 && i > todayIdx ? 'fut' : ''].join(' ');
     return `<div class="dc" data-i="${i}"><div class="${cls}" style="height:${v ? Math.max(5, Math.round(v / axD.top * CH)) : 0}px;animation-delay:${i * 12}ms"></div></div>`;
   }).join('');
-  h += `<h2>${tr('Daily spending')}</h2><div class="card"><div class="dread" id="dread"></div>` +
+  h += `<h2>${tr('Daily spending')}</h2><div class="card"><p class="hint dhelp">${tr('Each bar is one day of the month. Touch a bar to see that day.')}</p><div class="dread" id="dread"></div>` +
     `<div class="dwrap" id="dwrap"><div class="dgrid">${axisLines(axD)}</div>` +
-    `<div class="davg" style="bottom:${ay}px"><span>${tr('Daily average')}</span></div><div class="dcols">${bars}</div></div>` +
+    `<div class="dcols">${bars}</div></div>` +
     `<div class="dax"><span>1</span><span>${Math.ceil(dim / 4)}</span><span>${Math.ceil(dim / 2)}</span><span>${Math.ceil(dim * 3 / 4)}</span><span>${dim}</span></div>` +
-    `<div class="dstats"><div><span>${tr('Peak day')}</span><b>${peakDay}</b></div><div><span>${tr('Active days')}</span><b>${active}/${elapsed}</b></div><div><span>${tr('Per active day')}</span><b>${short(avgActive)}</b></div></div></div>`;
+    `<div class="dstats"><div><span>${tr('Peak day')}</span><b>${peakDay}</b></div><div><span>${tr('Active days')}</span><b>${active}/${elapsed}</b></div></div></div>`;
   setTimeout(paintDaily, 0);
 
   const byBank = Object.entries(sumBy(m, r => r.bank || tr('Cash / no bank'))).sort((a, b) => b[1] - a[1]);
   const bmax = byBank[0][1];
   h += `<h2>${tr('By bank')}</h2><div class="card">${byBank.map(([k, v]) =>
     `<div class="hbar" data-info="bank" data-arg="${esc(k)}"><span>${esc(k.replace(/^.*\((.+)\)$/, '$1'))}</span><div class="ht"><i style="width:${Math.round(v / bmax * 100)}%"></i></div><b>${fmt(v)}</b></div>`).join('')}</div>`;
-  const byWal = Object.entries(sumBy(m, r => r.wallet || tr('No wallet'))).sort((a, b) => b[1] - a[1]);
-  if (byWal.length) h += `<h2>${tr('By wallet')}</h2><div class="card">${byWal.map(([k, v]) =>
-    `<div class="hbar" data-info="wallet" data-arg="${esc(k)}"><span>${esc(k)}</span><div class="ht"><i style="width:${Math.round(v / byWal[0][1] * 100)}%"></i></div><b>${fmt(v)}</b></div>`).join('')}</div>`;
 
   $('#dash').innerHTML = h;
   runCounts($('#dash'));
@@ -1162,7 +1155,7 @@ async function openSheet(r) {
   const row = (k, v) => v ? `<div class="drow"><span>${tr(k)}</span><b>${esc(v)}</b></div>` : '';
   $('#sheetBody').innerHTML =
     `<div class="d-cat">${esc(r.category)}</div><div class="d-amt ${isInc(r) ? 'in' : ''}">${isInc(r) ? '+' : ''}${fmt(r.amount)}</div>` +
-    row('Category', r.category) + row('Type', isInc(r) ? tr('Income') : tr('Expense')) + row('Date', new Date(r.time).toLocaleDateString(DLOC())) + row('Time', new Date(r.time).toLocaleTimeString(DLOC(), { hour: '2-digit', minute: '2-digit' })) + row('Wallet', r.wallet) + row('Bank', r.bank) + row('Payee', r.payee) +
+    row('Category', r.category) + row('Type', isInc(r) ? tr('Income') : tr('Expense')) + row('Date', new Date(r.time).toLocaleDateString(DLOC())) + row('Time', new Date(r.time).toLocaleTimeString(DLOC(), { hour: '2-digit', minute: '2-digit' })) + row('Bank', r.bank) + row('Payee', r.payee) +
     row('Note', r.note) +
     (r.loc ? `<div class="drow"><span>${tr('Location')}</span><b><a href="https://maps.apple.com/?ll=${r.loc.lat},${r.loc.lng}&q=${encodeURIComponent(r.category)}" target="_blank" rel="noopener">${tr('Open in Maps')}</a></b></div>` : '') +
     '<div id="sheetPhoto"></div>' +
@@ -1191,7 +1184,6 @@ function editTx(r) {
     `<label>${tr('Amount (₫)')}<input id="eAmt" inputmode="numeric" value="${esc(String(r.amount))}"></label>` +
     `<div class="daterow"><label>${tr('Date')}<input id="eDate" type="date" value="${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}"></label><button id="eToday" class="todaybtn" type="button">${tr('Today')}</button></div>` +
     `<label>${tr('Time')}<input id="eTime" type="time" value="${pad2(d.getHours())}:${pad2(d.getMinutes())}"></label>` +
-    `<label>${tr('Wallet')}<select id="eWallet">${[...new Set([...wallets(), r.wallet].filter(Boolean))].map(w => `<option value="${esc(w)}"${w === r.wallet ? ' selected' : ''}>${esc(w)}</option>`).join('')}</select></label>` +
     `<label>${tr('Note')}<input id="eNote" value="${esc(r.note || '')}"></label>` +
     `<button id="eSave" class="big">${tr('Save changes')}</button>`;
   document.querySelectorAll('#sheetBody .chip').forEach(b => b.onclick = () => {
@@ -1205,7 +1197,7 @@ function editTx(r) {
     const t = new Date(($('#eDate').value || `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`) + 'T' + ($('#eTime').value || '00:00'));
     if (isNaN(t)) return;
     markJars(ymOf(r.time));   // tháng cũ cũng cần cập nhật bảng 6 hũ
-    Object.assign(r, { category: pick, amount: amt, time: t.toISOString(), note: $('#eNote').value.trim(), wallet: $('#eWallet').value || r.wallet || '', synced: false });
+    Object.assign(r, { category: pick, amount: amt, time: t.toISOString(), note: $('#eNote').value.trim(), synced: false });
     await putRec(r);
     closeSheet();
     if (curView === 'home') renderHome(); else if (curView === 'txn') renderTxn();
@@ -1236,49 +1228,10 @@ function renderSettings() {
     $('#faceOnBtn').hidden = faceOn(); $('#faceOffBtn').hidden = !faceOn();
   });
   $('#sheetUrl').value = cfg.get('sheetUrl', '');
-  renderBankEditor(); renderWalletEditor();
   $('#locSw').checked = cfg.get('locOn', '1') !== '0';
   document.querySelectorAll('#segLang button').forEach(b => b.classList.toggle('on', b.dataset.v === lang));
   document.querySelectorAll('#segTheme button').forEach(b => b.classList.toggle('on', b.dataset.v === cfg.get('theme', 'auto')));
 }
-const parseBanks = txt => txt.split('\n').map(l => l.trim()).filter(Boolean).map(l => { const p = l.split('|'); return { n: (p[0] || '').trim(), l: p.slice(1).join('|').trim() }; });
-const bankRows = () => parseBanks(cfg.get('banks', DEF_BANKS));
-const saveBankRows = rows => cfg.set('banks', rows.filter(x => x.n).map(x => x.n + ' | ' + x.l).join('\n'));
-const readBankDom = () => [...document.querySelectorAll('#bankList .brow')].map(r => ({ n: r.querySelector('.bn').value.trim(), l: r.querySelector('.bl').value.trim() }));
-function renderBankEditor() {
-  const rows = bankRows(), have = new Set(rows.map(x => x.n.toLowerCase()));
-  $('#bankList').innerHTML = rows.map((b, i) => `<div class="card brow" data-i="${i}"><div class="bhead"><span class="bico">🏦</span><input class="bn" value="${esc(b.n)}" placeholder="${tr('Bank name')}" aria-label="${tr('Bank name')}"><button class="mini del" aria-label="${tr('Remove')}">✕</button></div>` +
-    `<label class="blab">${tr('App link')}<input class="bl" value="${esc(b.l)}" placeholder="mbbank://" autocapitalize="none" autocorrect="off" inputmode="url"></label></div>`).join('');
-  $('#bankPreset').innerHTML = `<option value="">${tr('Add a bank…')}</option>` +
-    parseBanks(DEF_BANKS).filter(x => !have.has(x.n.toLowerCase())).map(x => `<option value="${esc(x.n)}">${esc(x.n)}</option>`).join('') + `<option value="__custom">${tr('Custom bank')}</option>`;
-}
-// Ví (Cash, MoMo, ZaloPay…): thêm / sửa / xoá
-const readWalletDom = () => [...document.querySelectorAll('#walletList .wn')].map(i => i.value.trim()).filter(Boolean);
-const saveWallets = list => cfg.set('wallets', list.join('\n'));
-function renderWalletEditor() {
-  $('#walletList').innerHTML = wallets().map((w, i) => `<div class="card brow wrow" data-i="${i}"><div class="bhead"><span class="bico">👛</span><input class="wn" value="${esc(w)}" placeholder="${tr('Wallet name')}" aria-label="${tr('Wallet name')}"><button class="mini del" aria-label="${tr('Remove')}">✕</button></div></div>`).join('');
-}
-$('#walletList').addEventListener('change', () => saveWallets(readWalletDom()));
-$('#walletList').addEventListener('click', e => {
-  const d = e.target.closest('.del'); if (!d) return;
-  const l = wallets(); l.splice(Number(d.closest('.wrow').dataset.i), 1); saveWallets(l); renderWalletEditor();
-});
-$('#walletAdd').onclick = () => {
-  saveWallets([...wallets(), 'New wallet']); renderWalletEditor();
-  const last = [...document.querySelectorAll('#walletList .wn')].pop(); if (last) { last.value = ''; last.focus(); }
-};
-$('#bankList').addEventListener('change', () => saveBankRows(readBankDom()));
-$('#bankList').addEventListener('click', e => {
-  const d = e.target.closest('.del'); if (!d) return;
-  const rows = readBankDom(); rows.splice(Number(d.closest('.brow').dataset.i), 1); saveBankRows(rows); renderBankEditor();
-});
-$('#bankPreset').onchange = () => {
-  const v = $('#bankPreset').value; if (!v) return;
-  const rows = readBankDom();
-  if (v === '__custom') rows.push({ n: ' ', l: '' }); else rows.push(parseBanks(DEF_BANKS).find(x => x.n === v) || { n: v, l: '' });
-  cfg.set('banks', rows.map(x => (x.n.trim() || 'New bank') + ' | ' + x.l).join('\n')); renderBankEditor();
-  if (v === '__custom') { const last = [...document.querySelectorAll('#bankList .bn')].pop(); if (last) { last.value = ''; last.focus(); } }
-};
 document.querySelectorAll('#segLang button').forEach(b => b.onclick = () => {
   lang = b.dataset.v; cfg.set('lang', lang); translateDom(); show(curView, false);
 });

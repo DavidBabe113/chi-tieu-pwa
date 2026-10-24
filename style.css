@@ -469,3 +469,18 @@ body[data-dir="prev"] main>section:not([hidden]){animation:slidePrev .26s var(--
 .paydet .bhead .bn,.paydet .blab .bl,.paydet .wn{background:var(--card)}
 .wrow .wn{margin:0;flex:1;min-width:0;font-weight:600;box-shadow:none}
 .paydet .jsel.wide{background:var(--fill)}
+
+/* ---------- v2.10: ô tổng hợp mỗi ô một hàng, chặn tràn ngang ---------- */
+html,body{max-width:100%;overflow-x:hidden}
+main{overflow-x:clip}
+.kpis{grid-template-columns:1fr!important;gap:10px;margin:0 0 10px}
+.kpis .kpi{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:0;padding:15px 18px}
+.kpis .kpi .l{font-size:15px;font-weight:600}
+.kpis .kpi .v{margin:0;font-size:20px}
+.kpis .kpi .sub2{display:none}
+.toprow,.filters{min-width:0;max-width:100%}
+.toprow .seg{min-width:0}
+.filters{flex-wrap:nowrap}
+.filters input[type=date]{min-width:0;max-width:150px}
+.filters .jsel{min-width:0}
+.dhelp{margin:0 0 10px}

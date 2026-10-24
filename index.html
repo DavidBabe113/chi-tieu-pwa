@@ -74,7 +74,6 @@
   <section id="v-detail" hidden>
     <label>Amount (₫)<input id="amount" inputmode="numeric" placeholder="0"></label>
     <div class="daterow"><label>Date<input id="dateIn" type="date"></label><button id="dateToday" class="todaybtn" type="button">Today</button></div>
-    <label>Wallet<select id="walletIn"></select></label>
     <label>Note<input id="note" placeholder="e.g. coffee with a client"></label>
     <div class="photo">
       <label class="snap" aria-label="Take a receipt photo">
@@ -120,15 +119,6 @@
         <select id="mRole" class="jsel wide" aria-label="Role"><option value="member">Member</option><option value="admin">Admin</option></select>
         <button id="addMember" class="big">Add member</button>
       </div>
-      <details class="adv paydet">
-        <summary>Payments</summary>
-        <h3 class="ih">Banks</h3>
-        <div id="bankList"></div>
-        <select id="bankPreset" class="jsel wide" aria-label="Add a bank"></select>
-        <h3 class="ih">Wallets</h3>
-        <div id="walletList"></div>
-        <button id="walletAdd" class="ghost" type="button">+ Add wallet</button>
-      </details>
       <h2>Security</h2>
       <div class="card verrow"><span>PIN lock</span><b id="pinState"></b></div>
       <button id="pinSet" class="ghost">Set PIN</button>
