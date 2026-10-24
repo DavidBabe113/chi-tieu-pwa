@@ -553,3 +553,7 @@ input[type=date]::-webkit-date-and-time-value{text-align:left}
 .dcols .ycol.z{cursor:default}
 #mapList{margin-top:14px}
 .linkbtn{display:block;text-align:center;margin:10px 0 4px;text-decoration:none}
+
+/* v2.17.1: nút + nổi bật nhẹ */
+.fab-add{width:56px;height:56px;font-weight:400;color:var(--accent);background:var(--card);box-shadow:0 6px 16px rgba(0,0,128,.22),0 0 0 2px var(--accent)}
+.fab-add:active{transform:scale(.94)}
