@@ -9,6 +9,7 @@
 <meta name="theme-color" content="#f5f5f7">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
+<link rel="stylesheet" href="vendor/leaflet.css">
 <link rel="stylesheet" href="style.css">
 <title>Expenses</title>
 </head>
@@ -43,9 +44,15 @@
   </section>
 
   <section id="v-txn" hidden>
-    <div class="toprow"><div class="seg" id="segTxn"><button data-v="out" class="on">Expense</button><button data-v="in">Income</button></div><button id="txnToday" class="todaybtn">Today</button></div>
+    <div class="toprow"><div class="seg" id="segTxn"><button data-v="out" class="on">Expense</button><button data-v="in">Income</button></div><button id="txnToday" class="todaybtn">Today</button><button id="txnMap" class="icon mapbtn" aria-label="Payment map"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg></button></div>
+    <div class="filters"><select id="txnCat" class="jsel" aria-label="Category"></select><input id="txnDay" type="date" aria-label="Date"><button id="txnDayClear" class="icon" hidden aria-label="All days">✕</button></div>
     <div id="txnHead" class="card hero"></div>
     <div id="txnList"></div>
+  </section>
+
+  <section id="v-map" hidden>
+    <p id="mapNote" class="hint"></p>
+    <div id="map"></div>
   </section>
 
   <section id="v-scan" hidden>
@@ -66,7 +73,8 @@
 
   <section id="v-detail" hidden>
     <label>Amount (₫)<input id="amount" inputmode="numeric" placeholder="0"></label>
-    <label>Date<input id="dateIn" type="date"></label>
+    <div class="daterow"><label>Date<input id="dateIn" type="date"></label><button id="dateToday" class="todaybtn" type="button">Today</button></div>
+    <label>Wallet<select id="walletIn"></select></label>
     <label>Note<input id="note" placeholder="e.g. coffee with a client"></label>
     <div class="photo">
       <label class="snap" aria-label="Take a receipt photo">
@@ -112,9 +120,15 @@
         <select id="mRole" class="jsel wide" aria-label="Role"><option value="member">Member</option><option value="admin">Admin</option></select>
         <button id="addMember" class="big">Add member</button>
       </div>
-      <h2>Banks</h2>
-      <div id="bankList"></div>
-      <select id="bankPreset" class="jsel wide" aria-label="Add a bank"></select>
+      <details class="adv paydet">
+        <summary>Payments</summary>
+        <h3 class="ih">Banks</h3>
+        <div id="bankList"></div>
+        <select id="bankPreset" class="jsel wide" aria-label="Add a bank"></select>
+        <h3 class="ih">Wallets</h3>
+        <div id="walletList"></div>
+        <button id="walletAdd" class="ghost" type="button">+ Add wallet</button>
+      </details>
       <h2>Security</h2>
       <div class="card verrow"><span>PIN lock</span><b id="pinState"></b></div>
       <button id="pinSet" class="ghost">Set PIN</button>
@@ -194,6 +208,7 @@
 
 <div id="toast" hidden></div>
 <script src="vendor/jsQR.js"></script>
+<script src="vendor/leaflet.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

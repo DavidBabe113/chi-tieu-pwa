@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.8.0';
+const VERSION = '2.9.0';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -21,7 +21,7 @@ const VI = {
   'Scan QR': 'Quét QR', 'Choose category': 'Chọn danh mục', 'Details': 'Chi tiết', 'Choose bank': 'Chọn ngân hàng',
   'Photo library': 'Thư viện ảnh', 'Settings': 'Cài đặt', 'Back': 'Quay lại', 'Close': 'Đóng', 'Add manually': 'Nhập tay',
   // tổng quan
-  'Spent this month': 'Đã chi tháng này', 'Dashboard': 'Bảng tổng hợp',
+  'Spent this month': 'Đã chi tháng này', 'Dashboard': 'Bảng tổng hợp', 'Monthly summary': 'Tổng hợp theo tháng', 'Wallet': 'Ví', 'Wallets': 'Ví', 'Payments': 'Thanh toán', '+ Add wallet': '+ Thêm ví', 'No wallet': 'Chưa chọn ví', 'By wallet': 'Theo ví', 'Wallet name': 'Tên ví', 'Savings rate': 'Tỷ lệ thiết kiệm', 'Projected remaining': 'Dự kiến còn lại', 'Total income': 'Tổng thu nhập', 'Total spending': 'Tổng chi tiêu tháng', 'Average per day': 'Trung bình mỗi ngày',
   'Link my Google account': 'Liên kết tài khoản Google của tôi', 'Google Client ID': 'Google Client ID', 'Google email or username': 'Email Google hoặc tên đăng nhập',
   'Password (leave empty for a Google email)': 'Mật khẩu (bỏ trống nếu dùng email Google)', 'This Google account is not on the member list': 'Tài khoản Google này chưa có trong danh sách thành viên',
   'Google sign-in failed': 'Đăng nhập Google không thành công', 'or': 'hoặc',
@@ -34,7 +34,7 @@ const VI = {
   'Wrong username or password': 'Sai tên đăng nhập hoặc mật khẩu', 'Wrong current password': 'Sai mật khẩu hiện tại', 'Password must have at least 4 characters': 'Mật khẩu cần ít nhất 4 ký tự',
   'Passwords do not match': 'Hai mật khẩu không khớp', 'That username is already taken': 'Tên đăng nhập này đã có',
   'Add expenses': 'Thêm chi tiêu', 'Add income': 'Thêm khoản thu', "See everyone's transactions": 'Xem giao dịch của mọi người', 'See the Dashboard': 'Xem bảng tổng hợp',
-  'See 6 Jars': 'Xem 6 hũ', 'Edit jar percentages': 'Sửa tỷ lệ các hũ', 'Manage categories': 'Quản lý danh mục', 'Transactions': 'Giao dịch', 'Remaining': 'Còn lại', 'Location': 'Vị trí', 'Open in Maps': 'Mở bản đồ', 'Save payment location': 'Lưu vị trí khi thanh toán', 'Privacy': 'Quyền riêng tư', 'Financial Tracking': 'Theo dõi tài chính', 'By month': 'Theo tháng', 'Balance': 'Số dư', 'Days elapsed': 'Số ngày đã qua', 'Category': 'Hạng mục', 'Edit': 'Sửa', 'Save changes': 'Lưu thay đổi', 'Time': 'Giờ', 'Enter an amount': 'Nhập số tiền', 'Active days': 'Ngày có chi', 'Per active day': 'TB ngày có chi', 'No spending': 'Không chi', 'transactions': 'giao dịch', 'transaction': 'giao dịch', 'No bank found': 'Không tìm thấy ngân hàng', 'Search bank': 'Tìm ngân hàng', 'Total money': 'Tổng số tiền', 'Spent so far': 'Đã chi tổng cộng', 'Spent in {0}': 'Đã chi trong {0}', 'Income in {0}': 'Thu nhập trong {0}', 'Spending chart': 'Biểu đồ chi tiêu', 'Peak day': 'Ngày chi nhiều nhất',
+  'See 6 Jars': 'Xem 6 hũ', 'Edit jar percentages': 'Sửa tỷ lệ các hũ', 'Manage categories': 'Quản lý danh mục', 'Transactions': 'Giao dịch', 'Remaining': 'Còn lại', 'Payment map': 'Bản đồ thanh toán', '{0} places with a saved location. Tap a pin for details.': '{0} nơi có vị trí đã lưu. Chạm vào ghim để xem chi tiết.', 'No locations saved yet. A location is saved when you enter an amount (allow location access).': 'Chưa có vị trí nào. Vị trí được lưu khi bạn nhập số tiền (hãy cho phép truy cập vị trí).', 'The map could not load. Check your connection.': 'Không tải được bản đồ. Kiểm tra kết nối mạng.', 'All categories': 'Tất cả hạng mục', 'Location': 'Vị trí', 'Open in Maps': 'Mở bản đồ', 'Save payment location': 'Lưu vị trí khi thanh toán', 'Privacy': 'Quyền riêng tư', 'Financial Tracking': 'Theo dõi tài chính', 'By month': 'Theo tháng', 'Balance': 'Số dư', 'Days elapsed': 'Số ngày đã qua', 'Category': 'Hạng mục', 'Edit': 'Sửa', 'Save changes': 'Lưu thay đổi', 'Time': 'Giờ', 'Enter an amount': 'Nhập số tiền', 'Active days': 'Ngày có chi', 'Per active day': 'TB ngày có chi', 'No spending': 'Không chi', 'transactions': 'giao dịch', 'transaction': 'giao dịch', 'No bank found': 'Không tìm thấy ngân hàng', 'Search bank': 'Tìm ngân hàng', 'Total money': 'Tổng số tiền', 'Spent so far': 'Đã chi tổng cộng', 'Spent in {0}': 'Đã chi trong {0}', 'Income in {0}': 'Thu nhập trong {0}', 'Spending chart': 'Biểu đồ chi tiêu', 'Peak day': 'Ngày chi nhiều nhất',
   'Bank name': 'Tên ngân hàng', 'App link': 'Liên kết mở app', 'Add a bank…': 'Thêm ngân hàng…', 'Custom bank': 'Ngân hàng khác (tự nhập)', 'Banks': 'Ngân hàng', 'Remove': 'Xoá', 'No data yet': 'Chưa có dữ liệu', 'Previous month': 'Tháng trước', 'Next month': 'Tháng sau',
   'Today': 'Hôm nay', 'Yesterday': 'Hôm qua', 'No transactions in this month.': 'Chưa có giao dịch trong tháng này.',
   '⏳ pending': '⏳ chờ đồng bộ', 'Did the transfer go through?': 'Giao dịch đã thành công?', 'Cancel': 'Huỷ', 'Done': 'Xong',
@@ -134,7 +134,7 @@ function applyTheme() {
 applyTheme();
 
 // ---------- mặc định ----------
-const DEF_CATS = '⛽ Fuel\n☕ Food & Coffee\n🛍 Shopping\n🏠 Home bills\n🏥 Health\n🎬 Entertainment\n📦 Other';
+const DEF_CATS = '⛽ Fuel\n☕ Food & Coffee\n🛍 Shopping\n🏥 Health\n🎬 Entertainment\n📦 Other';
 const DEF_ICATS = '💼 Salary\n🎁 Bonus\n💻 Freelance\n📈 Investment\n🧧 Gift\n💰 Other income';
 // URL scheme mở thẳng app ngân hàng trên iOS (lấy từ trang chuyển tiếp của dl.vietqr.io). Chỉ mở app,
 // không truyền được số tiền / tài khoản (iOS không có link điền sẵn đã kiểm chứng).
@@ -218,6 +218,9 @@ let stream = null, scanning = false, curView = 'home';
 
 const cats = () => cfg.get('cats', DEF_CATS).split('\n').map(s => s.trim()).filter(Boolean);
 const icats = () => cfg.get('icats', DEF_ICATS).split('\n').map(s => s.trim()).filter(Boolean);
+{ const sc = cfg.get('cats', ''); if (/Home bills/i.test(sc)) cfg.set('cats', sc.split('\n').filter(l => !/Home bills/i.test(l)).join('\n')); }   // đã bỏ hạng mục Home bills
+const DEF_WALLETS = '💵 Cash\n🟣 MoMo\n🔵 ZaloPay';
+const wallets = () => cfg.get('wallets', DEF_WALLETS).split('\n').map(s => s.trim()).filter(Boolean);
 const isInc = r => r.type === 'income';       // bản ghi cũ không có type = chi tiêu
 const banks = () => cfg.get('banks', DEF_BANKS).split('\n').map(l => l.split('|').map(s => s.trim()))
   .filter(a => a[0]).map(a => ({ name: a[0], url: a[1] || '' }));
@@ -228,7 +231,7 @@ function toast(msg, ms = 2600) {
 }
 
 // ---------- điều hướng (dùng lịch sử trình duyệt để vuốt cạnh trái = quay lại) ----------
-const TITLES = { home: 'Financial Tracking', txn: 'Transactions', jars: '6 Jars', cats: 'Categories', scan: 'Scan QR', cat: 'Choose category', detail: 'Details', bank: 'Choose bank', settings: 'Settings' };
+const TITLES = { home: 'Financial Tracking', map: 'Payment map', txn: 'Transactions', jars: '6 Jars', cats: 'Categories', scan: 'Scan QR', cat: 'Choose category', detail: 'Details', bank: 'Choose bank', settings: 'Settings' };
 const TOP = ['home', 'txn', 'jars', 'cats'];
 let depth = 0, pendingTop = null, lastBack = 0, dir = 'fwd';
 try { history.replaceState({ v: 'home', d: 0 }, ''); } catch {}
@@ -259,6 +262,7 @@ function show(v, mode = true) {
   window.scrollTo(0, 0);
   if (v === 'home') renderHome();
   if (v === 'txn') renderTxn();
+  if (v === 'map') renderMap();
   if (v === 'jars') renderJars();
   if (v === 'cats') renderCategories();
   if (v === 'settings') renderSettings();
@@ -484,10 +488,12 @@ const ymd = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0
 function openDetail() {
   $('#amount').value = cur.amount ? Number(cur.amount).toLocaleString(LOC()) : '';
   $('#note').value = cur.note;
+  const wl = wallets(), wsel = wl.includes(cur.wallet) ? cur.wallet : wl.includes(cfg.get('lastWallet', '')) ? cfg.get('lastWallet', '') : wl[0] || '';
+  $('#walletIn').innerHTML = wl.map(w => `<option value="${esc(w)}"${w === wsel ? ' selected' : ''}>${esc(w)}</option>`).join('');
   $('#dateIn').value = ymd(new Date(cur.time));
   $('#preview').hidden = true; curPhoto = null;
   const inc = cur.type === 'income';   // khoản thu: không ảnh, không ngân hàng
-  $('.photo').hidden = inc; $('#toBank').hidden = inc; $('#saveOnly').hidden = inc; $('#saveIncome').hidden = !inc;
+  $('.photo').hidden = false; $('#toBank').hidden = inc; $('#saveOnly').hidden = inc; $('#saveIncome').hidden = !inc;
   show('detail');
   // Ghi lại vị trí lúc nhập số tiền (cần bạn cho phép định vị; tắt được trong Cài đặt)
   const rec = cur; rec.loc = null;
@@ -538,6 +544,7 @@ function shrink(file, max = 1280) {
 function collectDetail() {
   cur.amount = $('#amount').value.replace(/\D/g, '');
   cur.note = $('#note').value.trim();
+  cur.wallet = $('#walletIn').value || ''; if (cur.wallet) cfg.set('lastWallet', cur.wallet);
   if (!cur.amount) { toast(tr('Enter an amount first')); return false; }
   const dv = $('#dateIn').value;   // ngày giao dịch (mặc định hôm nay); giữ giờ hiện tại
   if (dv) { const [y, m, d] = dv.split('-').map(Number), n = new Date(); cur.time = new Date(y, m - 1, d, n.getHours(), n.getMinutes(), n.getSeconds()).toISOString(); }
@@ -559,6 +566,7 @@ $('#saveOnly').onclick = async () => {
 };
 $('#saveIncome').onclick = async () => {
   if (!can('addIncome') || !collectDetail()) return;
+  await stash();
   cur.type = 'income'; cur.status = 'done'; await putRec(cur); sync();
   goTop('home');
 };
@@ -728,7 +736,7 @@ async function fillDays(box, items) {
     for (const r of g.items) {
       const d = new Date(r.time);
       const it = document.createElement('div'); it.className = 'item'; it.dataset.id = r.id;
-      it.innerHTML = `<div class="t">${esc(r.category)}<small>${d.toLocaleTimeString(DLOC(), { hour: '2-digit', minute: '2-digit' })}${r.note ? ' · ' + esc(r.note) : ''}</small></div><div class="amt ${isInc(r) ? 'in' : ''}">${isInc(r) ? '+' : ''}${fmt(r.amount)}</div>`;
+      it.innerHTML = `<div class="t">${esc(r.category)}<small>${d.toLocaleTimeString(DLOC(), { hour: '2-digit', minute: '2-digit' })}${r.wallet ? ' · ' + esc(r.wallet) : ''}${r.bank ? ' · ' + esc(r.bank.replace(/^.*\((.+)\)$/, '$1')) : ''}</small>${r.note ? `<span class="nt">${esc(r.note)}</span>` : ''}</div><div class="amt ${isInc(r) ? 'in' : ''}">${isInc(r) ? '+' : ''}${fmt(r.amount)}</div>`;
       if (r.photo) { const b = await getPhoto(r.id); if (b) { const i = new Image(); i.decoding = 'async'; i.loading = 'lazy'; i.src = URL.createObjectURL(b); it.prepend(i); } }
       grp.append(it);
     }
@@ -769,13 +777,20 @@ async function renderHome() {
 bindMonthNav($('#stats'), renderHome);
 
 // ---------- Giao dịch: lịch sử theo tháng, hai tab nhỏ Chi tiêu / Thu nhập ----------
-let txnType = 'out';
+let txnType = 'out', txnCat = '', txnDay = '';
 async function renderTxn() {
   const all = await doneRecs();
   all.forEach(r => recById[r.id] = r);
   const totalInc = sum(all.filter(isInc)), totalExp = sum(all.filter(r => !isInc(r)));
   const inc = txnType === 'in';
-  const items = all.filter(r => ymOf(r.time) === viewYm && isInc(r) === inc).sort((a, b) => b.time.localeCompare(a.time));
+  // ô chọn hạng mục: danh mục đã cài + danh mục có trong dữ liệu của loại này
+  const ofType = all.filter(r => isInc(r) === inc);
+  const catOpts = [...new Set([...(inc ? icats() : cats()), ...ofType.map(r => r.category)])].filter(Boolean);
+  if (txnCat && !catOpts.includes(txnCat)) txnCat = '';
+  $('#txnCat').innerHTML = `<option value="">${tr('All categories')}</option>` + catOpts.map(c => `<option value="${esc(c)}"${c === txnCat ? ' selected' : ''}>${esc(c)}</option>`).join('');
+  if (txnDay && txnDay.slice(0, 7) !== viewYm) txnDay = '';
+  $('#txnDay').value = txnDay; $('#txnDayClear').hidden = !txnDay;
+  const items = ofType.filter(r => ymOf(r.time) === viewYm && (!txnCat || r.category === txnCat) && (!txnDay || ymd(new Date(r.time)) === txnDay)).sort((a, b) => b.time.localeCompare(a.time));
   const tot = sum(items);
   document.querySelectorAll('#segTxn button').forEach(b => b.classList.toggle('on', b.dataset.v === txnType));
   $('#txnHead').innerHTML = monthNav('') +
@@ -785,14 +800,40 @@ async function renderTxn() {
   await fillDays($('#txnList'), items);
   if (!items.length) $('#txnList').innerHTML = `<p class="hint">${tr('No transactions in this month.')}</p>`;
 }
-bindMonthNav($('#txnHead'), renderTxn);
+bindMonthNav($('#txnHead'), () => { txnDay = ''; renderTxn(); });
+$('#txnCat').onchange = e => { txnCat = e.target.value; renderTxn(); };
+$('#txnDay').onchange = e => { txnDay = e.target.value; if (txnDay) viewYm = txnDay.slice(0, 7); renderTxn(); };
+$('#txnDayClear').onclick = () => { txnDay = ''; renderTxn(); };
 $('#txnList').onclick = e => { const it = e.target.closest('.item'); if (it && recById[it.dataset.id]) openSheet(recById[it.dataset.id]); };
-$('#txnToday').onclick = async () => {
-  viewYm = nowYm(); await renderTxn();
-  const t = $('#txnList .dayh[data-today]');
-  if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' }); else window.scrollTo({ top: 0, behavior: 'smooth' });
-};
+$('#txnToday').onclick = () => { viewYm = nowYm(); txnDay = ymd(new Date()); renderTxn(); window.scrollTo({ top: 0, behavior: 'smooth' }); };   // Today: lọc đúng hôm nay
 document.querySelectorAll('#segTxn button').forEach(b => b.onclick = () => { txnType = b.dataset.v; renderTxn(); });
+// ---------- bản đồ các nơi đã thanh toán (Leaflet + OpenStreetMap; vị trí chỉ đọc từ dữ liệu trong máy) ----------
+let leaf = null, leafLayer = null;
+async function renderMap() {
+  const all = (await doneRecs()).filter(r => r.loc && isFinite(r.loc.lat) && isFinite(r.loc.lng));
+  all.forEach(r => recById[r.id] = r);
+  $('#mapNote').textContent = all.length ? tr('{0} places with a saved location. Tap a pin for details.', all.length) : tr('No locations saved yet. A location is saved when you enter an amount (allow location access).');
+  if (typeof L === 'undefined') { $('#mapNote').textContent = tr('The map could not load. Check your connection.'); return; }
+  if (!leaf) {
+    leaf = L.map('map', { zoomControl: true, attributionControl: true }).setView([16.05, 108.2], 5);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(leaf);
+    leafLayer = L.layerGroup().addTo(leaf);
+  }
+  leafLayer.clearLayers();
+  const pts = [];
+  all.forEach(r => {
+    const inc = isInc(r), p = [r.loc.lat, r.loc.lng]; pts.push(p);
+    L.circleMarker(p, { radius: 9, color: '#fff', weight: 2, fillColor: inc ? '#16a34a' : '#dc2626', fillOpacity: 0.95 })
+      .bindTooltip(`${r.category} · ${inc ? '+' : ''}${fmt(r.amount)}`, { direction: 'top' })
+      .on('click', () => openSheet(r)).addTo(leafLayer);
+  });
+  setTimeout(() => {
+    leaf.invalidateSize();
+    if (pts.length === 1) leaf.setView(pts[0], 16); else if (pts.length) leaf.fitBounds(pts, { padding: [40, 40], maxZoom: 16 });
+  }, 60);
+}
+$('#txnMap').onclick = () => show('map');
+$('#dateToday').onclick = () => { $('#dateIn').value = ymd(new Date()); };
 $('#dash').onclick = e => { const it = e.target.closest('.item'); if (it && recById[it.dataset.id]) openSheet(recById[it.dataset.id]); };
 
 // ---------- bấm vào một ô tổng hợp để xem chi tiết (theo tháng / hạng mục / giao dịch) ----------
@@ -822,7 +863,9 @@ async function showInfo(kind, arg, ymArg) {
       ([...months].reverse().map(ym => infoRow(monthLabel(ym), fmt(f(ym)), '', kind === 'income' ? 'pos' : 'neg')).join('') || `<p class="hint">${tr('No data yet')}</p>`);
   } else if (kind === 'remain') {
     let cum = 0; const rows = months.map(ym => { const n = incOf(ym) - expOf(ym); cum += n; return infoRow(monthLabel(ym), (n >= 0 ? '+' : '') + fmt(n), `${tr('Balance')} ${fmt(cum)}`, n < 0 ? 'neg' : 'pos'); }).reverse();
-    html = head(tr('Remaining'), fmt(cum)) + `<h3 class="ih">${tr('By month')}</h3>` + (rows.join('') || `<p class="hint">${tr('No data yet')}</p>`);
+    const wb = {}; all.forEach(r => { const k = r.wallet || tr('No wallet'); wb[k] = (wb[k] || 0) + (isInc(r) ? 1 : -1) * Number(r.amount); });
+    const wrows = Object.entries(wb).sort((a, b) => b[1] - a[1]).map(([k, v]) => infoRow(k, fmt(v), '', v < 0 ? 'neg' : 'pos')).join('');
+    html = head(tr('Remaining'), fmt(cum)) + (wrows ? `<h3 class="ih">${tr('By wallet')}</h3>` + wrows : '') + `<h3 class="ih">${tr('By month')}</h3>` + (rows.join('') || `<p class="hint">${tr('No data yet')}</p>`);
   } else if (kind === 'month') {
     const exp = inM(viewYm, r => !isInc(r)), tot = sum(exp), by = Object.entries(sumBy(exp, r => r.category)).sort((a, b) => b[1] - a[1]);
     html = head(tr('Spent in {0}', monthLabel(viewYm)), fmt(tot)) + `<h3 class="ih">${tr('By category')}</h3>` +
@@ -843,12 +886,21 @@ async function showInfo(kind, arg, ymArg) {
   } else if (kind === 'avg' || kind === 'est') {
     const exp = inM(viewYm, r => !isInc(r)), tot = sum(exp), [yy, mm] = viewYm.split('-').map(Number), dim = new Date(yy, mm, 0).getDate();
     const el = viewYm === nowYm() ? new Date().getDate() : dim, avg = tot / Math.max(1, el);
-    if (kind === 'est') html = head(tr('Month-end estimate'), fmt(avg * dim)) + infoRow(tr('Spent so far'), fmt(tot)) + infoRow(tr('Days elapsed'), el + '/' + dim) + infoRow(tr('Daily average'), fmt(avg));
+    if (kind === 'est') {
+      const inc = incOf(viewYm), left = inc - avg * dim;
+      html = inc ? head(tr('Projected remaining'), fmt(left), left < 0 ? 'neg' : 'in') + infoRow(tr('Total income'), fmt(inc), '', 'pos') + infoRow(tr('Spent so far'), fmt(tot), '', 'neg') + infoRow(tr('Days elapsed'), el + '/' + dim) + infoRow(tr('Average per day'), fmt(avg)) + infoRow(tr('Month-end estimate'), fmt(avg * dim), '', 'neg')
+        : head(tr('Month-end estimate'), fmt(avg * dim)) + infoRow(tr('Spent so far'), fmt(tot)) + infoRow(tr('Days elapsed'), el + '/' + dim) + infoRow(tr('Average per day'), fmt(avg));
+    }
     else {
       const byDay = {}; exp.forEach(r => { const k = new Date(r.time).getDate(); byDay[k] = (byDay[k] || 0) + Number(r.amount); });
-      html = head(tr('Daily average'), fmt(avg)) + `<h3 class="ih">${tr('Daily spending')}</h3>` +
+      html = head(tr('Average per day'), fmt(avg)) + `<h3 class="ih">${tr('Daily spending')}</h3>` +
         Object.keys(byDay).map(Number).sort((a, b) => b - a).map(d => infoRow(new Date(yy, mm - 1, d).toLocaleDateString(DLOC(), { weekday: 'short', day: 'numeric', month: 'short' }), fmt(byDay[d]))).join('');
     }
+  } else if (kind === 'bank' || kind === 'wallet') {
+    const key = r => kind === 'bank' ? (r.bank || tr('Cash / no bank')) : (r.wallet || tr('No wallet'));
+    const items = inM(viewYm, r => !isInc(r) && key(r) === arg).sort((a, b) => b.time.localeCompare(a.time));
+    html = head(kind === 'bank' ? arg.replace(/^.*\((.+)\)$/, '$1') : arg, fmt(sum(items))) + `<h3 class="ih">${monthLabel(viewYm)} · ${items.length} ${tr(items.length > 1 ? 'transactions' : 'transaction')}</h3>` +
+      items.map(r => infoRow(r.category, fmt(r.amount), esc(new Date(r.time).toLocaleDateString(DLOC(), { day: 'numeric', month: 'short' }) + (r.note ? ' · ' + r.note : '')), 'neg', r.id)).join('');
   } else if (kind === 'mon') {
     const ym = arg, i = incOf(ym), e = expOf(ym), n = i - e;
     const grp = (f, cls) => Object.entries(sumBy(inM(ym, f), r => r.category)).sort((a, b) => b[1] - a[1]).map(([k, v]) =>
@@ -894,6 +946,14 @@ function pickDaily(e) {
   addEventListener('pointercancel', () => { down = false; });
 }
 
+// Trục Y: chọn bước tròn (1/2/5 × 10^k) để các mốc dễ đọc, tối đa khoảng 4 mức
+function niceAxis(max) {
+  const raw = Math.max(1, max) / 4, mag = Math.pow(10, Math.floor(Math.log10(raw))), n = raw / mag;
+  const step = (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * mag, cnt = Math.max(1, Math.ceil(Math.max(1, max) / step));
+  return { step, cnt, top: step * cnt };
+}
+const axisLines = ax => Array.from({ length: ax.cnt + 1 }, (_, i) =>
+  `<div class="gl" style="bottom:${(i / ax.cnt * 100).toFixed(2)}%"><em>${i ? short(ax.step * i) : '0'}</em></div>`).join('');
 function renderDash(all) {
   const recs = all.filter(r => !isInc(r));   // biểu đồ chi tiêu chỉ tính khoản chi
   const incIn = ym => sum(all.filter(r => isInc(r) && ymOf(r.time) === ym));
@@ -906,9 +966,9 @@ function renderDash(all) {
   const prevYm = addMonths(viewYm, -1), pTotal = sum(inM(prevYm));
 
   // Thu nhập và chênh lệch nằm ở đây (không còn trong thẻ tóm tắt)
-  let h = `<h2>${tr('Dashboard')}</h2><div class="kpis">` +
-    `<div class="kpi" data-info="inc"><div class="l">${tr('Income')}</div><div class="v sm pos" data-key="d-inc" data-count="${incNow}">${fmt(incNow)}</div></div>` +
-    `<div class="kpi" data-info="net"><div class="l">${tr('Net')}</div><div class="v sm ${net < 0 ? 'neg' : ''}" data-key="d-net" data-count="${net}">${fmt(net)}</div></div></div>`;
+  let h = `<h2>${tr('Monthly summary')} <span class="h2m">${monthLabel(viewYm)}</span></h2><div class="kpis">` +
+    `<div class="kpi" data-info="inc"><div class="l">${tr('Total income')}</div><div class="v sm pos" data-key="d-inc" data-count="${incNow}">${fmt(incNow)}</div></div>` +
+    `<div class="kpi" data-info="month"><div class="l">${tr('Total spending')}</div><div class="v sm neg" data-key="d-exp" data-count="${total}">${fmt(total)}</div></div></div>`;
   if (!m.length) { $('#dash').innerHTML = h; runCounts($('#dash')); return; }
 
   const avgDay = total / Math.max(1, elapsed);
@@ -916,24 +976,23 @@ function renderDash(all) {
   const pct = pTotal ? (total - pTotal) / pTotal * 100 : null;
 
   h += `<div class="kpis">
-    <div class="kpi" data-info="avg"><div class="l">${tr('Daily average')}</div><div class="v sm">${fmt(avgDay)}</div></div>
+    <div class="kpi" data-info="avg"><div class="l">${tr('Average per day')}</div><div class="v sm">${fmt(avgDay)}</div></div>
     <div class="kpi" data-info="month"><div class="l">${tr('Top category')}</div><div class="v sm">${fmt(topCat[1])}</div><div class="sub2">${esc(topCat[0])} · ${Math.round(topCat[1] / total * 100)}%</div></div>
     ${incNow ? `<div class="kpi" data-info="rate"><div class="l">${tr('Savings rate')}</div><div class="v sm">${Math.round(net / incNow * 100)}%</div></div>` : ''}
-    ${isCur && elapsed < dim ? `<div class="kpi" data-info="est"><div class="l">${tr('Month-end estimate')}</div><div class="v sm">${fmt(avgDay * dim)}</div></div>` : ''}
+    ${isCur && elapsed < dim ? (incNow
+      ? `<div class="kpi" data-info="est"><div class="l">${tr('Projected remaining')}</div><div class="v sm ${incNow - avgDay * dim < 0 ? 'neg' : 'pos'}">${fmt(incNow - avgDay * dim)}</div></div>`
+      : `<div class="kpi" data-info="est"><div class="l">${tr('Month-end estimate')}</div><div class="v sm">${fmt(avgDay * dim)}</div></div>`) : ''}
   </div>`;
 
   const months = [-5, -4, -3, -2, -1, 0].map(n => addMonths(viewYm, n));
   const inc6 = months.map(incIn), exp6 = months.map(ym => sum(inM(ym)));
-  if (inc6.some(v => v > 0)) {
-    const mx = Math.max(1, ...inc6, ...exp6);
-    h += `<h2>${tr('Income vs spending')}</h2><div class="card">` +
-      `<div class="cols two">${months.map((ym, i) => `<div class="col" data-info="mon" data-arg="${ym}"><div class="pair"><div class="cbar inc" style="height:${Math.max(inc6[i] ? 4 : 0, inc6[i] / mx * 100)}%"></div><div class="cbar sel" style="height:${Math.max(exp6[i] ? 4 : 0, exp6[i] / mx * 100)}%"></div></div><span class="cl">${monthShort(ym)}</span></div>`).join('')}</div>` +
-      `<div class="iolg"><span><i class="g"></i>${tr('Income')}</span><span><i class="b"></i>${tr('Spending')}</span></div></div>`;
-  } else {
-    const mx = Math.max(1, ...exp6);
-    h += `<h2>${tr('Last 6 months')}</h2><div class="card"><div class="cols">${months.map((ym, i) =>
-      `<div class="col" data-info="mon" data-arg="${ym}"><span class="cv">${exp6[i] ? short(exp6[i]) : ''}</span><div class="cbar ${ym === viewYm ? 'sel' : ''}" style="height:${Math.max(exp6[i] ? 4 : 0, exp6[i] / mx * 100)}%"></div><span class="cl">${monthShort(ym)}</span></div>`).join('')}</div></div>`;
-  }
+  // Biểu đồ cột theo tháng: trục Y theo mốc số tiền tròn; thu nhập xanh lá, chi tiêu đỏ
+  const hasInc = inc6.some(v => v > 0), ax6 = niceAxis(Math.max(1, ...exp6, ...(hasInc ? inc6 : [])));
+  const px6 = v => v ? Math.max(4, Math.round(v / ax6.top * 150)) : 0;
+  h += `<h2>${tr(hasInc ? 'Income vs spending' : 'Last 6 months')}</h2><div class="card"><div class="ychart"><div class="ygrid">${axisLines(ax6)}</div><div class="ycols">` +
+    months.map((ym, i) => `<div class="ycol ${ym === viewYm ? 'cur' : ''}" data-info="mon" data-arg="${ym}"><div class="ypair">` +
+      (hasInc ? `<div class="yb inc" style="height:${px6(inc6[i])}px"></div>` : '') + `<div class="yb exp" style="height:${px6(exp6[i])}px"></div></div><span class="ycl">${monthShort(ym)}</span></div>`).join('') +
+    `</div></div><div class="iolg">${hasInc ? `<span><i class="dot inc"></i>${tr('Income')}</span>` : ''}<span><i class="dot exp"></i>${tr('Spending')}</span></div></div>`;
 
   const days = Array(dim).fill(0); m.forEach(r => days[new Date(r.time).getDate() - 1] += Number(r.amount));
   const dmax = Math.max(1, ...days);
@@ -947,14 +1006,14 @@ function renderDash(all) {
   dailySel = days.indexOf(dmax);
   if (todayIdx >= 0) { dailySel = todayIdx; while (dailySel > 0 && !days[dailySel]) dailySel--; if (!days[dailySel]) dailySel = days.indexOf(dmax); }   // mặc định: hôm nay, nếu chưa chi thì ngày gần nhất có chi
   const peakDay = days.indexOf(dmax) + 1, active = cntD.filter(Boolean).length, avgActive = active ? total / active : 0;
-  const CH = 128, ay = Math.round(avgDay / dmax * CH);
+  const CH = 128, axD = niceAxis(dmax), ay = Math.round(avgDay / axD.top * CH);   // trục Y theo mốc số tiền tròn
   const bars = days.map((v, i) => {
     const wd = new Date(y, mo - 1, i + 1).getDay();
     const cls = ['dbar', v && v === dmax ? 'peak' : '', wd === 0 || wd === 6 ? 'we' : '', i === todayIdx ? 'tod' : '', todayIdx >= 0 && i > todayIdx ? 'fut' : ''].join(' ');
-    return `<div class="dc" data-i="${i}"><div class="${cls}" style="height:${v ? Math.max(5, Math.round(v / dmax * CH)) : 0}px;animation-delay:${i * 12}ms"></div></div>`;
+    return `<div class="dc" data-i="${i}"><div class="${cls}" style="height:${v ? Math.max(5, Math.round(v / axD.top * CH)) : 0}px;animation-delay:${i * 12}ms"></div></div>`;
   }).join('');
   h += `<h2>${tr('Daily spending')}</h2><div class="card"><div class="dread" id="dread"></div>` +
-    `<div class="dwrap" id="dwrap"><div class="dgrid"><div class="gl" style="bottom:100%"><em>${short(dmax)}</em></div><div class="gl" style="bottom:50%"><em>${short(dmax / 2)}</em></div><div class="gl" style="bottom:0"><em>0</em></div></div>` +
+    `<div class="dwrap" id="dwrap"><div class="dgrid">${axisLines(axD)}</div>` +
     `<div class="davg" style="bottom:${ay}px"><span>${tr('Daily average')}</span></div><div class="dcols">${bars}</div></div>` +
     `<div class="dax"><span>1</span><span>${Math.ceil(dim / 4)}</span><span>${Math.ceil(dim / 2)}</span><span>${Math.ceil(dim * 3 / 4)}</span><span>${dim}</span></div>` +
     `<div class="dstats"><div><span>${tr('Peak day')}</span><b>${peakDay}</b></div><div><span>${tr('Active days')}</span><b>${active}/${elapsed}</b></div><div><span>${tr('Per active day')}</span><b>${short(avgActive)}</b></div></div></div>`;
@@ -963,7 +1022,10 @@ function renderDash(all) {
   const byBank = Object.entries(sumBy(m, r => r.bank || tr('Cash / no bank'))).sort((a, b) => b[1] - a[1]);
   const bmax = byBank[0][1];
   h += `<h2>${tr('By bank')}</h2><div class="card">${byBank.map(([k, v]) =>
-    `<div class="hbar"><span>${esc(k.replace(/^.*\((.+)\)$/, '$1'))}</span><div class="ht"><i style="width:${Math.round(v / bmax * 100)}%"></i></div><b>${fmt(v)}</b></div>`).join('')}</div>`;
+    `<div class="hbar" data-info="bank" data-arg="${esc(k)}"><span>${esc(k.replace(/^.*\((.+)\)$/, '$1'))}</span><div class="ht"><i style="width:${Math.round(v / bmax * 100)}%"></i></div><b>${fmt(v)}</b></div>`).join('')}</div>`;
+  const byWal = Object.entries(sumBy(m, r => r.wallet || tr('No wallet'))).sort((a, b) => b[1] - a[1]);
+  if (byWal.length) h += `<h2>${tr('By wallet')}</h2><div class="card">${byWal.map(([k, v]) =>
+    `<div class="hbar" data-info="wallet" data-arg="${esc(k)}"><span>${esc(k)}</span><div class="ht"><i style="width:${Math.round(v / byWal[0][1] * 100)}%"></i></div><b>${fmt(v)}</b></div>`).join('')}</div>`;
 
   $('#dash').innerHTML = h;
   runCounts($('#dash'));
@@ -1100,7 +1162,7 @@ async function openSheet(r) {
   const row = (k, v) => v ? `<div class="drow"><span>${tr(k)}</span><b>${esc(v)}</b></div>` : '';
   $('#sheetBody').innerHTML =
     `<div class="d-cat">${esc(r.category)}</div><div class="d-amt ${isInc(r) ? 'in' : ''}">${isInc(r) ? '+' : ''}${fmt(r.amount)}</div>` +
-    row('Category', r.category) + row('Type', isInc(r) ? tr('Income') : tr('Expense')) + row('Date', new Date(r.time).toLocaleDateString(DLOC())) + row('Time', new Date(r.time).toLocaleTimeString(DLOC(), { hour: '2-digit', minute: '2-digit' })) + row('Bank', r.bank) + row('Payee', r.payee) +
+    row('Category', r.category) + row('Type', isInc(r) ? tr('Income') : tr('Expense')) + row('Date', new Date(r.time).toLocaleDateString(DLOC())) + row('Time', new Date(r.time).toLocaleTimeString(DLOC(), { hour: '2-digit', minute: '2-digit' })) + row('Wallet', r.wallet) + row('Bank', r.bank) + row('Payee', r.payee) +
     row('Note', r.note) +
     (r.loc ? `<div class="drow"><span>${tr('Location')}</span><b><a href="https://maps.apple.com/?ll=${r.loc.lat},${r.loc.lng}&q=${encodeURIComponent(r.category)}" target="_blank" rel="noopener">${tr('Open in Maps')}</a></b></div>` : '') +
     '<div id="sheetPhoto"></div>' +
@@ -1127,21 +1189,23 @@ function editTx(r) {
   $('#sheetBody').innerHTML = `<div class="d-cat">${tr('Edit')}</div>` +
     `<div class="chips">${list.map((c, i) => `<button class="chip ${c === pick ? 'on' : ''}" data-i="${i}">${esc(c)}</button>`).join('')}</div>` +
     `<label>${tr('Amount (₫)')}<input id="eAmt" inputmode="numeric" value="${esc(String(r.amount))}"></label>` +
-    `<label>${tr('Date')}<input id="eDate" type="date" value="${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}"></label>` +
+    `<div class="daterow"><label>${tr('Date')}<input id="eDate" type="date" value="${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}"></label><button id="eToday" class="todaybtn" type="button">${tr('Today')}</button></div>` +
     `<label>${tr('Time')}<input id="eTime" type="time" value="${pad2(d.getHours())}:${pad2(d.getMinutes())}"></label>` +
+    `<label>${tr('Wallet')}<select id="eWallet">${[...new Set([...wallets(), r.wallet].filter(Boolean))].map(w => `<option value="${esc(w)}"${w === r.wallet ? ' selected' : ''}>${esc(w)}</option>`).join('')}</select></label>` +
     `<label>${tr('Note')}<input id="eNote" value="${esc(r.note || '')}"></label>` +
     `<button id="eSave" class="big">${tr('Save changes')}</button>`;
   document.querySelectorAll('#sheetBody .chip').forEach(b => b.onclick = () => {
     pick = list[Number(b.dataset.i)];
     document.querySelectorAll('#sheetBody .chip').forEach(x => x.classList.toggle('on', x === b));
   });
+  $('#eToday').onclick = () => { $('#eDate').value = ymd(new Date()); };
   $('#eSave').onclick = async () => {
     const amt = $('#eAmt').value.replace(/\D/g, '');
     if (!amt || !Number(amt)) { toast(tr('Enter an amount')); return; }
     const t = new Date(($('#eDate').value || `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`) + 'T' + ($('#eTime').value || '00:00'));
     if (isNaN(t)) return;
     markJars(ymOf(r.time));   // tháng cũ cũng cần cập nhật bảng 6 hũ
-    Object.assign(r, { category: pick, amount: amt, time: t.toISOString(), note: $('#eNote').value.trim(), synced: false });
+    Object.assign(r, { category: pick, amount: amt, time: t.toISOString(), note: $('#eNote').value.trim(), wallet: $('#eWallet').value || r.wallet || '', synced: false });
     await putRec(r);
     closeSheet();
     if (curView === 'home') renderHome(); else if (curView === 'txn') renderTxn();
@@ -1172,7 +1236,7 @@ function renderSettings() {
     $('#faceOnBtn').hidden = faceOn(); $('#faceOffBtn').hidden = !faceOn();
   });
   $('#sheetUrl').value = cfg.get('sheetUrl', '');
-  renderBankEditor();
+  renderBankEditor(); renderWalletEditor();
   $('#locSw').checked = cfg.get('locOn', '1') !== '0';
   document.querySelectorAll('#segLang button').forEach(b => b.classList.toggle('on', b.dataset.v === lang));
   document.querySelectorAll('#segTheme button').forEach(b => b.classList.toggle('on', b.dataset.v === cfg.get('theme', 'auto')));
@@ -1188,6 +1252,21 @@ function renderBankEditor() {
   $('#bankPreset').innerHTML = `<option value="">${tr('Add a bank…')}</option>` +
     parseBanks(DEF_BANKS).filter(x => !have.has(x.n.toLowerCase())).map(x => `<option value="${esc(x.n)}">${esc(x.n)}</option>`).join('') + `<option value="__custom">${tr('Custom bank')}</option>`;
 }
+// Ví (Cash, MoMo, ZaloPay…): thêm / sửa / xoá
+const readWalletDom = () => [...document.querySelectorAll('#walletList .wn')].map(i => i.value.trim()).filter(Boolean);
+const saveWallets = list => cfg.set('wallets', list.join('\n'));
+function renderWalletEditor() {
+  $('#walletList').innerHTML = wallets().map((w, i) => `<div class="card brow wrow" data-i="${i}"><div class="bhead"><span class="bico">👛</span><input class="wn" value="${esc(w)}" placeholder="${tr('Wallet name')}" aria-label="${tr('Wallet name')}"><button class="mini del" aria-label="${tr('Remove')}">✕</button></div></div>`).join('');
+}
+$('#walletList').addEventListener('change', () => saveWallets(readWalletDom()));
+$('#walletList').addEventListener('click', e => {
+  const d = e.target.closest('.del'); if (!d) return;
+  const l = wallets(); l.splice(Number(d.closest('.wrow').dataset.i), 1); saveWallets(l); renderWalletEditor();
+});
+$('#walletAdd').onclick = () => {
+  saveWallets([...wallets(), 'New wallet']); renderWalletEditor();
+  const last = [...document.querySelectorAll('#walletList .wn')].pop(); if (last) { last.value = ''; last.focus(); }
+};
 $('#bankList').addEventListener('change', () => saveBankRows(readBankDom()));
 $('#bankList').addEventListener('click', e => {
   const d = e.target.closest('.del'); if (!d) return;

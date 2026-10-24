@@ -426,3 +426,46 @@ body[data-dir="prev"] main>section:not([hidden]){animation:slidePrev .26s var(--
 .irow small{display:block;color:var(--muted);font-weight:400;font-size:13px}
 .irow b{font-weight:600;white-space:nowrap}
 .ih{font:700 17px var(--font-d);margin:20px 0 4px}
+
+/* ---------- v2.8: bộ lọc hạng mục/ngày, nút Today ở ô ngày, bản đồ thanh toán ---------- */
+.filters{display:flex;align-items:center;gap:8px;margin:0 0 12px}
+.filters .jsel{flex:1;min-width:0;max-width:none;width:auto;margin:0;padding:12px 10px;font-size:15px}
+.filters input[type=date]{flex:none;width:auto;margin:0;padding:10px 10px;font-size:15px;border-radius:12px;background:var(--fill);box-shadow:none}
+.filters .icon{flex:none}
+.mapbtn{flex:none;color:var(--accent)}
+.daterow{display:flex;align-items:flex-end;gap:10px}
+.daterow label{flex:1;min-width:0}
+.daterow .todaybtn{flex:none;height:48px;margin-bottom:0}
+#map{position:relative;z-index:0;height:calc(100vh - 250px);min-height:320px;border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow)}
+
+.h2m{font:600 15px var(--font);color:var(--muted);margin-left:6px;letter-spacing:0}
+
+/* ---------- v2.8: biểu đồ cột tháng có trục Y theo mốc tiền, chú thích thu / chi ---------- */
+.ychart{position:relative;height:150px;margin:6px 0 34px 34px}
+.ygrid .gl,.dgrid .gl{position:absolute;left:0;right:0;border-top:.5px dashed var(--line)}
+.ygrid em{position:absolute;left:-34px;top:-7px;width:30px;text-align:right;font:500 10px var(--font);color:var(--muted);font-style:normal}
+.ygrid .gl:first-child em{top:-8px}
+.ycols{position:absolute;inset:0;display:flex;gap:6px}
+.ycol{flex:1;min-width:0;position:relative;display:flex;align-items:flex-end;justify-content:center;border-radius:10px;cursor:pointer}
+.ycol.cur{background:rgba(0,0,128,.06)}
+.ypair{display:flex;align-items:flex-end;gap:4px;height:100%}
+.yb{width:16px;min-width:6px;border-radius:5px 5px 2px 2px;transform-origin:bottom;animation:growY .7s var(--ease) both}
+.yb.inc{background:linear-gradient(180deg,#4ade80,#16a34a)}
+.yb.exp{background:linear-gradient(180deg,#f87171,#dc2626)}
+.ycl{position:absolute;top:100%;margin-top:7px;font:600 12px var(--font);color:var(--muted)}
+.ycol.cur .ycl{color:var(--fg)}
+.iolg .dot{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:6px;vertical-align:-1px}
+.iolg .dot.inc{background:#16a34a}
+.iolg .dot.exp{background:#dc2626}
+.iolg{gap:20px}
+
+/* ---------- v2.9: ví, ghi chú chi tiết, mục Thanh toán gom gọn ---------- */
+.item .t small{white-space:normal}
+.item .nt{display:block;margin-top:2px;font-size:14px;color:var(--fg);opacity:.85;white-space:normal;word-break:break-word}
+.hbar[data-info]{cursor:pointer}
+.paydet .ih{margin:16px 0 6px}
+.paydet .card{background:var(--fill);box-shadow:none}
+.paydet .brow{margin:0 0 8px}
+.paydet .bhead .bn,.paydet .blab .bl,.paydet .wn{background:var(--card)}
+.wrow .wn{margin:0;flex:1;min-width:0;font-weight:600;box-shadow:none}
+.paydet .jsel.wide{background:var(--fill)}
