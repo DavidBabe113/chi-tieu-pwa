@@ -3,26 +3,26 @@
 :root{
   --font:ui-rounded,"SF Pro Rounded",-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Helvetica Neue",Helvetica,Arial,sans-serif;
   --font-d:ui-rounded,"SF Pro Rounded",-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Helvetica Neue",Helvetica,Arial,sans-serif;
-  --bg:#fbf6e4;--fg:#14391f;--muted:#5e7a66;--card:#fffefa;--line:rgba(20,57,31,.12);
+  --bg:#fffaea;--fg:#123a22;--muted:#5b7d66;--card:#fffffc;--line:rgba(20,70,35,.12);
   --fill:rgba(20,57,31,.07);--thumb:#fff;
-  --accent:#1f8a4c;--accent2:#34a765;--on-accent:#fff;--link:#1f8a4c;--cta:#f2b632;--on-cta:#14391f;
-  --ok:#1f8a4c;--warn:#b45309;--danger:#d64545;
-  --shadow:0 1px 2px rgba(0,0,0,.04),0 4px 18px rgba(0,0,0,.05);
+  --accent:#1fa85a;--accent2:#3cc477;--on-accent:#fff;--link:#16934c;--cta:#ffc83d;--on-cta:#123a22;
+  --ok:#16934c;--warn:#b45309;--danger:#e0443e;
+  --shadow:0 1px 1px rgba(18,58,34,.04),0 2px 4px rgba(18,58,34,.04),0 8px 22px rgba(18,58,34,.07);
   --r:22px;--ease:cubic-bezier(.28,.11,.32,1);
 }
 :root[data-theme="dark"]{
-  --bg:#0e1a12;--fg:#f3f0df;--muted:#9db5a3;--card:#17261c;--line:rgba(243,240,223,.14);
-  --fill:rgba(243,240,223,.1);--thumb:#2d4435;
-  --accent:#3fbf72;--accent2:#6ad594;--on-accent:#08210f;--link:#6ad594;--cta:#f2b632;--on-cta:#14391f;
-  --ok:#3fbf72;--warn:#f2b632;--danger:#ff6b6b;
-  --shadow:0 1px 2px rgba(0,0,0,.5);
+  --bg:#183225;--fg:#fdfaea;--muted:#b9d3c1;--card:#234638;--line:rgba(253,250,234,.16);
+  --fill:rgba(253,250,234,.11);--thumb:#386050;
+  --accent:#4fe08f;--accent2:#7aeaa9;--on-accent:#0b2c18;--link:#7aeaa9;--cta:#ffc83d;--on-cta:#123a22;
+  --ok:#4fe08f;--warn:#ffc83d;--danger:#ff7a72;
+  --shadow:0 1px 1px rgba(0,0,0,.2),0 3px 8px rgba(0,0,0,.22),0 10px 26px rgba(0,0,0,.2);
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#0e1a12;--fg:#f3f0df;--muted:#9db5a3;--card:#17261c;--line:rgba(243,240,223,.14);
-  --fill:rgba(243,240,223,.1);--thumb:#2d4435;
-  --accent:#3fbf72;--accent2:#6ad594;--on-accent:#08210f;--link:#6ad594;--cta:#f2b632;--on-cta:#14391f;
-  --ok:#3fbf72;--warn:#f2b632;--danger:#ff6b6b;
-  --shadow:0 1px 2px rgba(0,0,0,.5);
+  --bg:#183225;--fg:#fdfaea;--muted:#b9d3c1;--card:#234638;--line:rgba(253,250,234,.16);
+  --fill:rgba(253,250,234,.11);--thumb:#386050;
+  --accent:#4fe08f;--accent2:#7aeaa9;--on-accent:#0b2c18;--link:#7aeaa9;--cta:#ffc83d;--on-cta:#123a22;
+  --ok:#4fe08f;--warn:#ffc83d;--danger:#ff7a72;
+  --shadow:0 1px 1px rgba(0,0,0,.2),0 3px 8px rgba(0,0,0,.22),0 10px 26px rgba(0,0,0,.2);
 }}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
@@ -76,7 +76,7 @@ h2{font:700 24px/1.15 var(--font-d);letter-spacing:-.025em;margin:36px 4px 14px}
 a.linkbtn{text-decoration:none}
 
 /* ---------- tổng quan ---------- */
-.hero,.incbox{background:linear-gradient(150deg,#0f5a32,#1f8a4c 60%,#34a765);color:#fff;padding:22px}
+.hero,.incbox{background:linear-gradient(150deg,#138a4a,#22b062 60%,#46cf84);color:#fff;padding:22px}
 .hl{font:600 13px var(--font);opacity:.72;letter-spacing:.01em;margin-top:6px}
 .total{display:block;font:700 48px/1.05 var(--font-d);letter-spacing:-.04em;margin:2px 0 14px}
 .sub{font-size:14px;opacity:.75;margin:-6px 0 14px}
@@ -255,7 +255,7 @@ details.adv[open] summary::after{transform:rotate(90deg)}
 @keyframes zoomUp{from{transform:translateY(60px) scale(.96);opacity:0}to{transform:none;opacity:1}}
 
 /* ---------- khoá PIN ---------- */
-.lock{position:fixed;inset:0;z-index:60;background:linear-gradient(160deg,#0f5a32,#1f8a4c 60%,#34a765);display:flex;align-items:center;justify-content:center;padding:24px}
+.lock{position:fixed;inset:0;z-index:60;background:linear-gradient(160deg,#138a4a,#22b062 60%,#46cf84);display:flex;align-items:center;justify-content:center;padding:24px}
 .lock-card{width:100%;max-width:320px;text-align:center;color:#fff}
 .lock-ic{font-size:40px;margin-bottom:6px}
 .lock-card h2{color:#fff;font:600 21px var(--font-d);letter-spacing:-.02em;margin:6px 0 20px}
@@ -628,3 +628,12 @@ h1,h2,.total,.ih{color:var(--fg)}
   .ghost:hover,.big:hover,.tabs button:hover{filter:brightness(.96)}
   #fabs{right:32px}
 }
+
+/* ---------- v2.26: sáng và tươi hơn, kính mờ, logo 3D, vi tương tác đàn hồi ---------- */
+header{background:color-mix(in srgb,var(--bg) 72%,transparent);-webkit-backdrop-filter:blur(20px) saturate(1.6);backdrop-filter:blur(20px) saturate(1.6)}
+header .logo{width:36px;height:36px;border-radius:10px;flex:none;box-shadow:0 2px 6px rgba(18,58,34,.2),0 6px 14px rgba(18,58,34,.12)}
+#back:not([hidden]) ~ .logo{display:none}
+.tabs{-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);box-shadow:inset 0 0 0 .5px var(--line)}
+.card,.kpi{box-shadow:var(--shadow)}
+.big,.ghost,.pill,.chip,.seg button,.tdy,.gnew,.stp,.item,.kpi,.lg,.lg2,.hbar,#banks button,#cats button,.tabs button{transition:transform .35s cubic-bezier(.34,1.56,.64,1),box-shadow .2s,background-color .2s,filter .2s}
+.big:active,.ghost:active,.pill:active,.chip:active,.seg button:active,.tdy:active,.gnew:active,.stp:active,.item:active,.kpi:active,.lg:active,.lg2:active,.hbar:active,#banks button:active,#cats button:active{transform:scale(.96)}

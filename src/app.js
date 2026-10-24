@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.25.0';
+const VERSION = '2.26.0';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -96,7 +96,7 @@ const VI = {
   'Face ID failed, enter your PIN': 'Face ID không thành công, hãy nhập mã PIN', 'Face ID could not be turned on on this device': 'Không bật được Face ID trên thiết bị này',
   'To reset a forgotten PIN, delete the app icon and add it again from Safari. Data on this phone that is not synced yet is lost.': 'Quên mã PIN thì xoá icon app rồi thêm lại từ Safari. Dữ liệu trên máy chưa đồng bộ sẽ mất.',
   'Data': 'Dữ liệu', '📊 Open Google Sheet': '📊 Mở Google Sheet', 'Google Sheet file link': 'Link file Google Sheet',
-  'Google Apps Script link (Web App)': 'Link Google Apps Script (Web App)', 'Reset app': 'Đặt lại app', 'Export to Excel': 'Xuất ra Excel', 'Export': 'Xuất file', 'All': 'Tất cả', 'All months': 'Tất cả các tháng', 'Savings goals': 'Mục tiêu tiết kiệm', 'New goal': 'Mục tiêu mới', 'Due': 'Hạn chót', 'Saved': 'Đã tích lũy', 'Add money': 'Nạp thêm tiền', 'No goals yet': 'Chưa có mục tiêu nào', 'Goal name': 'Tên mục tiêu', 'e.g. Japan trip': 'vd: Du lịch Nhật Bản', 'Target': 'Số tiền cần đạt', 'Deadline': 'Hạn chót', '3 mo': '3 tháng', '6 mo': '6 tháng', '1 yr': '1 năm', '2 yr': '2 năm', 'None': 'Không', 'Create goal': 'Tạo mục tiêu', 'Delete this goal?': 'Xoá mục tiêu này?', 'Enter an amount first': 'Hãy nhập số tiền', 'Amount': 'Số tiền', 'Date': 'Ngày', 'Reset the app? All transactions, photos and settings on this phone are deleted. Your Google Sheet is not touched.': 'Đặt lại app? Toàn bộ giao dịch, ảnh và cài đặt trên điện thoại này sẽ bị xoá. Google Sheet không bị ảnh hưởng.', 'Banks': 'Ngân hàng',
+  'Google Apps Script link (Web App)': 'Link Google Apps Script (Web App)', 'Reset app': 'Đặt lại app', 'Take from': 'Lấy từ', 'Outside money': 'Tiền bên ngoài (không trừ hũ)', 'Remaining in this jar: {0}': 'Còn lại trong hũ này: {0}', 'Added from outside, no jar is reduced': 'Nạp từ nguồn ngoài, không trừ hũ nào', 'Not enough in this jar. Remaining: {0}': 'Hũ này không đủ tiền. Còn lại: {0}', 'Export to Excel': 'Xuất ra Excel', 'Export': 'Xuất file', 'All': 'Tất cả', 'All months': 'Tất cả các tháng', 'Savings goals': 'Mục tiêu tiết kiệm', 'New goal': 'Mục tiêu mới', 'Due': 'Hạn chót', 'Saved': 'Đã tích lũy', 'Add money': 'Nạp thêm tiền', 'No goals yet': 'Chưa có mục tiêu nào', 'Goal name': 'Tên mục tiêu', 'e.g. Japan trip': 'vd: Du lịch Nhật Bản', 'Target': 'Số tiền cần đạt', 'Deadline': 'Hạn chót', '3 mo': '3 tháng', '6 mo': '6 tháng', '1 yr': '1 năm', '2 yr': '2 năm', 'None': 'Không', 'Create goal': 'Tạo mục tiêu', 'Delete this goal?': 'Xoá mục tiêu này?', 'Enter an amount first': 'Hãy nhập số tiền', 'Amount': 'Số tiền', 'Date': 'Ngày', 'Reset the app? All transactions, photos and settings on this phone are deleted. Your Google Sheet is not touched.': 'Đặt lại app? Toàn bộ giao dịch, ảnh và cài đặt trên điện thoại này sẽ bị xoá. Google Sheet không bị ảnh hưởng.', 'Banks': 'Ngân hàng',
   'One per line: Name (Brand) | app link. Edit if an app does not open.': 'Mỗi dòng: Tên (Thương hiệu) | link mở app. Sửa lại nếu app không mở được.',
   'Sent. Check the ChiTieu tab in your Sheet': 'Đã gửi. Mở tab ChiTieu trong Sheet để kiểm tra', 'Send failed, check the link': 'Gửi lỗi, kiểm tra link',
   'Save': 'Lưu',
@@ -498,7 +498,7 @@ function renderCats() {
 }
 const ymd = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 function openDetail() {
-  $('#amount').value = cur.amount ? Number(cur.amount).toLocaleString(LOC()) : '';
+  $('#amount').value = commas(cur.amount || '');
   $('#note').value = cur.note;
   $('#preview').hidden = true; curPhoto = null;
   const inc = cur.type === 'income';   // khoản thu: không ảnh, không ngân hàng
@@ -510,10 +510,8 @@ function openDetail() {
     navigator.geolocation.getCurrentPosition(p => { rec.loc = { lat: +p.coords.latitude.toFixed(5), lng: +p.coords.longitude.toFixed(5), acc: Math.round(p.coords.accuracy) }; }, () => {}, { enableHighAccuracy: true, timeout: 10000, maximumAge: 120000 });
   }
 }
-$('#amount').oninput = e => {
-  const d = e.target.value.replace(/\D/g, '');
-  e.target.value = d ? Number(d).toLocaleString(LOC()) : '';
-};
+const commas = v => { const d = String(v).replace(/\D/g, ''); return d ? Number(d).toLocaleString('en-US') : ''; };
+document.addEventListener('input', e => { if (e.target.matches('input[inputmode="numeric"]')) e.target.value = commas(e.target.value); });
 $('#photoIn').onchange = async e => {
   const f = e.target.files[0]; if (!f) return;
   curPhoto = await shrink(f);
@@ -874,16 +872,22 @@ function renderGoals() {
         `<div class="jbar"><i style="width:${p}%"></i></div><button class="ghost gadd" data-g="add" data-id="${g.id}">+ ${tr('Add money')}</button></div>`;
     }).join('') : `<p class="hint">${tr('No goals yet')}</p>`);
 }
-let goalDue = 12;
-function goalForm(id) {
+let goalDue = 12, goalJars = [];
+const goalNote = () => { const i = Number($('#gSrc').value); $('#gRem').textContent = i < 0 ? tr('Added from outside, no jar is reduced') : tr('Remaining in this jar: {0}', fmt(goalJars[i].remaining)); };
+async function goalForm(id) {
   const g = id ? goals().find(x => x.id === id) : null;
   goalDue = 12;
+  if (g) goalJars = computeJars(nowYm(), await doneRecs(), pctFor(nowYm())).jars;
   openPanel(`<h3 class="ih">${tr(g ? 'Add money' : 'New goal')}</h3>` + (g
-    ? `<p class="gname">${esc(g.name)}</p><label>${tr('Amount')} (₫)<input id="gAmt" inputmode="numeric" placeholder="0"></label><button class="big" id="gSave" data-id="${g.id}">${tr('Add money')}</button>`
+    ? `<p class="gname">${esc(g.name)}</p><label>${tr('Amount')} (₫)<input id="gAmt" inputmode="numeric" placeholder="0"></label>` +
+      `<label>${tr('Take from')}</label><select id="gSrc" class="jsel wide">${goalJars.map((j, i) => `<option value="${i}" ${i === 1 ? 'selected' : ''}>${esc(jarName(i))} · ${fmt(j.remaining)}</option>`).join('')}<option value="-1">${tr('Outside money')}</option></select>` +
+      `<p class="hint" id="gRem"></p><button class="big" id="gSave" data-id="${g.id}">${tr('Add money')}</button>`
     : `<label>${tr('Goal name')}<input id="gName" placeholder="${tr('e.g. Japan trip')}"></label><label>${tr('Target')} (₫)<input id="gAmt" inputmode="numeric" placeholder="0"></label>` +
       `<label>${tr('Deadline')}</label><div class="seg gdue" id="gDue">${[[3, '3 mo'], [6, '6 mo'], [12, '1 yr'], [24, '2 yr'], [0, 'None']].map(([m, t]) => `<button data-m="${m}" class="${m === 12 ? 'on' : ''}">${tr(t)}</button>`).join('')}</div>` +
       `<button class="big" id="gSave">${tr('Create goal')}</button>`));
+  if (g) goalNote();
 }
+document.addEventListener('change', e => { if (e.target.id === 'gSrc') goalNote(); });
 $('#goals').addEventListener('click', e => {
   const b = e.target.closest('[data-g]'); if (!b) return;
   if (b.dataset.g === 'new') goalForm();
@@ -897,7 +901,11 @@ document.addEventListener('click', e => {
   const amt = Math.round(Number(($('#gAmt').value || '').replace(/[^\d]/g, '')));
   if (!amt) { toast(tr('Enter an amount first')); return; }
   const list = goals(), id = sv.dataset.id;
-  if (id) { const g = list.find(x => x.id === id); if (g) g.saved += amt; }
+  if (id) {
+    const g = list.find(x => x.id === id), jar = Number($('#gSrc').value);
+    if (jar >= 0 && amt > goalJars[jar].remaining) { toast(tr('Not enough in this jar. Remaining: {0}', fmt(Math.max(0, goalJars[jar].remaining)))); return; }
+    if (g) { g.saved += amt; (g.log = g.log || []).push({ ym: nowYm(), jar, amt, t: new Date().toISOString() }); }
+  }
   else {
     const name = $('#gName').value.trim(); if (!name) { toast(tr('Enter a name first')); return; }
     const n = new Date(), due = goalDue ? ymd(new Date(n.getFullYear(), n.getMonth() + goalDue, n.getDate())) : '';
@@ -1172,6 +1180,7 @@ function computeJars(ym, recs, pct) {
     const j = map[catName(r.category)];
     if (Number.isInteger(j) && j >= 0 && j < 6) spent[j] += Number(r.amount); else unassigned += Number(r.amount);
   });
+  goals().forEach(g => (g.log || []).forEach(l => { if (l.ym === ym && l.jar >= 0 && l.jar < 6) spent[l.jar] += l.amt; }));   // tiền nạp vào mục tiêu trừ vào hũ nguồn
   return { income, nInc: incs.length, unassigned, jars: JAR_KEYS.map((k, i) => { const allocated = income * (pct[i] || 0) / 100; return { key: k, pct: pct[i] || 0, allocated, spent: spent[i], remaining: allocated - spent[i] }; }) };
 }
 let draftPct = [], draftYm = '', jarRecs = [];
@@ -1322,7 +1331,7 @@ function editTx(r) {
   let pick = r.category;
   $('#sheetBody').innerHTML = `<div class="d-cat">${tr('Edit')}</div>` +
     `<div class="chips">${list.map((c, i) => `<button class="chip ${c === pick ? 'on' : ''}" data-i="${i}">${esc(c)}</button>`).join('')}</div>` +
-    `<label>${tr('Amount (₫)')}<input id="eAmt" inputmode="numeric" value="${esc(String(r.amount))}"></label>` +
+    `<label>${tr('Amount (₫)')}<input id="eAmt" inputmode="numeric" value="${commas(r.amount)}"></label>` +
     `<label>${tr('Note')}<input id="eNote" value="${esc(r.note || '')}"></label>` +
     `<button id="eSave" class="big">${tr('Save changes')}</button>`;
   document.querySelectorAll('#sheetBody .chip').forEach(b => b.onclick = () => {
