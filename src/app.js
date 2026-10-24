@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.26.0';
+const VERSION = '2.27.0';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -96,7 +96,7 @@ const VI = {
   'Face ID failed, enter your PIN': 'Face ID không thành công, hãy nhập mã PIN', 'Face ID could not be turned on on this device': 'Không bật được Face ID trên thiết bị này',
   'To reset a forgotten PIN, delete the app icon and add it again from Safari. Data on this phone that is not synced yet is lost.': 'Quên mã PIN thì xoá icon app rồi thêm lại từ Safari. Dữ liệu trên máy chưa đồng bộ sẽ mất.',
   'Data': 'Dữ liệu', '📊 Open Google Sheet': '📊 Mở Google Sheet', 'Google Sheet file link': 'Link file Google Sheet',
-  'Google Apps Script link (Web App)': 'Link Google Apps Script (Web App)', 'Reset app': 'Đặt lại app', 'Take from': 'Lấy từ', 'Outside money': 'Tiền bên ngoài (không trừ hũ)', 'Remaining in this jar: {0}': 'Còn lại trong hũ này: {0}', 'Added from outside, no jar is reduced': 'Nạp từ nguồn ngoài, không trừ hũ nào', 'Not enough in this jar. Remaining: {0}': 'Hũ này không đủ tiền. Còn lại: {0}', 'Export to Excel': 'Xuất ra Excel', 'Export': 'Xuất file', 'All': 'Tất cả', 'All months': 'Tất cả các tháng', 'Savings goals': 'Mục tiêu tiết kiệm', 'New goal': 'Mục tiêu mới', 'Due': 'Hạn chót', 'Saved': 'Đã tích lũy', 'Add money': 'Nạp thêm tiền', 'No goals yet': 'Chưa có mục tiêu nào', 'Goal name': 'Tên mục tiêu', 'e.g. Japan trip': 'vd: Du lịch Nhật Bản', 'Target': 'Số tiền cần đạt', 'Deadline': 'Hạn chót', '3 mo': '3 tháng', '6 mo': '6 tháng', '1 yr': '1 năm', '2 yr': '2 năm', 'None': 'Không', 'Create goal': 'Tạo mục tiêu', 'Delete this goal?': 'Xoá mục tiêu này?', 'Enter an amount first': 'Hãy nhập số tiền', 'Amount': 'Số tiền', 'Date': 'Ngày', 'Reset the app? All transactions, photos and settings on this phone are deleted. Your Google Sheet is not touched.': 'Đặt lại app? Toàn bộ giao dịch, ảnh và cài đặt trên điện thoại này sẽ bị xoá. Google Sheet không bị ảnh hưởng.', 'Banks': 'Ngân hàng',
+  'Google Apps Script link (Web App)': 'Link Google Apps Script (Web App)', 'Reset app': 'Đặt lại app', 'Deadline (from today)': 'Hạn chót (tính từ hôm nay)', 'Years': 'Năm', 'Months': 'Tháng', 'Days': 'Ngày', 'Take from': 'Lấy từ', 'Outside money': 'Tiền bên ngoài (không trừ hũ)', 'Remaining in this jar: {0}': 'Còn lại trong hũ này: {0}', 'Added from outside, no jar is reduced': 'Nạp từ nguồn ngoài, không trừ hũ nào', 'Not enough in this jar. Remaining: {0}': 'Hũ này không đủ tiền. Còn lại: {0}', 'Export to Excel': 'Xuất ra Excel', 'Export': 'Xuất file', 'All': 'Tất cả', 'All months': 'Tất cả các tháng', 'Savings goals': 'Mục tiêu tiết kiệm', 'New goal': 'Mục tiêu mới', 'Due': 'Hạn chót', 'Saved': 'Đã tích lũy', 'Add money': 'Nạp thêm tiền', 'No goals yet': 'Chưa có mục tiêu nào', 'Goal name': 'Tên mục tiêu', 'e.g. Japan trip': 'vd: Du lịch Nhật Bản', 'Target': 'Số tiền cần đạt', 'Deadline': 'Hạn chót', '3 mo': '3 tháng', '6 mo': '6 tháng', '1 yr': '1 năm', '2 yr': '2 năm', 'None': 'Không', 'Create goal': 'Tạo mục tiêu', 'Delete this goal?': 'Xoá mục tiêu này?', 'Enter an amount first': 'Hãy nhập số tiền', 'Amount': 'Số tiền', 'Date': 'Ngày', 'Reset the app? All transactions, photos and settings on this phone are deleted. Your Google Sheet is not touched.': 'Đặt lại app? Toàn bộ giao dịch, ảnh và cài đặt trên điện thoại này sẽ bị xoá. Google Sheet không bị ảnh hưởng.', 'Banks': 'Ngân hàng',
   'One per line: Name (Brand) | app link. Edit if an app does not open.': 'Mỗi dòng: Tên (Thương hiệu) | link mở app. Sửa lại nếu app không mở được.',
   'Sent. Check the ChiTieu tab in your Sheet': 'Đã gửi. Mở tab ChiTieu trong Sheet để kiểm tra', 'Send failed, check the link': 'Gửi lỗi, kiểm tra link',
   'Save': 'Lưu',
@@ -883,7 +883,7 @@ async function goalForm(id) {
       `<label>${tr('Take from')}</label><select id="gSrc" class="jsel wide">${goalJars.map((j, i) => `<option value="${i}" ${i === 1 ? 'selected' : ''}>${esc(jarName(i))} · ${fmt(j.remaining)}</option>`).join('')}<option value="-1">${tr('Outside money')}</option></select>` +
       `<p class="hint" id="gRem"></p><button class="big" id="gSave" data-id="${g.id}">${tr('Add money')}</button>`
     : `<label>${tr('Goal name')}<input id="gName" placeholder="${tr('e.g. Japan trip')}"></label><label>${tr('Target')} (₫)<input id="gAmt" inputmode="numeric" placeholder="0"></label>` +
-      `<label>${tr('Deadline')}</label><div class="seg gdue" id="gDue">${[[3, '3 mo'], [6, '6 mo'], [12, '1 yr'], [24, '2 yr'], [0, 'None']].map(([m, t]) => `<button data-m="${m}" class="${m === 12 ? 'on' : ''}">${tr(t)}</button>`).join('')}</div>` +
+      `<label>${tr('Deadline (from today)')}</label><div class="gdl"><label>${tr('Years')}<input id="gY" inputmode="numeric" placeholder="0"></label><label>${tr('Months')}<input id="gM" inputmode="numeric" placeholder="0"></label><label>${tr('Days')}<input id="gD" inputmode="numeric" placeholder="0"></label></div>` +
       `<button class="big" id="gSave">${tr('Create goal')}</button>`));
   if (g) goalNote();
 }
@@ -895,8 +895,6 @@ $('#goals').addEventListener('click', e => {
   else if (b.dataset.g === 'del' && confirm(tr('Delete this goal?'))) { saveGoals(goals().filter(x => x.id !== b.dataset.id)); renderGoals(); }
 });
 document.addEventListener('click', e => {
-  const d = e.target.closest('#gDue button');
-  if (d) { goalDue = Number(d.dataset.m); document.querySelectorAll('#gDue button').forEach(x => x.classList.toggle('on', x === d)); return; }
   const sv = e.target.closest('#gSave'); if (!sv) return;
   const amt = Math.round(Number(($('#gAmt').value || '').replace(/[^\d]/g, '')));
   if (!amt) { toast(tr('Enter an amount first')); return; }
@@ -908,7 +906,7 @@ document.addEventListener('click', e => {
   }
   else {
     const name = $('#gName').value.trim(); if (!name) { toast(tr('Enter a name first')); return; }
-    const n = new Date(), due = goalDue ? ymd(new Date(n.getFullYear(), n.getMonth() + goalDue, n.getDate())) : '';
+    const v = k => Number(($(k).value || '').replace(/\D/g, '')) || 0, n = new Date(), due = v('#gY') || v('#gM') || v('#gD') ? ymd(new Date(n.getFullYear() + v('#gY'), n.getMonth() + v('#gM'), n.getDate() + v('#gD'))) : '';
     list.push({ id: Date.now().toString(36), name, target: amt, saved: 0, due });
   }
   saveGoals(list); closeSheet(); renderGoals();

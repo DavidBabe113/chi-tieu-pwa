@@ -637,3 +637,7 @@ header .logo{width:36px;height:36px;border-radius:10px;flex:none;box-shadow:0 2p
 .card,.kpi{box-shadow:var(--shadow)}
 .big,.ghost,.pill,.chip,.seg button,.tdy,.gnew,.stp,.item,.kpi,.lg,.lg2,.hbar,#banks button,#cats button,.tabs button{transition:transform .35s cubic-bezier(.34,1.56,.64,1),box-shadow .2s,background-color .2s,filter .2s}
 .big:active,.ghost:active,.pill:active,.chip:active,.seg button:active,.tdy:active,.gnew:active,.stp:active,.item:active,.kpi:active,.lg:active,.lg2:active,.hbar:active,#banks button:active,#cats button:active{transform:scale(.96)}
+
+.gdl{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.gdl label{margin:0;font-size:13px;color:var(--muted)}
+.gdl input{text-align:center;margin-top:4px}
