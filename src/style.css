@@ -594,3 +594,37 @@ h1,h2,.total,.ih{color:var(--fg)}
 .cgrid button{aspect-ratio:1;border:0;border-radius:50%;background:none;color:var(--fg);font:500 16px var(--font);padding:0}
 .cgrid button.td{box-shadow:inset 0 0 0 1.5px var(--accent)}
 .cgrid button.on{background:var(--accent);color:var(--on-accent)}
+
+/* ---------- v2.24: mục tiêu tiết kiệm ---------- */
+.gtop{display:flex;align-items:center;justify-content:space-between}
+.gnew{width:36px;height:36px;border:0;border-radius:50%;background:var(--cta);color:var(--on-cta);font:600 24px/1 var(--font);padding:0}
+.goal .gh{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.goal .gn b{display:block;font:700 17px var(--font-d)}
+.goal .gn small,.goal .gv small{color:var(--muted);font-size:13px}
+.goal .gdel{border:0;background:none;font-size:18px;opacity:.6;padding:2px 4px}
+.goal .gp{display:flex;justify-content:space-between;margin-top:12px;font-size:13px;color:var(--muted)}
+.goal .gp b{color:var(--accent)}
+.goal .gv b{font:700 22px var(--font-d)}
+.goal .gadd{margin:4px 0 0;padding:11px;font-size:15px}
+.gname{font-weight:700;margin:0 0 4px}
+.gdue{margin-bottom:6px}
+
+/* ---------- Giao diện máy tính / laptop (màn rộng): bố cục bảng điều khiển; điện thoại giữ nguyên ---------- */
+@media (min-width:1000px) and (hover:hover){
+  header{max-width:1180px;margin:0 auto;padding:20px 32px 8px}
+  header h1{font-size:26px}
+  .tabs{max-width:640px;width:auto;margin:6px 0 12px max(32px,calc(50% - 558px));grid-template-columns:repeat(var(--n,4),minmax(130px,1fr))}
+  .tabs button{font-size:14px;padding:10px 6px;cursor:pointer}
+  main{max-width:1180px;padding:0 32px 80px}
+  #v-home{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 24px;align-items:start}
+  #v-home>#pending,#v-home>#balance,#v-home>#dash{grid-column:1/-1}
+  #dash .kpis{grid-template-columns:repeat(4,1fr)!important;gap:14px}
+  #dash .kpis .kpi{flex-direction:column;align-items:flex-start;gap:6px;padding:18px}
+  #dash .ychart{height:200px}
+  .sheet{align-items:center}
+  .sheet-card{border-radius:28px;max-width:520px;padding-bottom:30px}
+  #map{height:calc(100vh - 330px)}
+  .item:hover,.kpi:hover{box-shadow:0 6px 24px rgba(20,57,31,.12)}
+  .ghost:hover,.big:hover,.tabs button:hover{filter:brightness(.96)}
+  #fabs{right:32px}
+}

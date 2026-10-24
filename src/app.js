@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.23.0';
+const VERSION = '2.25.0';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -96,7 +96,7 @@ const VI = {
   'Face ID failed, enter your PIN': 'Face ID không thành công, hãy nhập mã PIN', 'Face ID could not be turned on on this device': 'Không bật được Face ID trên thiết bị này',
   'To reset a forgotten PIN, delete the app icon and add it again from Safari. Data on this phone that is not synced yet is lost.': 'Quên mã PIN thì xoá icon app rồi thêm lại từ Safari. Dữ liệu trên máy chưa đồng bộ sẽ mất.',
   'Data': 'Dữ liệu', '📊 Open Google Sheet': '📊 Mở Google Sheet', 'Google Sheet file link': 'Link file Google Sheet',
-  'Google Apps Script link (Web App)': 'Link Google Apps Script (Web App)', 'Reset app': 'Đặt lại app', 'Date': 'Ngày', 'Reset the app? All transactions, photos and settings on this phone are deleted. Your Google Sheet is not touched.': 'Đặt lại app? Toàn bộ giao dịch, ảnh và cài đặt trên điện thoại này sẽ bị xoá. Google Sheet không bị ảnh hưởng.', 'Banks': 'Ngân hàng',
+  'Google Apps Script link (Web App)': 'Link Google Apps Script (Web App)', 'Reset app': 'Đặt lại app', 'Export to Excel': 'Xuất ra Excel', 'Export': 'Xuất file', 'All': 'Tất cả', 'All months': 'Tất cả các tháng', 'Savings goals': 'Mục tiêu tiết kiệm', 'New goal': 'Mục tiêu mới', 'Due': 'Hạn chót', 'Saved': 'Đã tích lũy', 'Add money': 'Nạp thêm tiền', 'No goals yet': 'Chưa có mục tiêu nào', 'Goal name': 'Tên mục tiêu', 'e.g. Japan trip': 'vd: Du lịch Nhật Bản', 'Target': 'Số tiền cần đạt', 'Deadline': 'Hạn chót', '3 mo': '3 tháng', '6 mo': '6 tháng', '1 yr': '1 năm', '2 yr': '2 năm', 'None': 'Không', 'Create goal': 'Tạo mục tiêu', 'Delete this goal?': 'Xoá mục tiêu này?', 'Enter an amount first': 'Hãy nhập số tiền', 'Amount': 'Số tiền', 'Date': 'Ngày', 'Reset the app? All transactions, photos and settings on this phone are deleted. Your Google Sheet is not touched.': 'Đặt lại app? Toàn bộ giao dịch, ảnh và cài đặt trên điện thoại này sẽ bị xoá. Google Sheet không bị ảnh hưởng.', 'Banks': 'Ngân hàng',
   'One per line: Name (Brand) | app link. Edit if an app does not open.': 'Mỗi dòng: Tên (Thương hiệu) | link mở app. Sửa lại nếu app không mở được.',
   'Sent. Check the ChiTieu tab in your Sheet': 'Đã gửi. Mở tab ChiTieu trong Sheet để kiểm tra', 'Send failed, check the link': 'Gửi lỗi, kiểm tra link',
   'Save': 'Lưu',
@@ -748,6 +748,7 @@ function donut(by, total, colors) {   // biểu đồ tròn theo hạng mục (c
   return `<svg class="donut" viewBox="0 0 42 42" role="img" aria-label="${tr('Spending chart')}"><circle cx="21" cy="21" r="15.9155" fill="none" stroke="var(--fill)" stroke-width="6"></circle>${segs}<text x="21" y="22.4" text-anchor="middle" class="dtx">${short(total)}</text></svg>`;
 }
 async function renderHome() {
+  renderGoals();
   await renderPending();
   const all = await doneRecs();
   all.forEach(r => recById[r.id] = r);
@@ -858,6 +859,119 @@ function renderMap(items) {
   }, 60);
 }
 $('#dash').onclick = e => { const it = e.target.closest('.item'); if (it && recById[it.dataset.id]) openSheet(recById[it.dataset.id]); };
+
+// ---------- mục tiêu tiết kiệm: tên, số tiền cần đạt, hạn chót; nạp thêm tiền để theo dõi tiến độ ----------
+const goals = () => getJSON('goals', []);
+const saveGoals = a => cfg.set('goals', JSON.stringify(a));
+function renderGoals() {
+  const list = goals();
+  $('#goals').innerHTML = `<div class="gtop"><h2>${tr('Savings goals')}</h2><button class="gnew" data-g="new" aria-label="${tr('New goal')}">+</button></div>` +
+    (list.length ? list.map(g => {
+      const p = g.target ? Math.min(100, g.saved / g.target * 100) : 0;
+      return `<div class="card goal"><div class="gh"><div class="gn"><b>${esc(g.name)}</b>${g.due ? `<small>${tr('Due')} ${new Date(g.due + 'T00:00').toLocaleDateString(DLOC(), { day: 'numeric', month: 'short', year: 'numeric' })}</small>` : ''}</div>` +
+        `<button class="gdel" data-g="del" data-id="${g.id}" aria-label="${tr('Delete')}">🗑</button></div>` +
+        `<div class="gp"><span>${tr('Saved')}</span><b>${Math.round(p * 10) / 10}%</b></div><div class="gv"><b>${fmt(g.saved)}</b><small> / ${fmt(g.target)}</small></div>` +
+        `<div class="jbar"><i style="width:${p}%"></i></div><button class="ghost gadd" data-g="add" data-id="${g.id}">+ ${tr('Add money')}</button></div>`;
+    }).join('') : `<p class="hint">${tr('No goals yet')}</p>`);
+}
+let goalDue = 12;
+function goalForm(id) {
+  const g = id ? goals().find(x => x.id === id) : null;
+  goalDue = 12;
+  openPanel(`<h3 class="ih">${tr(g ? 'Add money' : 'New goal')}</h3>` + (g
+    ? `<p class="gname">${esc(g.name)}</p><label>${tr('Amount')} (₫)<input id="gAmt" inputmode="numeric" placeholder="0"></label><button class="big" id="gSave" data-id="${g.id}">${tr('Add money')}</button>`
+    : `<label>${tr('Goal name')}<input id="gName" placeholder="${tr('e.g. Japan trip')}"></label><label>${tr('Target')} (₫)<input id="gAmt" inputmode="numeric" placeholder="0"></label>` +
+      `<label>${tr('Deadline')}</label><div class="seg gdue" id="gDue">${[[3, '3 mo'], [6, '6 mo'], [12, '1 yr'], [24, '2 yr'], [0, 'None']].map(([m, t]) => `<button data-m="${m}" class="${m === 12 ? 'on' : ''}">${tr(t)}</button>`).join('')}</div>` +
+      `<button class="big" id="gSave">${tr('Create goal')}</button>`));
+}
+$('#goals').addEventListener('click', e => {
+  const b = e.target.closest('[data-g]'); if (!b) return;
+  if (b.dataset.g === 'new') goalForm();
+  else if (b.dataset.g === 'add') goalForm(b.dataset.id);
+  else if (b.dataset.g === 'del' && confirm(tr('Delete this goal?'))) { saveGoals(goals().filter(x => x.id !== b.dataset.id)); renderGoals(); }
+});
+document.addEventListener('click', e => {
+  const d = e.target.closest('#gDue button');
+  if (d) { goalDue = Number(d.dataset.m); document.querySelectorAll('#gDue button').forEach(x => x.classList.toggle('on', x === d)); return; }
+  const sv = e.target.closest('#gSave'); if (!sv) return;
+  const amt = Math.round(Number(($('#gAmt').value || '').replace(/[^\d]/g, '')));
+  if (!amt) { toast(tr('Enter an amount first')); return; }
+  const list = goals(), id = sv.dataset.id;
+  if (id) { const g = list.find(x => x.id === id); if (g) g.saved += amt; }
+  else {
+    const name = $('#gName').value.trim(); if (!name) { toast(tr('Enter a name first')); return; }
+    const n = new Date(), due = goalDue ? ymd(new Date(n.getFullYear(), n.getMonth() + goalDue, n.getDate())) : '';
+    list.push({ id: Date.now().toString(36), name, target: amt, saved: 0, due });
+  }
+  saveGoals(list); closeSheet(); renderGoals();
+});
+
+// ---------- xuất Excel (.xlsx thật, tự dựng: zip không nén + XML) theo tháng / hạng mục / loại ----------
+const crcT = (() => { const t = []; for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+const crc32 = u => { let c = 0xFFFFFFFF; for (let i = 0; i < u.length; i++) c = crcT[(c ^ u[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+function zipStore(files) {   // files: [[tên, chuỗi]]
+  const enc = new TextEncoder(), parts = [], cen = []; let off = 0;
+  const u16 = n => [n & 255, n >> 8 & 255], u32 = n => [n & 255, n >> 8 & 255, n >> 16 & 255, n >>> 24 & 255];
+  files.forEach(([name, text]) => {
+    const nb = enc.encode(name), d = enc.encode(text), crc = crc32(d);
+    const head = [0x50, 0x4B, 3, 4, 20, 0, 0, 8, 0, 0, 0, 0, 0, 0, ...u32(crc), ...u32(d.length), ...u32(d.length), ...u16(nb.length), 0, 0];
+    parts.push(new Uint8Array(head), nb, d);
+    cen.push(new Uint8Array([0x50, 0x4B, 1, 2, 20, 0, 20, 0, 0, 8, 0, 0, 0, 0, 0, 0, ...u32(crc), ...u32(d.length), ...u32(d.length), ...u16(nb.length), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...u32(off)]), nb);
+    off += head.length + nb.length + d.length;
+  });
+  const cl = cen.reduce((a, x) => a + x.length, 0);
+  return new Blob([...parts, ...cen, new Uint8Array([0x50, 0x4B, 5, 6, 0, 0, 0, 0, ...u16(files.length), ...u16(files.length), ...u32(cl), ...u32(off), 0, 0])], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+}
+const xe = v => String(v).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]);
+const colL = i => String.fromCharCode(65 + i);
+function xlsxBlob(rows) {   // rows[0] = tiêu đề; số là ô số, còn lại là chuỗi
+  const sd = rows.map((r, y) => `<row r="${y + 1}">` + r.map((v, x) => typeof v === 'number'
+    ? `<c r="${colL(x)}${y + 1}"><v>${v}</v></c>` : `<c r="${colL(x)}${y + 1}" t="inlineStr"${y ? '' : ' s="1"'}><is><t>${xe(v)}</t></is></c>`).join('') + '</row>').join('');
+  const X = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+  return zipStore([
+    ['[Content_Types].xml', X + '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>'],
+    ['_rels/.rels', X + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'],
+    ['xl/workbook.xml', X + '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Transactions" sheetId="1" r:id="rId1"/></sheets></workbook>'],
+    ['xl/_rels/workbook.xml.rels', X + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>'],
+    ['xl/styles.xml', X + '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>'],
+    ['xl/worksheets/sheet1.xml', X + '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><cols><col min="1" max="2" width="12" customWidth="1"/><col min="3" max="4" width="16" customWidth="1"/><col min="5" max="5" width="14" customWidth="1"/><col min="6" max="9" width="26" customWidth="1"/></cols><sheetData>' + sd + '</sheetData></worksheet>'],
+  ]);
+}
+let exp = { type: 'all', ym: '', cat: '', all: [] };
+const expItems = () => exp.all.filter(r => (exp.type === 'all' || (exp.type === 'in') === isInc(r)) && (!exp.ym || ymOf(r.time) === exp.ym) && (!exp.cat || r.category === exp.cat)).sort((a, b) => a.time.localeCompare(b.time));
+function paintExport() {
+  const base = exp.all.filter(r => exp.type === 'all' || (exp.type === 'in') === isInc(r));
+  const months = [...new Set(base.map(r => ymOf(r.time)))].sort().reverse(), catsL = [...new Set(base.map(r => r.category))].filter(Boolean).sort();
+  if (exp.ym && !months.includes(exp.ym)) exp.ym = ''; if (exp.cat && !catsL.includes(exp.cat)) exp.cat = '';
+  const n = expItems().length;
+  $('#sheetBody').innerHTML = `<h3 class="ih">${tr('Export to Excel')}</h3>` +
+    `<div class="seg" id="xType">${[['all', 'All'], ['out', 'Expense'], ['in', 'Income']].map(([v, t]) => `<button data-v="${v}" class="${exp.type === v ? 'on' : ''}">${tr(t)}</button>`).join('')}</div>` +
+    `<select id="xMonth" class="jsel wide"><option value="">${tr('All months')}</option>${months.map(m => `<option value="${m}" ${m === exp.ym ? 'selected' : ''}>${monthLabel(m)}</option>`).join('')}</select>` +
+    `<select id="xCat" class="jsel wide"><option value="">${tr('All categories')}</option>${catsL.map(k => `<option value="${esc(k)}" ${k === exp.cat ? 'selected' : ''}>${esc(k)}</option>`).join('')}</select>` +
+    `<p class="hint">${n} ${tr(n === 1 ? 'transaction' : 'transactions')}</p><button class="big" id="xGo" ${n ? '' : 'disabled'}>${tr('Export')}</button>`;
+}
+$('#exportXlsx').onclick = async () => { exp = { type: 'all', ym: '', cat: '', all: await doneRecs() }; openPanel(''); paintExport(); };
+document.addEventListener('click', async e => {
+  const t = e.target.closest('#xType button');
+  if (t) { exp.type = t.dataset.v; paintExport(); return; }
+  if (!e.target.closest('#xGo')) return;
+  const items = expItems(), rows = [['Date', 'Time', 'Type', 'Category', 'Amount (VND)', 'Note', 'Payee', 'Payment method', 'Location']];
+  items.forEach(r => {
+    const d = new Date(r.time);
+    rows.push([ymd(d), d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }), isInc(r) ? 'Income' : 'Expense', r.category || '', Number(r.amount) || 0, r.note || '', r.payee || '', r.bank || '',
+      r.loc ? `https://www.google.com/maps/search/?api=1&query=${r.loc.lat},${r.loc.lng}` : '']);
+  });
+  const name = `FinancialTracking_${exp.ym || 'all'}${exp.cat ? '_' + exp.cat.replace(/[^\w\p{L}]+/gu, '') : ''}.xlsx`, blob = xlsxBlob(rows);
+  try {
+    const f = new File([blob], name, { type: blob.type });
+    if (navigator.canShare && navigator.canShare({ files: [f] })) { await navigator.share({ files: [f] }); return; }
+  } catch (err) { if (err && err.name === 'AbortError') return; }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+});
+document.addEventListener('change', e => {
+  if (e.target.id === 'xMonth') { exp.ym = e.target.value; paintExport(); }
+  else if (e.target.id === 'xCat') { exp.cat = e.target.value; paintExport(); }
+});
 
 // ---------- bấm vào một ô tổng hợp để xem chi tiết (theo tháng / hạng mục / giao dịch) ----------
 function openPanel(html) {
