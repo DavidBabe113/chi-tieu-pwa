@@ -129,7 +129,7 @@ function applyTheme() {
   const t = cfg.get('theme', 'auto');
   if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme;
   const dark = t === 'dark' || (t === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
-  const m = document.querySelector('meta[name=theme-color]'); if (m) m.content = dark ? '#000000' : '#fbf6e4';
+  const m = document.querySelector('meta[name=theme-color]'); if (m) m.content = dark ? '#000000' : '#ffffff';
 }
 applyTheme();
 
