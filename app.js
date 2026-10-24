@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.6.1';
+const VERSION = '2.7.0';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -34,7 +34,7 @@ const VI = {
   'Wrong username or password': 'Sai tên đăng nhập hoặc mật khẩu', 'Wrong current password': 'Sai mật khẩu hiện tại', 'Password must have at least 4 characters': 'Mật khẩu cần ít nhất 4 ký tự',
   'Passwords do not match': 'Hai mật khẩu không khớp', 'That username is already taken': 'Tên đăng nhập này đã có',
   'Add expenses': 'Thêm chi tiêu', 'Add income': 'Thêm khoản thu', "See everyone's transactions": 'Xem giao dịch của mọi người', 'See the Dashboard': 'Xem bảng tổng hợp',
-  'See 6 Jars': 'Xem 6 hũ', 'Edit jar percentages': 'Sửa tỷ lệ các hũ', 'Manage categories': 'Quản lý danh mục', 'Transactions': 'Giao dịch', 'Remaining': 'Còn lại', 'Category': 'Hạng mục', 'Edit': 'Sửa', 'Save changes': 'Lưu thay đổi', 'Time': 'Giờ', 'Enter an amount': 'Nhập số tiền', 'Active days': 'Ngày có chi', 'Per active day': 'TB ngày có chi', 'No spending': 'Không chi', 'transactions': 'giao dịch', 'transaction': 'giao dịch', 'No bank found': 'Không tìm thấy ngân hàng', 'Search bank': 'Tìm ngân hàng', 'Total money': 'Tổng số tiền', 'Spent so far': 'Đã chi tổng cộng', 'Spent in {0}': 'Đã chi trong {0}', 'Income in {0}': 'Thu nhập trong {0}', 'Spending chart': 'Biểu đồ chi tiêu', 'Peak day': 'Ngày chi nhiều nhất',
+  'See 6 Jars': 'Xem 6 hũ', 'Edit jar percentages': 'Sửa tỷ lệ các hũ', 'Manage categories': 'Quản lý danh mục', 'Transactions': 'Giao dịch', 'Remaining': 'Còn lại', 'Financial Tracking': 'Theo dõi tài chính', 'By month': 'Theo tháng', 'Balance': 'Số dư', 'Days elapsed': 'Số ngày đã qua', 'Category': 'Hạng mục', 'Edit': 'Sửa', 'Save changes': 'Lưu thay đổi', 'Time': 'Giờ', 'Enter an amount': 'Nhập số tiền', 'Active days': 'Ngày có chi', 'Per active day': 'TB ngày có chi', 'No spending': 'Không chi', 'transactions': 'giao dịch', 'transaction': 'giao dịch', 'No bank found': 'Không tìm thấy ngân hàng', 'Search bank': 'Tìm ngân hàng', 'Total money': 'Tổng số tiền', 'Spent so far': 'Đã chi tổng cộng', 'Spent in {0}': 'Đã chi trong {0}', 'Income in {0}': 'Thu nhập trong {0}', 'Spending chart': 'Biểu đồ chi tiêu', 'Peak day': 'Ngày chi nhiều nhất',
   'Bank name': 'Tên ngân hàng', 'App link': 'Liên kết mở app', 'Add a bank…': 'Thêm ngân hàng…', 'Custom bank': 'Ngân hàng khác (tự nhập)', 'Banks': 'Ngân hàng', 'Remove': 'Xoá', 'No data yet': 'Chưa có dữ liệu', 'Previous month': 'Tháng trước', 'Next month': 'Tháng sau',
   'Today': 'Hôm nay', 'Yesterday': 'Hôm qua', 'No transactions in this month.': 'Chưa có giao dịch trong tháng này.',
   '⏳ pending': '⏳ chờ đồng bộ', 'Did the transfer go through?': 'Giao dịch đã thành công?', 'Cancel': 'Huỷ', 'Done': 'Xong',
@@ -228,7 +228,7 @@ function toast(msg, ms = 2600) {
 }
 
 // ---------- điều hướng (dùng lịch sử trình duyệt để vuốt cạnh trái = quay lại) ----------
-const TITLES = { home: 'Expenses', txn: 'Transactions', jars: '6 Jars', cats: 'Categories', scan: 'Scan QR', cat: 'Choose category', detail: 'Details', bank: 'Choose bank', settings: 'Settings' };
+const TITLES = { home: 'Financial Tracking', txn: 'Transactions', jars: '6 Jars', cats: 'Categories', scan: 'Scan QR', cat: 'Choose category', detail: 'Details', bank: 'Choose bank', settings: 'Settings' };
 const TOP = ['home', 'txn', 'jars', 'cats'];
 let depth = 0, pendingTop = null, lastBack = 0, dir = 'fwd';
 try { history.replaceState({ v: 'home', d: 0 }, ''); } catch {}
@@ -689,23 +689,10 @@ function bindMonthNav(box, rerender) {
 }
 
 // ---------- hiệu ứng: đếm số, hiện dần khi cuộn, thanh tiêu đề thu gọn ----------
-const lastCount = {};
-function countTo(el) {
-  const to = Number(el.dataset.count), key = el.dataset.key || '', from = lastCount[key] ?? 0;
-  lastCount[key] = to;
-  if (from === to || matchMedia('(prefers-reduced-motion: reduce)').matches) { el.textContent = fmt(to); return; }
-  const t0 = performance.now();
-  const step = t => { const p = Math.min(1, (t - t0) / 800), e = 1 - Math.pow(1 - p, 4); el.textContent = fmt(from + (to - from) * e); if (p < 1) requestAnimationFrame(step); };
-  requestAnimationFrame(step);
-}
+function countTo(el) { el.textContent = fmt(Number(el.dataset.count)); }   // hiện số ngay, không chạy hiệu ứng đếm (tránh nhảy số)
 const runCounts = root => root.querySelectorAll('[data-count]').forEach(countTo);
 const io = 'IntersectionObserver' in window ? new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { threshold: 0.06 }) : null;
-function reveal() {
-  document.querySelectorAll('main .card:not(.list), main .kpi, main h2').forEach(el => {
-    if (el.classList.contains('rv')) return;
-    el.classList.add('rv'); if (io) io.observe(el); else el.classList.add('in');
-  });
-}
+function reveal() { /* đã tắt: hiệu ứng hiện dần làm các ô nháy mỗi lần dữ liệu vẽ lại */ }
 let revealQueued = false;
 new MutationObserver(() => { if (!revealQueued) { revealQueued = true; requestAnimationFrame(() => { revealQueued = false; reveal(); }); } })
   .observe(document.querySelector('main'), { childList: true, subtree: true });
@@ -767,6 +754,10 @@ async function renderHome() {
       `<div class="crow2"><span>${esc(k)}</span><div class="trk"><i style="width:${Math.max(3, Math.round(v / mx * 100))}%"></i></div><b>${fmt(v)}</b></div>`).join('')}</div>` : '');
   $('#catChart').innerHTML = by.length ? `<h2>${tr('Spending chart')}</h2><div class="card chart">${donut(by, spent)}<div class="legend">${by.map(([k, v], i) =>
     `<div class="lg"><i style="background:${PAL[i % PAL.length]}"></i><span>${esc(k)}</span><b>${Math.round(v / spent * 100)}%</b></div>`).join('')}</div></div>` : '';
+  const bd = $('#balance'); bd.querySelectorAll('.hl,.total').forEach(e => e.dataset.info = 'remain');
+  const duo = bd.querySelector('.duo').children; duo[0].dataset.info = 'income'; duo[1].dataset.info = 'spent';
+  $('#stats').querySelectorAll('.hl,.total').forEach(e => e.dataset.info = 'month');
+  $('#stats').querySelectorAll('.crow2').forEach((e, i) => { e.dataset.info = 'cat'; e.dataset.arg = by[i][0]; });
   runCounts($('#balance')); runCounts($('#stats'));
   renderDash(all);
 }
@@ -798,6 +789,78 @@ $('#txnToday').onclick = async () => {
 };
 document.querySelectorAll('#segTxn button').forEach(b => b.onclick = () => { txnType = b.dataset.v; renderTxn(); });
 $('#dash').onclick = e => { const it = e.target.closest('.item'); if (it && recById[it.dataset.id]) openSheet(recById[it.dataset.id]); };
+
+// ---------- bấm vào một ô tổng hợp để xem chi tiết (theo tháng / hạng mục / giao dịch) ----------
+function openPanel(html) {
+  $('#sheetBody').innerHTML = html;
+  const was = $('#sheet').hidden;
+  $('#sheet').hidden = false;
+  document.body.classList.add('noscroll');
+  if (was) { try { history.pushState({ v: curView, d: depth, sheet: 1 }, ''); } catch {} }
+  $('#sheet .sheet-card').scrollTop = 0;
+}
+const infoRow = (label, value, sub, cls, id) =>
+  `<div class="irow ${id ? 'tap' : ''}" ${id ? `data-id="${esc(id)}"` : ''}><div class="il">${esc(label)}${sub ? `<small>${sub}</small>` : ''}</div><b class="${cls || ''}">${value}</b></div>`;
+async function showInfo(kind, arg, ymArg) {
+  const VM = ymArg || viewYm;
+  const all = await doneRecs();
+  all.forEach(r => recById[r.id] = r);
+  const inM = (ym, f) => all.filter(r => ymOf(r.time) === ym && f(r));
+  const incOf = ym => sum(inM(ym, isInc)), expOf = ym => sum(inM(ym, r => !isInc(r)));
+  const months = [...new Set(all.map(r => ymOf(r.time)))].sort();
+  const last6 = [-5, -4, -3, -2, -1, 0].map(n => addMonths(viewYm, n));
+  const head = (t, v, cls) => `<div class="d-cat">${esc(t)}</div><div class="d-amt ${cls || ''}">${v}</div>`;
+  let html = '';
+  if (kind === 'income' || kind === 'spent') {
+    const f = kind === 'income' ? incOf : expOf, tot = kind === 'income' ? sum(all.filter(isInc)) : sum(all.filter(r => !isInc(r)));
+    html = head(tr(kind === 'income' ? 'Total money' : 'Spent so far'), fmt(tot), kind === 'income' ? 'in' : '') + `<h3 class="ih">${tr('By month')}</h3>` +
+      ([...months].reverse().map(ym => infoRow(monthLabel(ym), fmt(f(ym)), '', kind === 'income' ? 'pos' : 'neg')).join('') || `<p class="hint">${tr('No data yet')}</p>`);
+  } else if (kind === 'remain') {
+    let cum = 0; const rows = months.map(ym => { const n = incOf(ym) - expOf(ym); cum += n; return infoRow(monthLabel(ym), (n >= 0 ? '+' : '') + fmt(n), `${tr('Balance')} ${fmt(cum)}`, n < 0 ? 'neg' : 'pos'); }).reverse();
+    html = head(tr('Remaining'), fmt(cum)) + `<h3 class="ih">${tr('By month')}</h3>` + (rows.join('') || `<p class="hint">${tr('No data yet')}</p>`);
+  } else if (kind === 'month') {
+    const exp = inM(viewYm, r => !isInc(r)), tot = sum(exp), by = Object.entries(sumBy(exp, r => r.category)).sort((a, b) => b[1] - a[1]);
+    html = head(tr('Spent in {0}', monthLabel(viewYm)), fmt(tot)) + `<h3 class="ih">${tr('By category')}</h3>` +
+      (by.map(([k, v]) => `<div data-info="cat" data-arg="${esc(k)}">${infoRow(k, fmt(v), Math.round(v / tot * 100) + '%')}</div>`).join('') || `<p class="hint">${tr('No data yet')}</p>`);
+  } else if (kind === 'cat') {
+    const items = inM(VM, r => r.category === arg).sort((a, b) => b.time.localeCompare(a.time));
+    html = head(arg, fmt(sum(items)), items.length && isInc(items[0]) ? 'in' : '') + `<h3 class="ih">${monthLabel(VM)}</h3>` +
+      items.map(r => infoRow(new Date(r.time).toLocaleDateString(DLOC(), { day: 'numeric', month: 'short' }) + ' ' + new Date(r.time).toLocaleTimeString(DLOC(), { hour: '2-digit', minute: '2-digit' }), (isInc(r) ? '+' : '') + fmt(r.amount), esc(r.note || ''), isInc(r) ? 'pos' : '', r.id)).join('');
+  } else if (kind === 'inc') {
+    const items = inM(viewYm, isInc), by = Object.entries(sumBy(items, r => r.category)).sort((a, b) => b[1] - a[1]);
+    html = head(tr('Income in {0}', monthLabel(viewYm)), fmt(sum(items)), 'in') + `<h3 class="ih">${tr('By category')}</h3>` +
+      (by.map(([k, v]) => `<div data-info="cat" data-arg="${esc(k)}">${infoRow(k, fmt(v), '', 'pos')}</div>`).join('') || `<p class="hint">${tr('No data yet')}</p>`);
+  } else if (kind === 'net' || kind === 'rate') {
+    html = head(tr(kind === 'net' ? 'Net' : 'Savings rate'), '') + `<h3 class="ih">${tr('Last 6 months')}</h3>` +
+      [...last6].reverse().map(ym => { const i = incOf(ym), e = expOf(ym), n = i - e;
+        if (kind === 'rate') return i ? infoRow(monthLabel(ym), Math.round(n / i * 100) + '%', `${tr('Income')} ${fmt(i)} · ${tr('Spending')} ${fmt(e)}`, n < 0 ? 'neg' : 'pos') : '';
+        return infoRow(monthLabel(ym), (n >= 0 ? '+' : '') + fmt(n), `${tr('Income')} ${fmt(i)} · ${tr('Spending')} ${fmt(e)}`, n < 0 ? 'neg' : 'pos'); }).join('');
+  } else if (kind === 'avg' || kind === 'est') {
+    const exp = inM(viewYm, r => !isInc(r)), tot = sum(exp), [yy, mm] = viewYm.split('-').map(Number), dim = new Date(yy, mm, 0).getDate();
+    const el = viewYm === nowYm() ? new Date().getDate() : dim, avg = tot / Math.max(1, el);
+    if (kind === 'est') html = head(tr('Month-end estimate'), fmt(avg * dim)) + infoRow(tr('Spent so far'), fmt(tot)) + infoRow(tr('Days elapsed'), el + '/' + dim) + infoRow(tr('Daily average'), fmt(avg));
+    else {
+      const byDay = {}; exp.forEach(r => { const k = new Date(r.time).getDate(); byDay[k] = (byDay[k] || 0) + Number(r.amount); });
+      html = head(tr('Daily average'), fmt(avg)) + `<h3 class="ih">${tr('Daily spending')}</h3>` +
+        Object.keys(byDay).map(Number).sort((a, b) => b - a).map(d => infoRow(new Date(yy, mm - 1, d).toLocaleDateString(DLOC(), { weekday: 'short', day: 'numeric', month: 'short' }), fmt(byDay[d]))).join('');
+    }
+  } else if (kind === 'mon') {
+    const ym = arg, i = incOf(ym), e = expOf(ym), n = i - e;
+    const grp = (f, cls) => Object.entries(sumBy(inM(ym, f), r => r.category)).sort((a, b) => b[1] - a[1]).map(([k, v]) =>
+      `<div data-info="cat" data-arg="${esc(k)}" data-ym="${ym}">${infoRow(k, fmt(v), '', cls)}</div>`).join('');
+    html = head(monthLabel(ym), (n >= 0 ? '+' : '') + fmt(n), n < 0 ? 'neg' : 'in') + infoRow(tr('Income'), fmt(i), '', 'pos') + infoRow(tr('Spending'), fmt(e), '', 'neg') +
+      (e ? `<h3 class="ih">${tr('Spending')}</h3>` + grp(r => !isInc(r), 'neg') : '') + (i ? `<h3 class="ih">${tr('Income')}</h3>` + grp(isInc, 'pos') : '') + (!i && !e ? `<p class="hint">${tr('No data yet')}</p>` : '');
+  } else return;
+  openPanel(html);
+}
+document.addEventListener('click', e => {
+  const row = e.target.closest('#sheet .irow[data-id]');
+  if (row && recById[row.dataset.id]) { openSheet(recById[row.dataset.id]); return; }
+  const t = e.target.closest('[data-info]');
+  if (!t || e.target.closest('.mnav')) return;
+  if (t.dataset.info === 'big') { if (recById[t.dataset.id]) openSheet(recById[t.dataset.id]); return; }
+  showInfo(t.dataset.info, t.dataset.arg, t.dataset.ym);
+});
 
 // ---------- Dashboard (nằm cuối tab Tổng quan): thu nhập, chênh lệch và phân tích ----------
 const PAL = ['#2f2fc4', '#14b8a6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16', '#ec4899'];
@@ -839,8 +902,8 @@ function renderDash(all) {
 
   // Thu nhập và chênh lệch nằm ở đây (không còn trong thẻ tóm tắt)
   let h = `<h2>${tr('Dashboard')}</h2><div class="kpis">` +
-    `<div class="kpi"><div class="l">${tr('Income')}</div><div class="v sm pos" data-key="d-inc" data-count="${incNow}">${fmt(incNow)}</div></div>` +
-    `<div class="kpi"><div class="l">${tr('Net')}</div><div class="v sm ${net < 0 ? 'neg' : ''}" data-key="d-net" data-count="${net}">${fmt(net)}</div></div></div>`;
+    `<div class="kpi" data-info="inc"><div class="l">${tr('Income')}</div><div class="v sm pos" data-key="d-inc" data-count="${incNow}">${fmt(incNow)}</div></div>` +
+    `<div class="kpi" data-info="net"><div class="l">${tr('Net')}</div><div class="v sm ${net < 0 ? 'neg' : ''}" data-key="d-net" data-count="${net}">${fmt(net)}</div></div></div>`;
   if (!m.length) { $('#dash').innerHTML = h; runCounts($('#dash')); return; }
 
   const avgDay = total / Math.max(1, elapsed);
@@ -848,10 +911,10 @@ function renderDash(all) {
   const pct = pTotal ? (total - pTotal) / pTotal * 100 : null;
 
   h += `<div class="kpis">
-    <div class="kpi"><div class="l">${tr('Daily average')}</div><div class="v sm">${fmt(avgDay)}</div></div>
-    <div class="kpi"><div class="l">${tr('Largest expense')}</div><div class="v sm">${fmt(biggest.amount)}</div><div class="sub2">${esc(biggest.category)}</div></div>
-    ${incNow ? `<div class="kpi"><div class="l">${tr('Savings rate')}</div><div class="v sm">${Math.round(net / incNow * 100)}%</div></div>` : ''}
-    ${isCur && elapsed < dim ? `<div class="kpi"><div class="l">${tr('Month-end estimate')}</div><div class="v sm">${fmt(avgDay * dim)}</div></div>` : ''}
+    <div class="kpi" data-info="avg"><div class="l">${tr('Daily average')}</div><div class="v sm">${fmt(avgDay)}</div></div>
+    <div class="kpi" data-info="big" data-id="${biggest.id}"><div class="l">${tr('Largest expense')}</div><div class="v sm">${fmt(biggest.amount)}</div><div class="sub2">${esc(biggest.category)}</div></div>
+    ${incNow ? `<div class="kpi" data-info="rate"><div class="l">${tr('Savings rate')}</div><div class="v sm">${Math.round(net / incNow * 100)}%</div></div>` : ''}
+    ${isCur && elapsed < dim ? `<div class="kpi" data-info="est"><div class="l">${tr('Month-end estimate')}</div><div class="v sm">${fmt(avgDay * dim)}</div></div>` : ''}
   </div>`;
 
   const months = [-5, -4, -3, -2, -1, 0].map(n => addMonths(viewYm, n));
@@ -859,12 +922,12 @@ function renderDash(all) {
   if (inc6.some(v => v > 0)) {
     const mx = Math.max(1, ...inc6, ...exp6);
     h += `<h2>${tr('Income vs spending')}</h2><div class="card">` +
-      `<div class="cols two">${months.map((ym, i) => `<div class="col"><div class="pair"><div class="cbar inc" style="height:${Math.max(inc6[i] ? 4 : 0, inc6[i] / mx * 100)}%"></div><div class="cbar sel" style="height:${Math.max(exp6[i] ? 4 : 0, exp6[i] / mx * 100)}%"></div></div><span class="cl">${monthShort(ym)}</span></div>`).join('')}</div>` +
+      `<div class="cols two">${months.map((ym, i) => `<div class="col" data-info="mon" data-arg="${ym}"><div class="pair"><div class="cbar inc" style="height:${Math.max(inc6[i] ? 4 : 0, inc6[i] / mx * 100)}%"></div><div class="cbar sel" style="height:${Math.max(exp6[i] ? 4 : 0, exp6[i] / mx * 100)}%"></div></div><span class="cl">${monthShort(ym)}</span></div>`).join('')}</div>` +
       `<div class="iolg"><span><i class="g"></i>${tr('Income')}</span><span><i class="b"></i>${tr('Spending')}</span></div></div>`;
   } else {
     const mx = Math.max(1, ...exp6);
     h += `<h2>${tr('Last 6 months')}</h2><div class="card"><div class="cols">${months.map((ym, i) =>
-      `<div class="col"><span class="cv">${exp6[i] ? short(exp6[i]) : ''}</span><div class="cbar ${ym === viewYm ? 'sel' : ''}" style="height:${Math.max(exp6[i] ? 4 : 0, exp6[i] / mx * 100)}%"></div><span class="cl">${monthShort(ym)}</span></div>`).join('')}</div></div>`;
+      `<div class="col" data-info="mon" data-arg="${ym}"><span class="cv">${exp6[i] ? short(exp6[i]) : ''}</span><div class="cbar ${ym === viewYm ? 'sel' : ''}" style="height:${Math.max(exp6[i] ? 4 : 0, exp6[i] / mx * 100)}%"></div><span class="cl">${monthShort(ym)}</span></div>`).join('')}</div></div>`;
   }
 
   const days = Array(dim).fill(0); m.forEach(r => days[new Date(r.time).getDate() - 1] += Number(r.amount));
@@ -1040,9 +1103,10 @@ async function openSheet(r) {
     '<div id="sheetPhoto"></div>' +
     (r.status === 'done' && (isAdmin() || !r.by || (me && r.by === me.id)) ? `<button id="editTx" class="ghost">${tr('Edit')}</button>` : '');
   const et = $('#editTx'); if (et) et.onclick = () => editTx(r);
+  const wasHidden = $('#sheet').hidden;
   $('#sheet').hidden = false;
   document.body.classList.add('noscroll');
-  try { history.pushState({ v: curView, d: depth, sheet: 1 }, ''); } catch {}   // vuốt quay lại sẽ đóng cửa sổ này
+  if (wasHidden) { try { history.pushState({ v: curView, d: depth, sheet: 1 }, ''); } catch {} }   // vuốt quay lại sẽ đóng cửa sổ này
   if (r.photo) {
     const b = await getPhoto(r.id);
     if (b) {
