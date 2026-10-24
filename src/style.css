@@ -721,3 +721,14 @@ header .logo{width:36px;height:36px;border-radius:10px;flex:none;box-shadow:0 2p
 
 .card,.kpi{border:.5px solid var(--line)}
 header{background:color-mix(in srgb,var(--bg) 78%,transparent)}
+
+/* ---------- v2.32: cảnh báo hũ theo mức dùng: tốt / trung bình / vượt quá ---------- */
+.jst{display:inline-block;margin-top:3px;padding:2px 9px;border-radius:980px;font:700 11px var(--font)}
+.jst.good{background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent)}
+.jst.mid{background:color-mix(in srgb,var(--cta) 38%,transparent);color:var(--fg)}
+.jst.bad{background:color-mix(in srgb,var(--danger) 18%,transparent);color:var(--danger);animation:pulseBad 1.6s ease-in-out infinite}
+@keyframes pulseBad{50%{opacity:.6}}
+.jar[data-lv="bad"]{box-shadow:0 0 0 1.5px var(--danger),var(--shadow)}
+.jar[data-lv="mid"]{box-shadow:0 0 0 1.5px var(--cta),var(--shadow)}
+.jbar i.warn{background:linear-gradient(90deg,#f59e0b,#ffc83d)}
+.jbar i.over{background:linear-gradient(90deg,#e0443e,#ff7a72)}
