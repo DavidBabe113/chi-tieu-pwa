@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.11.0';
+const VERSION = '2.12.0';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -18,7 +18,7 @@ const VI = {
   // tab & tiêu đề
   'Expenses': 'Chi tiêu', 'Overview': 'Tổng quan', 'Statistics': 'Thống kê', '6 Jars': '6 hũ', 'Categories': 'Danh mục',
   'Choose from Photos': 'Chọn từ thư viện ảnh', 'No QR code found in this photo': 'Không tìm thấy mã QR trong ảnh này', 'Scan QR from a photo': 'Quét QR từ ảnh',
-  'Scan QR': 'Quét QR', 'Choose category': 'Chọn danh mục', 'Details': 'Chi tiết', 'Choose bank': 'Chọn ngân hàng',
+  'Scan QR': 'Quét QR', 'Choose category': 'Chọn danh mục', 'Details': 'Chi tiết', 'Choose bank': 'Chọn ngân hàng', 'Payment method': 'Lựa chọn thanh toán', 'Next: payment method': 'Tiếp: lựa chọn thanh toán', 'Banks': 'Ngân hàng', 'Nothing found': 'Không tìm thấy', 'Search': 'Tìm kiếm', 'Choose how you pay. The app opens and you confirm as usual. Enter the amount there yourself.': 'Chọn cách thanh toán. App sẽ mở, bạn xác nhận như bình thường và tự nhập số tiền ở đó.', 'By payment method': 'Theo hình thức thanh toán',
   'Photo library': 'Thư viện ảnh', 'Settings': 'Cài đặt', 'Back': 'Quay lại', 'Close': 'Đóng', 'Add manually': 'Nhập tay',
   // tổng quan
   'Spent this month': 'Đã chi tháng này', 'Dashboard': 'Bảng tổng hợp', 'Monthly summary': 'Tổng hợp theo tháng', 'Each bar is one day of the month. Touch a bar to see that day.': 'Mỗi cột là một ngày trong tháng. Chạm vào cột để xem ngày đó.', 'Places in {0}': 'Số nơi thanh toán trong {0}', 'Places on {0}': 'Số nơi thanh toán ngày {0}', 'Map': 'Bản đồ', 'Wallet': 'Ví', 'Wallets': 'Ví', 'Payments': 'Thanh toán', '+ Add wallet': '+ Thêm ví', 'No wallet': 'Chưa chọn ví', 'By wallet': 'Theo ví', 'Wallet name': 'Tên ví', 'Savings rate': 'Tỷ lệ thiết kiệm', 'Projected remaining': 'Dự kiến còn lại', 'Total income': 'Tổng thu nhập', 'Total spending': 'Tổng chi tiêu tháng', 'Average per day': 'Trung bình mỗi ngày',
@@ -149,8 +149,6 @@ const DEF_BANKS = [
   'Vietnam Joint Stock Commercial Bank for Industry and Trade (VietinBank) | vietinbankipay://',
   'Vietnam Bank for Agriculture and Rural Development (Agribank) | agribankmobile://',
   'Orient Commercial Joint Stock Bank (OCB) | newomni-app://',
-  'MoMo (MoMo) | momo://',
-  'ZaloPay (ZaloPay) | zalopay://',
 ].join('\n');
 const OLD_BANKS = 'Vietcombank | vietcombankmobile://\nMB Bank | mbbank://\nTechcombank | tcb://\nVPBank | vpbankneo://\nACB | acbone://\nBIDV | bidv.smartbanking.partner://\nTPBank | hydro://\nVietinBank | vietinbankipay://\nAgribank | agribankmobile://\nOCB | newomni-app://';
 // File Google Sheet chứa dữ liệu (chỉ mở được khi đăng nhập đúng tài khoản Google, Sheet không chia sẻ cho ai)
@@ -225,8 +223,9 @@ const DEF_WALLETS = '💵 Cash\n🟣 MoMo\n🔵 ZaloPay';
 const wallets = () => cfg.get('wallets', DEF_WALLETS).split('\n').map(s => s.trim()).filter(Boolean);
 const isInc = r => r.type === 'income';       // bản ghi cũ không có type = chi tiêu
 const banks = () => cfg.get('banks', DEF_BANKS).split('\n').map(l => l.split('|').map(s => s.trim()))
-  .filter(a => a[0]).map(a => ({ name: a[0], url: a[1] || '' }));
-{ const sb = cfg.get('banks', ''); if (sb) { let t = sb; if (!/momo/i.test(t)) t += '\nMoMo (MoMo) | momo://'; if (!/zalopay/i.test(t)) t += '\nZaloPay (ZaloPay) | zalopay://'; if (t !== sb) cfg.set('banks', t); } }
+  .filter(a => a[0] && !/momo|zalopay/i.test(a[0])).map(a => ({ name: a[0], url: a[1] || '' }));
+const WALLET_APPS = [{ name: 'MoMo', url: 'momo://' }, { name: 'ZaloPay', url: 'zalopay://' }];   // mở app ví điện tử
+let payTab = 'bank';
 
 function toast(msg, ms = 2600) {
   const t = $('#toast'); t.textContent = msg; t.hidden = false;
@@ -234,7 +233,7 @@ function toast(msg, ms = 2600) {
 }
 
 // ---------- điều hướng (dùng lịch sử trình duyệt để vuốt cạnh trái = quay lại) ----------
-const TITLES = { home: 'Financial Tracking', txn: 'Transactions', jars: '6 Jars', cats: 'Categories', scan: 'Scan QR', cat: 'Choose category', detail: 'Details', bank: 'Choose bank', settings: 'Settings' };
+const TITLES = { home: 'Financial Tracking', txn: 'Transactions', jars: '6 Jars', cats: 'Categories', scan: 'Scan QR', cat: 'Choose category', detail: 'Details', bank: 'Payment method', settings: 'Settings' };
 const TOP = ['home', 'txn', 'jars', 'cats'];
 let depth = 0, pendingTop = null, lastBack = 0, dir = 'fwd';
 try { history.replaceState({ v: 'home', d: 0 }, ''); } catch {}
@@ -569,7 +568,7 @@ $('#saveIncome').onclick = async () => {
   cur.type = 'income'; cur.status = 'done'; await putRec(cur); sync();
   goTop('home');
 };
-$('#toBank').onclick = () => { if (can('addExpense') && collectDetail()) { $('#bankQ').value = ''; $('#bankQ').hidden = true; $('#bankQ').placeholder = tr('Search bank'); renderBanks(); show('bank'); } };
+$('#toBank').onclick = () => { if (can('addExpense') && collectDetail()) { payTab = 'bank'; $('#bankQ').value = ''; $('#bankQ').hidden = true; $('#bankQ').placeholder = tr('Search'); renderBanks(); show('bank'); } };
 
 // ---------- chọn ngân hàng ----------
 // Chọn ngân hàng: tên viết tắt (thương hiệu) ở trên, tên đầy đủ ở dưới; có ô tìm nhanh
@@ -578,7 +577,8 @@ function renderBanks() {
   const q = fold(($('#bankQ').value || '').trim());
   $('#banks').innerHTML = '';
   let n = 0;
-  banks().forEach(b => {
+  document.querySelectorAll('#segPay button').forEach(x => x.classList.toggle('on', x.dataset.v === payTab));
+  (payTab === 'wallet' ? WALLET_APPS : banks()).forEach(b => {
     if (q && !fold(b.name).includes(q)) return;
     n++;
     const el = document.createElement('button');
@@ -587,13 +587,14 @@ function renderBanks() {
     el.onclick = () => openBank(b);
     $('#banks').append(el);
   });
-  if (!n) $('#banks').innerHTML = `<p class="hint">${tr('No bank found')}</p>`;
+  if (!n) $('#banks').innerHTML = `<p class="hint">${tr('Nothing found')}</p>`;
 }
 $('#bankSearchBtn').onclick = () => {
   const q = $('#bankQ'); q.hidden = !q.hidden;
   if (q.hidden) { q.value = ''; renderBanks(); } else q.focus();
 };
 $('#bankQ').oninput = renderBanks;
+document.querySelectorAll('#segPay button').forEach(b => b.onclick = () => { payTab = b.dataset.v; renderBanks(); });
 async function openBank(b) {
   await stash();
   cur.bank = b.name; cur.status = 'done';   // đã nhập số tiền + chọn ngân hàng = lưu luôn
@@ -1023,7 +1024,7 @@ function renderDash(all) {
 
   const byBank = Object.entries(sumBy(m, r => r.bank || tr('Cash / no bank'))).sort((a, b) => b[1] - a[1]);
   const bmax = byBank[0][1];
-  h += `<h2>${tr('By bank')}</h2><div class="card">${byBank.map(([k, v]) =>
+  h += `<h2>${tr('By payment method')}</h2><div class="card">${byBank.map(([k, v]) =>
     `<div class="hbar" data-info="bank" data-arg="${esc(k)}"><span>${esc(k.replace(/^.*\((.+)\)$/, '$1'))}</span><div class="ht"><i style="width:${Math.round(v / bmax * 100)}%"></i></div><b>${fmt(v)}</b></div>`).join('')}</div>`;
 
   $('#dash').innerHTML = h;
