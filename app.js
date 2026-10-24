@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.15.1';
+const VERSION = '2.16.1';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -18,7 +18,7 @@ const VI = {
   // tab & tiêu đề
   'Expenses': 'Chi tiêu', 'Overview': 'Tổng quan', 'Statistics': 'Thống kê', '6 Jars': '6 hũ', 'Categories': 'Danh mục',
   'Choose from Photos': 'Chọn từ thư viện ảnh', 'No QR code found in this photo': 'Không tìm thấy mã QR trong ảnh này', 'Scan QR from a photo': 'Quét QR từ ảnh',
-  'Scan QR': 'Quét QR', 'Choose category': 'Chọn danh mục', 'Details': 'Chi tiết', 'Choose bank': 'Chọn ngân hàng', 'Payment method': 'Lựa chọn thanh toán', 'Not in any jar: <b>{0}</b>': 'Chưa thuộc hũ nào: <b>{0}</b>', 'No locations yet': 'Chưa có vị trí nào', 'Each slice is one day: how much of the month spending happened that day. Tap a day for details.': 'Mỗi miếng là một ngày: ngày đó chiếm bao nhiêu phần chi của tháng. Chạm vào ngày để xem chi tiết.', 'Other days': 'Các ngày còn lại', 'Highest': 'Cao nhất', 'Tap to see the list': 'Chạm để xem danh sách', 'Payment places': 'Các nơi thanh toán', 'Next: payment method': 'Tiếp: lựa chọn thanh toán', 'Banks': 'Ngân hàng', 'Nothing found': 'Không tìm thấy', 'Search': 'Tìm kiếm', 'Choose how you pay. The app opens and you confirm as usual. Enter the amount there yourself.': 'Chọn cách thanh toán. App sẽ mở, bạn xác nhận như bình thường và tự nhập số tiền ở đó.', 'By payment method': 'Theo hình thức thanh toán',
+  'Scan QR': 'Quét QR', 'Choose category': 'Chọn danh mục', 'Details': 'Chi tiết', 'Choose bank': 'Chọn ngân hàng', 'Payment method': 'Lựa chọn thanh toán', 'Continue to pay': 'Tiếp tục thanh toán', 'Save only': 'Chỉ lưu', 'Choose a payment method': 'Hãy chọn phương thức thanh toán', 'Not in any jar: <b>{0}</b>': 'Chưa thuộc hũ nào: <b>{0}</b>', 'No locations yet': 'Chưa có vị trí nào', 'Each slice is one day: how much of the month spending happened that day. Tap a day for details.': 'Mỗi miếng là một ngày: ngày đó chiếm bao nhiêu phần chi của tháng. Chạm vào ngày để xem chi tiết.', 'Other days': 'Các ngày còn lại', 'Highest': 'Cao nhất', 'Tap to see the list': 'Chạm để xem danh sách', 'Payment places': 'Các nơi thanh toán', 'Next: payment method': 'Tiếp: lựa chọn thanh toán', 'Banks': 'Ngân hàng', 'Nothing found': 'Không tìm thấy', 'Search': 'Tìm kiếm', 'Choose how you pay. The app opens and you confirm as usual. Enter the amount there yourself.': 'Chọn cách thanh toán. App sẽ mở, bạn xác nhận như bình thường và tự nhập số tiền ở đó.', 'By payment method': 'Theo hình thức thanh toán',
   'Photo library': 'Thư viện ảnh', 'Settings': 'Cài đặt', 'Back': 'Quay lại', 'Close': 'Đóng', 'Add manually': 'Nhập tay',
   // tổng quan
   'Spent this month': 'Đã chi tháng này', 'Dashboard': 'Bảng tổng hợp', 'Monthly summary': 'Tổng hợp theo tháng', 'Each bar is one day of the month. Touch a bar to see that day.': 'Mỗi cột là một ngày trong tháng. Chạm vào cột để xem ngày đó.', 'Places in {0}': 'Số nơi thanh toán trong {0}', 'Places on {0}': 'Số nơi thanh toán ngày {0}', 'Map': 'Bản đồ', 'Wallet': 'Ví', 'Wallets': 'Ví', 'Payments': 'Thanh toán', '+ Add wallet': '+ Thêm ví', 'No wallet': 'Chưa chọn ví', 'By wallet': 'Theo ví', 'Wallet name': 'Tên ví', 'Savings rate': 'Tỷ lệ thiết kiệm', 'Projected remaining': 'Dự kiến còn lại', 'Total income': 'Tổng thu nhập', 'Total spending': 'Tổng chi tiêu tháng', 'Average per day': 'Trung bình mỗi ngày',
@@ -225,7 +225,7 @@ const isInc = r => r.type === 'income';       // bản ghi cũ không có type =
 const banks = () => cfg.get('banks', DEF_BANKS).split('\n').map(l => l.split('|').map(s => s.trim()))
   .filter(a => a[0] && !/momo|zalopay/i.test(a[0])).map(a => ({ name: a[0], url: a[1] || '' }));
 const WALLET_APPS = [{ name: 'MoMo', url: 'momo://' }, { name: 'ZaloPay', url: 'zalopay://' }];   // mở app ví điện tử
-let payTab = 'bank';
+let payTab = 'bank', payPick = null;
 
 function toast(msg, ms = 2600) {
   const t = $('#toast'); t.textContent = msg; t.hidden = false;
@@ -489,10 +489,9 @@ const ymd = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0
 function openDetail() {
   $('#amount').value = cur.amount ? Number(cur.amount).toLocaleString(LOC()) : '';
   $('#note').value = cur.note;
-  $('#dateIn').value = ymd(new Date(cur.time));
   $('#preview').hidden = true; curPhoto = null;
   const inc = cur.type === 'income';   // khoản thu: không ảnh, không ngân hàng
-  $('.photo').hidden = false; $('#toBank').hidden = inc; $('#saveOnly').hidden = inc; $('#saveIncome').hidden = !inc;
+  $('.photo').hidden = false; $('#payBox').hidden = inc; payPick = null; payTab = 'bank'; $('#bankQ').value = ''; $('#bankQ').hidden = true; $('#bankQ').placeholder = tr('Search'); renderBanks(); $('#toBank').hidden = inc; $('#saveOnly').hidden = inc; $('#saveIncome').hidden = !inc;
   show('detail');
   // Ghi lại vị trí lúc nhập số tiền (cần bạn cho phép định vị; tắt được trong Cài đặt)
   const rec = cur; rec.loc = null;
@@ -534,8 +533,7 @@ function collectDetail() {
   cur.amount = $('#amount').value.replace(/\D/g, '');
   cur.note = $('#note').value.trim();
   if (!cur.amount) { toast(tr('Enter an amount first')); return false; }
-  const dv = $('#dateIn').value;   // ngày giao dịch (mặc định hôm nay); giữ giờ hiện tại
-  if (dv) { const [y, m, d] = dv.split('-').map(Number), n = new Date(); cur.time = new Date(y, m - 1, d, n.getHours(), n.getMinutes(), n.getSeconds()).toISOString(); }
+  cur.time = new Date().toISOString();   // ngày giờ lấy đúng lúc lưu, không chỉnh được
   return true;
 }
 async function stash() {
@@ -546,19 +544,14 @@ async function stash() {
 }
 
 // "Save only" = chi tiền mặt, không qua ngân hàng → lưu luôn, không báo gì
-$('#saveOnly').onclick = async () => {
-  if (!can('addExpense') || !collectDetail()) return;
-  await stash();
-  cur.status = 'done'; await putRec(cur); sync();
-  goTop('home');
-};
+$('#saveOnly').onclick = () => { if (can('addExpense')) finishPay(false); };
 $('#saveIncome').onclick = async () => {
   if (!can('addIncome') || !collectDetail()) return;
   await stash();
   cur.type = 'income'; cur.status = 'done'; await putRec(cur); sync();
   goTop('home');
 };
-$('#toBank').onclick = () => { if (can('addExpense') && collectDetail()) { payTab = 'bank'; $('#bankQ').value = ''; $('#bankQ').hidden = true; $('#bankQ').placeholder = tr('Search'); renderBanks(); show('bank'); } };
+$('#toBank').onclick = () => { if (can('addExpense')) finishPay(true); };
 
 // ---------- chọn ngân hàng ----------
 // Chọn ngân hàng: tên viết tắt (thương hiệu) ở trên, tên đầy đủ ở dưới; có ô tìm nhanh
@@ -574,7 +567,8 @@ function renderBanks() {
     const el = document.createElement('button');
     const m = b.name.match(/^(.*?)\s*\((.+)\)$/);   // "Tên đầy đủ (Viết tắt)"
     el.innerHTML = m ? `<span class="bk1">${esc(m[2])}</span><small class="bk2">${esc(m[1])}</small>` : `<span class="bk1">${esc(b.name)}</span>`;
-    el.onclick = () => openBank(b);
+    if (payPick && payPick.name === b.name) el.className = 'on';
+    el.onclick = () => { payPick = payPick && payPick.name === b.name ? null : b; renderBanks(); };
     $('#banks').append(el);
   });
   if (!n) $('#banks').innerHTML = `<p class="hint">${tr('Nothing found')}</p>`;
@@ -585,15 +579,19 @@ $('#bankSearchBtn').onclick = () => {
 };
 $('#bankQ').oninput = renderBanks;
 document.querySelectorAll('#segPay button').forEach(b => b.onclick = () => { payTab = b.dataset.v; renderBanks(); });
-async function openBank(b) {
+// Hoàn tất: lưu giao dịch (kèm phương thức đã chọn). open = true → mở app ngân hàng / ví để thanh toán
+async function finishPay(open) {
+  if (open && !payPick) { toast(tr('Choose a payment method')); return; }
+  if (!collectDetail()) return;
   await stash();
-  cur.bank = b.name; cur.status = 'done';   // đã nhập số tiền + chọn ngân hàng = lưu luôn
-  await putRec(cur);
-  sync();
+  cur.bank = payPick ? payPick.name : ''; cur.status = 'done';
+  await putRec(cur); sync();
+  const go = open ? payPick : null;
   goTop('home');
-  if (!b.url) { toast(tr('No app link for this bank. Set one in Settings')); return; }
+  if (!go) return;
+  if (!go.url) { toast(tr('No app link for this bank. Set one in Settings')); return; }
   setTimeout(() => {
-    location.href = b.url;
+    location.href = go.url;
     setTimeout(() => { if (!document.hidden) toast(tr('Could not open the app. Check the link in Settings.'), 4000); }, 1800);
   }, 80);
 }
@@ -827,7 +825,6 @@ function renderMap(items) {
     if (pts.length === 1) leaf.setView(pts[0], 16); else if (pts.length) leaf.fitBounds(pts, { padding: [50, 50], maxZoom: 16 });
   }, 60);
 }
-$('#dateToday').onclick = () => { $('#dateIn').value = ymd(new Date()); };
 $('#dash').onclick = e => { const it = e.target.closest('.item'); if (it && recById[it.dataset.id]) openSheet(recById[it.dataset.id]); };
 
 // ---------- bấm vào một ô tổng hợp để xem chi tiết (theo tháng / hạng mục / giao dịch) ----------
@@ -1171,31 +1168,23 @@ async function openSheet(r) {
     }
   }
 }
-// Sửa lại giao dịch đã nhập sai: hạng mục, số tiền, ngày, giờ, ghi chú
-const pad2 = n => String(n).padStart(2, '0');
+// Sửa lại giao dịch đã nhập sai: hạng mục, số tiền, ghi chú (ngày giờ không đổi được)
 function editTx(r) {
-  const d = new Date(r.time);
   const list = (isInc(r) ? icats() : cats()).slice(); if (r.category && !list.includes(r.category)) list.unshift(r.category);
   let pick = r.category;
   $('#sheetBody').innerHTML = `<div class="d-cat">${tr('Edit')}</div>` +
     `<div class="chips">${list.map((c, i) => `<button class="chip ${c === pick ? 'on' : ''}" data-i="${i}">${esc(c)}</button>`).join('')}</div>` +
     `<label>${tr('Amount (₫)')}<input id="eAmt" inputmode="numeric" value="${esc(String(r.amount))}"></label>` +
-    `<label for="eDate">${tr('Date')}</label><div class="daterow"><input id="eDate" type="date" value="${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}"><button id="eToday" class="todaybtn" type="button">${tr('Today')}</button></div>` +
-    `<label>${tr('Time')}<input id="eTime" type="time" value="${pad2(d.getHours())}:${pad2(d.getMinutes())}"></label>` +
     `<label>${tr('Note')}<input id="eNote" value="${esc(r.note || '')}"></label>` +
     `<button id="eSave" class="big">${tr('Save changes')}</button>`;
   document.querySelectorAll('#sheetBody .chip').forEach(b => b.onclick = () => {
     pick = list[Number(b.dataset.i)];
     document.querySelectorAll('#sheetBody .chip').forEach(x => x.classList.toggle('on', x === b));
   });
-  $('#eToday').onclick = () => { $('#eDate').value = ymd(new Date()); };
   $('#eSave').onclick = async () => {
     const amt = $('#eAmt').value.replace(/\D/g, '');
     if (!amt || !Number(amt)) { toast(tr('Enter an amount')); return; }
-    const t = new Date(($('#eDate').value || `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`) + 'T' + ($('#eTime').value || '00:00'));
-    if (isNaN(t)) return;
-    markJars(ymOf(r.time));   // tháng cũ cũng cần cập nhật bảng 6 hũ
-    Object.assign(r, { category: pick, amount: amt, time: t.toISOString(), note: $('#eNote').value.trim(), synced: false });
+    Object.assign(r, { category: pick, amount: amt, note: $('#eNote').value.trim(), synced: false });   // ngày giờ giữ nguyên
     await putRec(r);
     closeSheet();
     if (curView === 'home') renderHome(); else if (curView === 'txn') renderTxn();

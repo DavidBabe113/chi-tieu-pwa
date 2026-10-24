@@ -68,8 +68,6 @@
 
   <section id="v-detail" hidden>
     <label>Amount (₫)<input id="amount" inputmode="numeric" placeholder="0"></label>
-    <label for="dateIn">Date</label>
-    <div class="daterow"><input id="dateIn" type="date"><button id="dateToday" class="todaybtn" type="button">Today</button></div>
     <label>Note<input id="note" placeholder="e.g. coffee with a client"></label>
     <div class="photo">
       <label class="snap" aria-label="Take a receipt photo">
@@ -78,15 +76,15 @@
       </label>
       <img id="preview" alt="" hidden>
     </div>
-    <button id="toBank" class="big">Next: payment method</button>
-    <button id="saveOnly" class="ghost">Save only, do not open a bank</button>
-    <button id="saveIncome" class="big" hidden>Save income</button>
-  </section>
-
-  <section id="v-bank" hidden>
+    <div id="payBox">
+      <label>Payment method</label>
     <div class="seg" id="segPay"><button data-v="bank" class="on">Banks</button><button data-v="wallet">Wallets</button></div>
     <div class="bsearch"><input id="bankQ" type="search" placeholder="Search" autocapitalize="none" autocorrect="off" hidden><button id="bankSearchBtn" class="icon" aria-label="Search"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg></button></div>
     <div id="banks" class="grid"></div>
+    </div>
+    <button id="toBank" class="big">Continue to pay</button>
+    <button id="saveOnly" class="ghost">Save only</button>
+    <button id="saveIncome" class="big" hidden>Save income</button>
   </section>
 
   <section id="v-settings" hidden>

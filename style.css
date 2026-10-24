@@ -527,3 +527,18 @@ input[type=date]::-webkit-date-and-time-value{text-align:left}
 .lg2 .pc small{display:block;font:500 12px var(--font);opacity:.75}
 .lg2:active{opacity:.6}
 @media (max-width:420px){.hchart{flex-direction:column;align-items:stretch}.hchart .donut{align-self:center}}
+
+/* ---------- v2.16: thẻ tháng không tô màu; chọn phương thức thanh toán trong màn nhập ---------- */
+.hero{background:var(--card)!important;color:var(--fg)!important;box-shadow:var(--shadow)}
+.hero .hl{color:var(--muted);opacity:1}
+.hero .mnav>button{background:var(--fill)!important;color:var(--fg)!important}
+.hero .mmid span{color:var(--fg)!important}
+.hero .tdy{background:var(--accent)!important;color:var(--on-accent)!important}
+.hero .donut circle:first-child{stroke:var(--fill)!important}
+.hero .donut .dtx{fill:var(--fg)!important}
+.hchart{border-top-color:var(--line)!important}
+.duo.w{border-top-color:var(--line)!important}
+.duo.w span{color:var(--muted)!important}
+#payBox .grid button.on{box-shadow:0 0 0 2.5px var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--card))}
+#payBox .grid{margin-bottom:6px}
+#payBox .seg{margin-top:2px}
