@@ -513,3 +513,17 @@ input[type=date]::-webkit-date-and-time-value{text-align:left}
 #v-detail .snap:active{transform:translateX(-50%) scale(.94)}
 #v-detail .snap svg{width:32px;height:32px}
 #v-detail{padding-bottom:110px}
+
+/* ---------- v2.15: thẻ tháng gộp biểu đồ tròn; mỗi hạng mục % trên, tiền dưới ---------- */
+.hchart{display:flex;align-items:center;gap:16px;border-top:.5px solid rgba(255,255,255,.22);padding-top:16px;margin-top:2px}
+.hchart .donut{width:130px;height:130px}
+.hero .donut circle:first-child{stroke:rgba(255,255,255,.16)}
+.hero .donut .dtx{fill:#fff}
+.lg2{display:flex;align-items:center;gap:8px;margin:9px 0;font-size:14px;cursor:pointer}
+.lg2 i{width:10px;height:10px;border-radius:50%;flex:none}
+.lg2 span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lg2 .pc{text-align:right;line-height:1.2;flex:none}
+.lg2 .pc b{display:block;font:700 15px var(--font)}
+.lg2 .pc small{display:block;font:500 12px var(--font);opacity:.75}
+.lg2:active{opacity:.6}
+@media (max-width:420px){.hchart{flex-direction:column;align-items:stretch}.hchart .donut{align-self:center}}

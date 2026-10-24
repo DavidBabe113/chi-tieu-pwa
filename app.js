@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.14.0';
+const VERSION = '2.15.0';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -18,7 +18,7 @@ const VI = {
   // tab & tiêu đề
   'Expenses': 'Chi tiêu', 'Overview': 'Tổng quan', 'Statistics': 'Thống kê', '6 Jars': '6 hũ', 'Categories': 'Danh mục',
   'Choose from Photos': 'Chọn từ thư viện ảnh', 'No QR code found in this photo': 'Không tìm thấy mã QR trong ảnh này', 'Scan QR from a photo': 'Quét QR từ ảnh',
-  'Scan QR': 'Quét QR', 'Choose category': 'Chọn danh mục', 'Details': 'Chi tiết', 'Choose bank': 'Chọn ngân hàng', 'Payment method': 'Lựa chọn thanh toán', 'Each slice is one day: how much of the month spending happened that day. Tap a day for details.': 'Mỗi miếng là một ngày: ngày đó chiếm bao nhiêu phần chi của tháng. Chạm vào ngày để xem chi tiết.', 'Other days': 'Các ngày còn lại', 'Highest': 'Cao nhất', 'Tap to see the list': 'Chạm để xem danh sách', 'Payment places': 'Các nơi thanh toán', 'Next: payment method': 'Tiếp: lựa chọn thanh toán', 'Banks': 'Ngân hàng', 'Nothing found': 'Không tìm thấy', 'Search': 'Tìm kiếm', 'Choose how you pay. The app opens and you confirm as usual. Enter the amount there yourself.': 'Chọn cách thanh toán. App sẽ mở, bạn xác nhận như bình thường và tự nhập số tiền ở đó.', 'By payment method': 'Theo hình thức thanh toán',
+  'Scan QR': 'Quét QR', 'Choose category': 'Chọn danh mục', 'Details': 'Chi tiết', 'Choose bank': 'Chọn ngân hàng', 'Payment method': 'Lựa chọn thanh toán', 'Not in any jar: <b>{0}</b>': 'Chưa thuộc hũ nào: <b>{0}</b>', 'No locations yet': 'Chưa có vị trí nào', 'Each slice is one day: how much of the month spending happened that day. Tap a day for details.': 'Mỗi miếng là một ngày: ngày đó chiếm bao nhiêu phần chi của tháng. Chạm vào ngày để xem chi tiết.', 'Other days': 'Các ngày còn lại', 'Highest': 'Cao nhất', 'Tap to see the list': 'Chạm để xem danh sách', 'Payment places': 'Các nơi thanh toán', 'Next: payment method': 'Tiếp: lựa chọn thanh toán', 'Banks': 'Ngân hàng', 'Nothing found': 'Không tìm thấy', 'Search': 'Tìm kiếm', 'Choose how you pay. The app opens and you confirm as usual. Enter the amount there yourself.': 'Chọn cách thanh toán. App sẽ mở, bạn xác nhận như bình thường và tự nhập số tiền ở đó.', 'By payment method': 'Theo hình thức thanh toán',
   'Photo library': 'Thư viện ảnh', 'Settings': 'Cài đặt', 'Back': 'Quay lại', 'Close': 'Đóng', 'Add manually': 'Nhập tay',
   // tổng quan
   'Spent this month': 'Đã chi tháng này', 'Dashboard': 'Bảng tổng hợp', 'Monthly summary': 'Tổng hợp theo tháng', 'Each bar is one day of the month. Touch a bar to see that day.': 'Mỗi cột là một ngày trong tháng. Chạm vào cột để xem ngày đó.', 'Places in {0}': 'Số nơi thanh toán trong {0}', 'Places on {0}': 'Số nơi thanh toán ngày {0}', 'Map': 'Bản đồ', 'Wallet': 'Ví', 'Wallets': 'Ví', 'Payments': 'Thanh toán', '+ Add wallet': '+ Thêm ví', 'No wallet': 'Chưa chọn ví', 'By wallet': 'Theo ví', 'Wallet name': 'Tên ví', 'Savings rate': 'Tỷ lệ thiết kiệm', 'Projected remaining': 'Dự kiến còn lại', 'Total income': 'Tổng thu nhập', 'Total spending': 'Tổng chi tiêu tháng', 'Average per day': 'Trung bình mỗi ngày',
@@ -359,7 +359,7 @@ let scanWorker = null;
 function stopWorker() { if (scanWorker) { scanWorker.terminate(); scanWorker = null; } }
 async function startScan() {
   show('scan');
-  $('#scanMsg').textContent = tr('Point the camera at the QR code…');
+  $('#scanMsg').textContent = '';
   $('.camwrap').classList.remove('found');
   const hi = { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30 } };
   try {
@@ -750,17 +750,13 @@ async function renderHome() {
   const exp = all.filter(r => !isInc(r) && ymOf(r.time) === viewYm);
   const spent = sum(exp);
   const by = Object.entries(sumBy(exp, r => r.category)).sort((a, b) => b[1] - a[1]);
-  const mx = by.length ? by[0][1] : 1;
   $('#stats').innerHTML = monthNav('') +
     `<div class="hl">${tr('Spent in {0}', monthLabel(viewYm))}</div><b class="total" data-key="home-spent" data-count="${spent}">${fmt(spent)}</b>` +
-    (by.length ? `<div class="catlist">${by.map(([k, v]) =>
-      `<div class="crow2"><span>${esc(k)}</span><div class="trk"><i style="width:${Math.max(3, Math.round(v / mx * 100))}%"></i></div><b>${fmt(v)}</b></div>`).join('')}</div>` : '');
-  $('#catChart').innerHTML = by.length ? `<h2>${tr('Spending chart')}</h2><div class="card chart">${donut(by, spent)}<div class="legend">${by.map(([k, v], i) =>
-    `<div class="lg"><i style="background:${PAL[i % PAL.length]}"></i><span>${esc(k)}</span><b>${Math.round(v / spent * 100)}%</b></div>`).join('')}</div></div>` : '';
+    (by.length ? `<div class="chart hchart">${donut(by, spent)}<div class="legend">${by.map(([k, v], i) =>
+      `<div class="lg2" data-info="cat" data-arg="${esc(k)}"><i style="background:${PAL[i % PAL.length]}"></i><span>${esc(k)}</span><div class="pc"><b>${Math.round(v / spent * 100)}%</b><small>${fmt(v)}</small></div></div>`).join('')}</div></div>` : '');
   const bd = $('#balance'); bd.querySelectorAll('.hl,.total').forEach(e => e.dataset.info = 'remain');
   const duo = bd.querySelector('.duo').children; duo[0].dataset.info = 'income'; duo[1].dataset.info = 'spent';
   $('#stats').querySelectorAll('.hl,.total').forEach(e => e.dataset.info = 'month');
-  $('#stats').querySelectorAll('.crow2').forEach((e, i) => { e.dataset.info = 'cat'; e.dataset.arg = by[i][0]; });
   runCounts($('#balance')); runCounts($('#stats'));
   renderDash(all);
 }
@@ -786,7 +782,7 @@ async function renderTxn() {
   $('#txnList').hidden = mapMode; $('#txnMapBox').hidden = !mapMode;
   if (mapMode) {
     const n = items.filter(r => r.loc).length;
-    $('#txnHead').innerHTML = monthNav('') + `<div class="hl" data-info="places">${tr(txnDay ? 'Places on {0}' : 'Places in {0}', txnDay ? new Date(txnDay + 'T00:00').toLocaleDateString(DLOC(), { day: 'numeric', month: 'short' }) : monthLabel(viewYm))}</div><b class="total" data-info="places">${n}</b><div class="hl" data-info="places">${tr('Tap to see the list')} ›</div>`;
+    $('#txnHead').innerHTML = monthNav('') + `<div class="hl" data-info="places">${tr(txnDay ? 'Places on {0}' : 'Places in {0}', txnDay ? new Date(txnDay + 'T00:00').toLocaleDateString(DLOC(), { day: 'numeric', month: 'short' }) : monthLabel(viewYm))}</div><b class="total" data-info="places">${n}</b>`;
     renderMap(items); return;
   }
   $('#txnHead').innerHTML = monthNav('') +
@@ -813,7 +809,7 @@ function pinHtml(r, k = 0) {   // nhãn nhỏ: biểu tượng hạng mục + t�
 }
 function renderMap(items) {
   const pts = [], withLoc = items.filter(r => r.loc && isFinite(r.loc.lat) && isFinite(r.loc.lng));
-  $('#mapNote').textContent = withLoc.length ? tr('{0} places with a saved location. Tap a pin for details.', withLoc.length) : tr('No locations saved yet. A location is saved when you enter an amount (allow location access).');
+  $('#mapNote').textContent = withLoc.length ? '' : tr('No locations yet');
   if (typeof L === 'undefined') { $('#mapNote').textContent = tr('The map could not load. Check your connection.'); return; }
   if (!leaf) {
     leaf = L.map('map', { zoomControl: true, attributionControl: true }).setView([16.05, 108.2], 5);
@@ -1010,7 +1006,7 @@ function renderDash(all) {
   const dColors = [...PAL.slice(0, 6), '#9ca3af'];
   const dLabel = d => new Date(y, mo - 1, d).toLocaleDateString(DLOC(), { weekday: 'short', day: 'numeric', month: 'short' });
   const dYmd = d => `${y}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-  h += `<h2>${tr('Daily spending')}</h2><div class="card"><p class="hint dhelp">${tr('Each slice is one day: how much of the month spending happened that day. Tap a day for details.')}</p>` +
+  h += `<h2>${tr('Daily spending')}</h2><div class="card">` +
     `<div class="chart">${donut(dSlices, total, dColors)}<div class="legend">${dSlices.map(([d, v], i) => d === 'other'
       ? `<div class="lg"><i style="background:${dColors[i]}"></i><span>${tr('Other days')} (${otherDays.length})</span><b>${Math.round(v / total * 100)}%</b></div>`
       : `<div class="lg" data-info="day" data-arg="${dYmd(d)}"><i style="background:${dColors[i]}"></i><span>${esc(dLabel(d))} · ${short(v)}</span><b>${Math.round(v / total * 100)}%</b></div>`).join('')}</div></div>` +
@@ -1076,7 +1072,7 @@ function paintJars() {
   btn.className = 'fab-save ' + (!ok ? 'bad' : isSame ? 'done' : '');   // nút tròn dấu tích: đỏ = tổng chưa đủ 100%, xanh lá = đã lưu
   btn.title = !ok ? tr('Percentages must add up to 100') : isSame ? tr('Saved for {0}', monthLabel(viewYm)) : tr('Save {0}', monthLabel(viewYm));
   btn.disabled = !ok || isSame; btn.hidden = !(can('editJars') && curView === 'jars');
-  $('#jarNote').innerHTML = c.unassigned > 0 ? `<div class="card jsub">${tr('Not in any jar: <b>{0}</b>. Assign those categories to a jar in the Categories tab.', fmt(c.unassigned))}</div>` : '';
+  $('#jarNote').innerHTML = c.unassigned > 0 ? `<div class="card jsub">${tr('Not in any jar: <b>{0}</b>', fmt(c.unassigned))}</div>` : '';
 }
 $('#jarsBody').addEventListener('input', e => {
   const i = e.target.dataset?.pct; if (i === undefined) return;
@@ -1096,7 +1092,7 @@ async function renderCategories() {
   const spentBy = {}; recs.forEach(r => { const k = catName(r.category); spentBy[k] = (spentBy[k] || 0) + Number(r.amount); });
   const map = jarMap();
   const jarOptions = sel => `<option value="-1">${tr('No jar')}</option>` + JAR_KEYS.map((k, i) => `<option value="${i}" ${sel === i ? 'selected' : ''}>${esc(jarName(i))}</option>`).join('');
-  let h = monthNav('light') + `<p class="hint">${tr('Your categories and the jar each one belongs to. Spending in a category is deducted from its jar.')}</p>`;
+  let h = monthNav('light');
   cats().forEach((c, i) => {
     const [e, ...rest] = c.split(' '); const name = rest.join(' ') || e;
     const ji = Number.isInteger(map[name.toLowerCase()]) ? map[name.toLowerCase()] : -1;
@@ -1172,7 +1168,6 @@ async function openSheet(r) {
       const i = new Image(); i.src = URL.createObjectURL(b); i.className = 'd-photo';
       i.onclick = () => savePhoto(b, r.photo);
       $('#sheetPhoto').append(i);
-      $('#sheetPhoto').insertAdjacentHTML('beforeend', `<p class="hint">${tr('Tap the photo to save it to your iPhone Photos.')}</p>`);
     }
   }
 }
@@ -1499,7 +1494,7 @@ function renderMembers() {
     const self = u.id === me.id;
     return `<div class="card member"><div class="mhead"><div class="cn">${esc(u.name)}<small>${tr(u.role === 'admin' ? 'Admin' : 'Member')}${self ? ' · ' + tr('You') : ''}</small></div>` +
       (self ? '' : `<button class="mini" data-act="reset" data-id="${u.id}">${tr('Reset password')}</button><button class="cdel" data-act="del" data-id="${u.id}" aria-label="${tr('Remove')}">✕</button>`) + '</div>' +
-      (u.role === 'admin' ? `<p class="hint">${tr('Administrators can do everything.')}</p>` :
+      (u.role === 'admin' ? '' :
         PERMS.map(([k, label]) => `<label class="sw"><span>${tr(label)}</span><input type="checkbox" data-act="perm" data-id="${u.id}" data-k="${k}" ${u.perms && u.perms[k] ? 'checked' : ''}><i></i></label>`).join('')) + '</div>';
   }).join('');
 }
