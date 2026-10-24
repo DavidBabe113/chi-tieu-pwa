@@ -25,3 +25,6 @@ Các file cốt lõi: `index.html`, `app.js`, `style.css`, `sw.js`, `scan-worker
 
 ## Dựng bản chạy
 Mã nguồn dễ đọc nằm ở `src/`. Sau khi sửa, chạy `node build.mjs` để sinh `app.js` và `style.css` (đã nén) ở thư mục gốc rồi đẩy lên GitHub. Mỗi bản phát hành nhớ đổi `VERSION` trong `src/app.js` và tên cache trong `sw.js`.
+
+## Chạy trên máy tính (PC / laptop)
+Cách nhanh nhất: mở https://davidbabe113.github.io/chi-tieu-pwa/ bằng Chrome/Edge. Chạy từ ổ đĩa: cần Node.js, bấm đúp `start-pc.bat` (hoặc `node serve.mjs`), trình duyệt mở http://localhost:8080. Dữ liệu lưu riêng trong từng trình duyệt; để dùng chung với điện thoại, dán cùng link Apps Script trong Cài đặt > Advanced.

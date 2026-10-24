@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.21.0';
+const VERSION = '2.22.0';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -129,7 +129,7 @@ function applyTheme() {
   const t = cfg.get('theme', 'auto');
   if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme;
   const dark = t === 'dark' || (t === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
-  const m = document.querySelector('meta[name=theme-color]'); if (m) m.content = dark ? '#000000' : '#f5f5f7';
+  const m = document.querySelector('meta[name=theme-color]'); if (m) m.content = dark ? '#000000' : '#fbf6e4';
 }
 applyTheme();
 

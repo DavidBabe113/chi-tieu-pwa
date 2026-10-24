@@ -1,27 +1,27 @@
 /* Giao diện theo phong cách apple.com: phông SF Pro, nền xám nhạt, thẻ trắng bo tròn, tiêu đề lớn, nút dạng viên thuốc,
    kính mờ, hiệu ứng hiện dần khi cuộn. Màu nhấn: xanh navy. */
 :root{
-  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Helvetica Neue",Helvetica,Arial,sans-serif;
-  --font-d:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Helvetica Neue",Helvetica,Arial,sans-serif;
-  --bg:#f5f5f7;--fg:#1d1d1f;--muted:#6e6e73;--card:#fff;--line:rgba(0,0,0,.1);
-  --fill:rgba(118,118,128,.12);--thumb:#fff;
-  --accent:#000080;--accent2:#2323b5;--on-accent:#fff;--link:#000080;
-  --ok:#248a3d;--warn:#b45309;--danger:#d70015;
+  --font:ui-rounded,"SF Pro Rounded",-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Helvetica Neue",Helvetica,Arial,sans-serif;
+  --font-d:ui-rounded,"SF Pro Rounded",-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Helvetica Neue",Helvetica,Arial,sans-serif;
+  --bg:#fbf6e4;--fg:#14391f;--muted:#5e7a66;--card:#fffefa;--line:rgba(20,57,31,.12);
+  --fill:rgba(20,57,31,.07);--thumb:#fff;
+  --accent:#1f8a4c;--accent2:#34a765;--on-accent:#fff;--link:#1f8a4c;--cta:#f2b632;--on-cta:#14391f;
+  --ok:#1f8a4c;--warn:#b45309;--danger:#d64545;
   --shadow:0 1px 2px rgba(0,0,0,.04),0 4px 18px rgba(0,0,0,.05);
   --r:22px;--ease:cubic-bezier(.28,.11,.32,1);
 }
 :root[data-theme="dark"]{
-  --bg:#000;--fg:#f5f5f7;--muted:#a1a1a6;--card:#1c1c1e;--line:rgba(255,255,255,.14);
-  --fill:rgba(118,118,128,.28);--thumb:#636366;
-  --accent:#3b8cff;--accent2:#6aaeff;--on-accent:#fff;--link:#6ab0ff;
-  --ok:#30d158;--warn:#ffd60a;--danger:#ff453a;
+  --bg:#0e1a12;--fg:#f3f0df;--muted:#9db5a3;--card:#17261c;--line:rgba(243,240,223,.14);
+  --fill:rgba(243,240,223,.1);--thumb:#2d4435;
+  --accent:#3fbf72;--accent2:#6ad594;--on-accent:#08210f;--link:#6ad594;--cta:#f2b632;--on-cta:#14391f;
+  --ok:#3fbf72;--warn:#f2b632;--danger:#ff6b6b;
   --shadow:0 1px 2px rgba(0,0,0,.5);
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#000;--fg:#f5f5f7;--muted:#a1a1a6;--card:#1c1c1e;--line:rgba(255,255,255,.14);
-  --fill:rgba(118,118,128,.28);--thumb:#636366;
-  --accent:#3b8cff;--accent2:#6aaeff;--on-accent:#fff;--link:#6ab0ff;
-  --ok:#30d158;--warn:#ffd60a;--danger:#ff453a;
+  --bg:#0e1a12;--fg:#f3f0df;--muted:#9db5a3;--card:#17261c;--line:rgba(243,240,223,.14);
+  --fill:rgba(243,240,223,.1);--thumb:#2d4435;
+  --accent:#3fbf72;--accent2:#6ad594;--on-accent:#08210f;--link:#6ad594;--cta:#f2b632;--on-cta:#14391f;
+  --ok:#3fbf72;--warn:#f2b632;--danger:#ff6b6b;
   --shadow:0 1px 2px rgba(0,0,0,.5);
 }}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -76,14 +76,14 @@ h2{font:700 24px/1.15 var(--font-d);letter-spacing:-.025em;margin:36px 4px 14px}
 a.linkbtn{text-decoration:none}
 
 /* ---------- tổng quan ---------- */
-.hero,.incbox{background:linear-gradient(150deg,#00003d,#000080 60%,#1a1aa6);color:#fff;padding:22px}
+.hero,.incbox{background:linear-gradient(150deg,#0f5a32,#1f8a4c 60%,#34a765);color:#fff;padding:22px}
 .hl{font:600 13px var(--font);opacity:.72;letter-spacing:.01em;margin-top:6px}
 .total{display:block;font:700 48px/1.05 var(--font-d);letter-spacing:-.04em;margin:2px 0 14px}
 .sub{font-size:14px;opacity:.75;margin:-6px 0 14px}
 .trio{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;border-top:.5px solid rgba(255,255,255,.22);padding-top:14px}
 .trio span{display:block;font:600 12px var(--font);opacity:.7}
 .trio b{display:block;font:700 17px var(--font);margin-top:2px;letter-spacing:-.02em}
-.incbox .pill{background:#fff;color:#000080;margin-top:2px}
+.incbox .pill{background:#fff;color:#1f8a4c;margin-top:2px}
 .dayh{font:600 13px var(--font);color:var(--muted);margin:24px 6px 8px}
 .item{display:flex;gap:12px;align-items:center;padding:13px 0;border-bottom:.5px solid var(--line);cursor:pointer;transition:opacity .2s}
 .item:last-child{border-bottom:0}
@@ -108,7 +108,7 @@ a.linkbtn{text-decoration:none}
 .tdy{padding:3px 12px;border:0;border-radius:980px;background:var(--accent);color:var(--on-accent);font:600 12px var(--font)}
 .hero .mnav>button{background:rgba(255,255,255,.16);color:#fff}
 .hero .mmid span{color:#fff}
-.hero .tdy{background:#fff;color:#000080}
+.hero .tdy{background:#fff;color:#1f8a4c}
 
 /* ---------- nút nổi: ảnh · quét QR · thêm ---------- */
 #v-home{padding-bottom:20px}
@@ -255,7 +255,7 @@ details.adv[open] summary::after{transform:rotate(90deg)}
 @keyframes zoomUp{from{transform:translateY(60px) scale(.96);opacity:0}to{transform:none;opacity:1}}
 
 /* ---------- khoá PIN ---------- */
-.lock{position:fixed;inset:0;z-index:60;background:linear-gradient(160deg,#00003d,#000080 60%,#1a1aa6);display:flex;align-items:center;justify-content:center;padding:24px}
+.lock{position:fixed;inset:0;z-index:60;background:linear-gradient(160deg,#0f5a32,#1f8a4c 60%,#34a765);display:flex;align-items:center;justify-content:center;padding:24px}
 .lock-card{width:100%;max-width:320px;text-align:center;color:#fff}
 .lock-ic{font-size:40px;margin-bottom:6px}
 .lock-card h2{color:#fff;font:600 21px var(--font-d);letter-spacing:-.02em;margin:6px 0 20px}
@@ -443,7 +443,7 @@ body[data-dir="prev"] main>section:not([hidden]){animation:slidePrev .26s var(--
 .ygrid .gl:first-child em{top:-8px}
 .ycols{position:absolute;inset:0;display:flex;gap:6px}
 .ycol{flex:1;min-width:0;position:relative;display:flex;align-items:flex-end;justify-content:center;border-radius:10px;cursor:pointer}
-.ycol.cur{background:rgba(0,0,128,.06)}
+.ycol.cur{background:rgba(31,138,76,.06)}
 .ypair{display:flex;align-items:flex-end;gap:4px;height:100%}
 .yb{width:16px;min-width:6px;border-radius:5px 5px 2px 2px;transform-origin:bottom;animation:growY .7s var(--ease) both}
 .yb.inc{background:linear-gradient(180deg,#4ade80,#16a34a)}
@@ -502,10 +502,10 @@ input[type=date]::-webkit-date-and-time-value{text-align:left}
 .filters input[type=date]{min-height:44px}
 
 /* ---------- v2.13.1: nút quét QR đơn giản; nút chụp ảnh nằm cùng vị trí nút quét ---------- */
-.fab-scan{background:var(--accent);box-shadow:0 6px 18px rgba(0,0,128,.28)}
+.fab-scan{background:var(--accent);box-shadow:0 6px 18px rgba(31,138,76,.28)}
 .fab-scan svg{width:32px;height:32px}
 #v-detail .photo{margin:0}
-#v-detail .snap{position:fixed;z-index:20;left:50%;bottom:calc(22px + env(safe-area-inset-bottom));transform:translateX(-50%);width:76px;height:76px;margin:0;background:var(--accent);box-shadow:0 6px 18px rgba(0,0,128,.28)}
+#v-detail .snap{position:fixed;z-index:20;left:50%;bottom:calc(22px + env(safe-area-inset-bottom));transform:translateX(-50%);width:76px;height:76px;margin:0;background:var(--accent);box-shadow:0 6px 18px rgba(31,138,76,.28)}
 #v-detail .snap:active{transform:translateX(-50%) scale(.94)}
 #v-detail .snap svg{width:32px;height:32px}
 #v-detail{padding-bottom:110px}
@@ -551,7 +551,7 @@ input[type=date]::-webkit-date-and-time-value{text-align:left}
 .linkbtn{display:block;text-align:center;margin:10px 0 4px;text-decoration:none}
 
 /* v2.17.1: nút + nổi bật nhẹ */
-.fab-add{width:56px;height:56px;font-weight:400;color:var(--accent);background:var(--card);box-shadow:0 6px 16px rgba(0,0,128,.22),0 0 0 2px var(--accent)}
+.fab-add{width:56px;height:56px;font-weight:400;color:var(--accent);background:var(--card);box-shadow:0 6px 16px rgba(31,138,76,.22),0 0 0 2px var(--accent)}
 .fab-add:active{transform:scale(.94)}
 
 /* ---------- v2.18: chỉnh % hũ bằng nút -/+ 5% ---------- */
@@ -579,3 +579,9 @@ input[type=date]::-webkit-date-and-time-value{text-align:left}
 .mpg button:disabled{opacity:.3}
 
 .ghost.danger{color:#dc2626}
+
+/* ---------- v2.22: bảng màu kem – xanh lá – vàng hổ phách, phông tròn (tham khảo app Eggu) ---------- */
+.big,.pill,.pend .acts .ok{background:var(--cta);color:var(--on-cta);font-weight:700}
+.fab-save:not(.bad):not(.done){background:var(--cta);color:var(--on-cta)}
+h1,h2,.total,.ih{color:var(--fg)}
+.card{border:.5px solid var(--line)}
