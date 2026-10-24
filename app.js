@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.13.2';
+const VERSION = '2.14.0';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -508,24 +508,14 @@ $('#photoIn').onchange = async e => {
   const f = e.target.files[0]; if (!f) return;
   curPhoto = await shrink(f);
   $('#preview').src = URL.createObjectURL(curPhoto); $('#preview').hidden = false;
-  e.target.value = '';
-  toAlbum(true);   // tự lưu vào album "Quản lý chi tiêu" qua Phím tắt
+  e.target.value = '';   // ảnh chỉ lưu trong app; không tự lưu ra album nữa
 };
-// Lưu vào album riêng: copy ảnh vào clipboard rồi chạy Phím tắt "LuuAnhChiTieu" (Lấy clipboard > Lưu vào album).
-async function toAlbum(silent) {
-  if (!curPhoto) return;
-  try {
-    const png = new Promise(res => {
-      const img = new Image();
-      img.onload = () => {
-        const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
-        c.getContext('2d').drawImage(img, 0, 0); c.toBlob(res, 'image/png'); URL.revokeObjectURL(img.src);
-      };
-      img.src = URL.createObjectURL(curPhoto);
-    });
-    await navigator.clipboard.write([new ClipboardItem({ 'image/png': png })]);
-  } catch { if (!silent) toast(tr('Could not copy the photo, try again')); return; }
-  location.href = 'shortcuts://run-shortcut?name=' + encodeURIComponent('LuuAnhChiTieu');
+// Lưu thủ công khi cần: chạm vào ảnh trong chi tiết giao dịch → bảng chia sẻ của iOS → "Lưu hình ảnh"
+async function savePhoto(blob, name) {
+  const f = new File([blob], name, { type: 'image/jpeg' });
+  if (navigator.canShare && navigator.canShare({ files: [f] })) {
+    try { await navigator.share({ files: [f] }); } catch {}
+  } else toast(tr('Press and hold the photo to save it'));
 }
 function shrink(file, max = 1280) {
   return new Promise(res => {
@@ -1180,7 +1170,9 @@ async function openSheet(r) {
     const b = await getPhoto(r.id);
     if (b) {
       const i = new Image(); i.src = URL.createObjectURL(b); i.className = 'd-photo';
+      i.onclick = () => savePhoto(b, r.photo);
       $('#sheetPhoto').append(i);
+      $('#sheetPhoto').insertAdjacentHTML('beforeend', `<p class="hint">${tr('Tap the photo to save it to your iPhone Photos.')}</p>`);
     }
   }
 }
