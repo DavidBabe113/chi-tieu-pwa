@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.34.0';
+const VERSION = '2.35.0';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -52,8 +52,8 @@ const VI = {
   'Face ID failed, enter your PIN': 'Face ID không thành công, hãy nhập mã PIN', 'Face ID could not be turned on on this device': 'Không bật được Face ID trên thiết bị này',
   'To reset a forgotten PIN, delete the app icon and add it again from Safari. Data on this phone that is not synced yet is lost.': 'Quên mã PIN thì xoá icon app rồi thêm lại từ Safari. Dữ liệu trên máy chưa đồng bộ sẽ mất.',
   'Data': 'Dữ liệu', '📊 Open Google Sheet': '📊 Mở Google Sheet', 'Google Sheet file link': 'Link file Google Sheet',
-  'Google Apps Script link (Web App)': 'Link Google Apps Script (Web App)', 'Reset app': 'Đặt lại app', '{0} exceeded': '{0} hũ vượt quá', '{0} to watch': '{0} hũ cần chú ý',
-  'All good': 'Tất cả đều tốt', 'Good': 'Tốt', 'Moderate': 'Trung bình', 'Exceeded': 'Vượt quá', 'Choose an icon': 'Chọn biểu tượng', 'Less': 'Ít', 'More': 'Nhiều', 'Change': 'Đổi',
+  'Google Apps Script link (Web App)': 'Link Google Apps Script (Web App)', 'Reset app': 'Đặt lại app', '{0} on alert': '{0} hũ báo động', '{0} to watch': '{0} hũ cần chú ý',
+  'All good': 'Tất cả đều tốt', 'Good': 'Tốt', 'Moderate': 'Trung bình', 'Alert': 'Báo động', 'Choose an icon': 'Chọn biểu tượng', 'Less': 'Ít', 'More': 'Nhiều', 'Change': 'Đổi',
   'Goal reached': 'Đã đạt mục tiêu', 'Overdue': 'Quá hạn', 'Due today': 'Đến hạn hôm nay', '{0} days left': 'Còn {0} ngày', 'Completed': 'Hoàn thành', '{0} to go': 'Còn {0}',
   'Set your first goal': 'Đặt mục tiêu đầu tiên', 'Save for a trip, a laptop, a rainy day…': 'Tiết kiệm cho chuyến đi, laptop, quỹ dự phòng…', 'Move to Trash': 'Chuyển vào thùng rác',
   'Trash': 'Thùng rác', 'Restore': 'Khôi phục', 'Delete forever': 'Xoá vĩnh viễn', 'Deleted': 'Đã xoá', 'Goal': 'Mục tiêu', 'Empty Trash': 'Dọn sạch thùng rác',
@@ -719,15 +719,15 @@ function donut(by, total, colors) {   // biểu đồ tròn theo hạng mục (c
   const segs = by.map(([k, v], i) => { const p = v / total * 100, o = 25 - cum; cum += p; return `<circle cx="21" cy="21" r="15.9155" fill="none" stroke="${(colors && colors[i]) || PAL[i % PAL.length]}" stroke-width="6" stroke-dasharray="${p.toFixed(3)} ${(100 - p).toFixed(3)}" stroke-dashoffset="${o.toFixed(3)}"></circle>`; }).join('');
   return `<svg class="donut" viewBox="0 0 42 42" role="img" aria-label="${tr('Spending chart')}"><circle cx="21" cy="21" r="15.9155" fill="none" stroke="var(--fill)" stroke-width="6"></circle>${segs}<text x="21" y="22.4" text-anchor="middle" class="dtx">${short(total)}</text></svg>`;
 }
-// Cảnh báo 6 hũ ngay ở Tổng quan: tốt < 70% · trung bình 70–100% · vượt quá > 100%
+// Cảnh báo 6 hũ ngay ở Tổng quan: xanh < 30% · vàng 30–70% · đỏ > 70% mức đã dùng
 function renderJarWatch(all) {
   const c = computeJars(viewYm, all, pctFor(viewYm)), box = $('#jarWatch');
   if (!c.income && !c.jars.some(j => j.spent)) { box.innerHTML = ''; return; }
-  const lvOf = j => { const raw = j.allocated ? j.spent / j.allocated * 100 : (j.spent > 0 ? 101 : 0); return [raw > 100 ? 'bad' : raw >= 70 ? 'mid' : 'good', raw]; };
+  const lvOf = j => { const raw = j.allocated ? j.spent / j.allocated * 100 : (j.spent > 0 ? 101 : 0); return [raw > 70 ? 'bad' : raw >= 30 ? 'mid' : 'good', raw]; };
   const bad = c.jars.filter(j => lvOf(j)[0] === 'bad'), mid = c.jars.filter(j => lvOf(j)[0] === 'mid');
-  box.innerHTML = `<div class="card jwatch" data-go="jars"><div class="jwh"><b>${tr('6 Jars')}</b><small>${bad.length ? `🔴 ${tr('{0} exceeded', bad.length)}` : mid.length ? `🟡 ${tr('{0} to watch', mid.length)}` : `🟢 ${tr('All good')}`}</small></div>` +
+  box.innerHTML = `<div class="card jwatch" data-go="jars"><div class="jwh"><b>${tr('6 Jars')}</b><small>${bad.length ? `🔴 ${tr('{0} on alert', bad.length)}` : mid.length ? `🟡 ${tr('{0} to watch', mid.length)}` : `🟢 ${tr('All good')}`}</small></div>` +
     `<div class="jwg">${c.jars.map((j, i) => { const [lv, raw] = lvOf(j); return `<div class="jw ${lv}"><span>${JAR_ICONS[i]}</span><b>${j.allocated ? Math.round(raw) + '%' : '–'}</b><small>${esc(jarName(i))}</small></div>`; }).join('')}</div>` +
-    (bad.length ? `<div class="jwa">${bad.map(j => `${esc(jarName(JAR_KEYS.indexOf(j.key)))}: ${tr('Over by {0}', fmt(-j.remaining))}`).join(' · ')}</div>` : '') + `</div>`;
+    (bad.length ? `<div class="jwa">${bad.map(j => `${esc(jarName(JAR_KEYS.indexOf(j.key)))}: ${j.remaining < 0 ? tr('Over by {0}', fmt(-j.remaining)) : tr('{0} left', fmt(j.remaining))}`).join(' · ')}</div>` : '') + `</div>`;
 }
 $('#jarWatch').onclick = e => { if (e.target.closest('[data-go="jars"]')) goTop('jars'); };
 async function renderHome() {
@@ -1230,9 +1230,9 @@ function paintJars() {
   c.jars.forEach((j, i) => {
     const card = $(`.jar[data-i="${i}"]`); if (!card) return;
     const raw = j.allocated ? j.spent / j.allocated * 100 : (j.spent > 0 ? 101 : 0), used = Math.min(100, raw);
-    const lv = raw > 100 ? 'bad' : raw >= 70 ? 'mid' : 'good';   // tốt < 70% · trung bình 70–100% · vượt quá > 100%
+    const lv = raw > 70 ? 'bad' : raw >= 30 ? 'mid' : 'good';   // xanh < 30% · vàng 30–70% · đỏ > 70%
     const st = card.querySelector('[data-st]'); st.className = 'jst ' + lv;
-    st.textContent = (lv === 'bad' ? '🔴 ' + tr('Exceeded') : lv === 'mid' ? '🟡 ' + tr('Moderate') : '🟢 ' + tr('Good')) + (j.allocated ? ` · ${Math.round(raw)}%` : '');
+    st.textContent = (lv === 'bad' ? '🔴 ' + tr('Alert') : lv === 'mid' ? '🟡 ' + tr('Moderate') : '🟢 ' + tr('Good')) + (j.allocated ? ` · ${Math.round(raw)}%` : '');
     card.dataset.lv = lv;
     card.querySelector('[data-alloc]').textContent = fmt(j.allocated);
     card.querySelector('[data-spent]').textContent = tr('Spent {0}', fmt(j.spent));
