@@ -22,3 +22,6 @@ Repo không chứa dữ liệu hay khoá bí mật nào của bạn. Mỗi ngư�
 3. Mở link Pages bằng Safari > Chia sẻ > Thêm vào Màn hình chính. Lần đầu mở sẽ tạo tài khoản admin riêng.
 
 Các file cốt lõi: `index.html`, `app.js`, `style.css`, `sw.js`, `scan-worker.js`, `manifest.webmanifest`, icon, `vendor/jsQR.js`.
+
+## Dựng bản chạy
+Mã nguồn dễ đọc nằm ở `src/`. Sau khi sửa, chạy `node build.mjs` để sinh `app.js` và `style.css` (đã nén) ở thư mục gốc rồi đẩy lên GitHub. Mỗi bản phát hành nhớ đổi `VERSION` trong `src/app.js` và tên cache trong `sw.js`.
