@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.28.0';
+const VERSION = '2.29.0';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -96,7 +96,7 @@ const VI = {
   'Face ID failed, enter your PIN': 'Face ID không thành công, hãy nhập mã PIN', 'Face ID could not be turned on on this device': 'Không bật được Face ID trên thiết bị này',
   'To reset a forgotten PIN, delete the app icon and add it again from Safari. Data on this phone that is not synced yet is lost.': 'Quên mã PIN thì xoá icon app rồi thêm lại từ Safari. Dữ liệu trên máy chưa đồng bộ sẽ mất.',
   'Data': 'Dữ liệu', '📊 Open Google Sheet': '📊 Mở Google Sheet', 'Google Sheet file link': 'Link file Google Sheet',
-  'Google Apps Script link (Web App)': 'Link Google Apps Script (Web App)', 'Reset app': 'Đặt lại app', 'Move to Trash': 'Chuyển vào thùng rác', 'Trash': 'Thùng rác', 'Restore': 'Khôi phục', 'Delete forever': 'Xoá vĩnh viễn', 'Deleted': 'Đã xoá', 'Goal': 'Mục tiêu', 'Empty Trash': 'Dọn sạch thùng rác', 'Trash is empty': 'Thùng rác trống', 'Delete everything in the Trash forever?': 'Xoá vĩnh viễn mọi thứ trong thùng rác?', 'Delete forever? This cannot be undone.': 'Xoá vĩnh viễn? Không thể hoàn tác.', 'Deadline (from today)': 'Hạn chót (tính từ hôm nay)', 'Years': 'Năm', 'Months': 'Tháng', 'Days': 'Ngày', 'Take from': 'Lấy từ', 'Outside money': 'Tiền bên ngoài (không trừ hũ)', 'Remaining in this jar: {0}': 'Còn lại trong hũ này: {0}', 'Added from outside, no jar is reduced': 'Nạp từ nguồn ngoài, không trừ hũ nào', 'Not enough in this jar. Remaining: {0}': 'Hũ này không đủ tiền. Còn lại: {0}', 'Export to Excel': 'Xuất ra Excel', 'Export': 'Xuất file', 'All': 'Tất cả', 'All months': 'Tất cả các tháng', 'Savings goals': 'Mục tiêu tiết kiệm', 'New goal': 'Mục tiêu mới', 'Due': 'Hạn chót', 'Saved': 'Đã tích lũy', 'Add money': 'Nạp thêm tiền', 'No goals yet': 'Chưa có mục tiêu nào', 'Goal name': 'Tên mục tiêu', 'e.g. Japan trip': 'vd: Du lịch Nhật Bản', 'Target': 'Số tiền cần đạt', 'Deadline': 'Hạn chót', '3 mo': '3 tháng', '6 mo': '6 tháng', '1 yr': '1 năm', '2 yr': '2 năm', 'None': 'Không', 'Create goal': 'Tạo mục tiêu', 'Delete this goal?': 'Xoá mục tiêu này?', 'Enter an amount first': 'Hãy nhập số tiền', 'Amount': 'Số tiền', 'Date': 'Ngày', 'Reset the app? All transactions, photos and settings on this phone are deleted. Your Google Sheet is not touched.': 'Đặt lại app? Toàn bộ giao dịch, ảnh và cài đặt trên điện thoại này sẽ bị xoá. Google Sheet không bị ảnh hưởng.', 'Banks': 'Ngân hàng',
+  'Google Apps Script link (Web App)': 'Link Google Apps Script (Web App)', 'Reset app': 'Đặt lại app', 'Goal reached': 'Đã đạt mục tiêu', 'Overdue': 'Quá hạn', 'Due today': 'Đến hạn hôm nay', '{0} days left': 'Còn {0} ngày', 'Completed': 'Hoàn thành', '{0} to go': 'Còn {0}', 'Set your first goal': 'Đặt mục tiêu đầu tiên', 'Save for a trip, a laptop, a rainy day…': 'Tiết kiệm cho chuyến đi, laptop, quỹ dự phòng…', 'Move to Trash': 'Chuyển vào thùng rác', 'Trash': 'Thùng rác', 'Restore': 'Khôi phục', 'Delete forever': 'Xoá vĩnh viễn', 'Deleted': 'Đã xoá', 'Goal': 'Mục tiêu', 'Empty Trash': 'Dọn sạch thùng rác', 'Trash is empty': 'Thùng rác trống', 'Delete everything in the Trash forever?': 'Xoá vĩnh viễn mọi thứ trong thùng rác?', 'Delete forever? This cannot be undone.': 'Xoá vĩnh viễn? Không thể hoàn tác.', 'Deadline (from today)': 'Hạn chót (tính từ hôm nay)', 'Years': 'Năm', 'Months': 'Tháng', 'Days': 'Ngày', 'Take from': 'Lấy từ', 'Outside money': 'Tiền bên ngoài (không trừ hũ)', 'Remaining in this jar: {0}': 'Còn lại trong hũ này: {0}', 'Added from outside, no jar is reduced': 'Nạp từ nguồn ngoài, không trừ hũ nào', 'Not enough in this jar. Remaining: {0}': 'Hũ này không đủ tiền. Còn lại: {0}', 'Export to Excel': 'Xuất ra Excel', 'Export': 'Xuất file', 'All': 'Tất cả', 'All months': 'Tất cả các tháng', 'Savings goals': 'Mục tiêu tiết kiệm', 'New goal': 'Mục tiêu mới', 'Due': 'Hạn chót', 'Saved': 'Đã tích lũy', 'Add money': 'Nạp thêm tiền', 'No goals yet': 'Chưa có mục tiêu nào', 'Goal name': 'Tên mục tiêu', 'e.g. Japan trip': 'vd: Du lịch Nhật Bản', 'Target': 'Số tiền cần đạt', 'Deadline': 'Hạn chót', '3 mo': '3 tháng', '6 mo': '6 tháng', '1 yr': '1 năm', '2 yr': '2 năm', 'None': 'Không', 'Create goal': 'Tạo mục tiêu', 'Delete this goal?': 'Xoá mục tiêu này?', 'Enter an amount first': 'Hãy nhập số tiền', 'Amount': 'Số tiền', 'Date': 'Ngày', 'Reset the app? All transactions, photos and settings on this phone are deleted. Your Google Sheet is not touched.': 'Đặt lại app? Toàn bộ giao dịch, ảnh và cài đặt trên điện thoại này sẽ bị xoá. Google Sheet không bị ảnh hưởng.', 'Banks': 'Ngân hàng',
   'One per line: Name (Brand) | app link. Edit if an app does not open.': 'Mỗi dòng: Tên (Thương hiệu) | link mở app. Sửa lại nếu app không mở được.',
   'Sent. Check the ChiTieu tab in your Sheet': 'Đã gửi. Mở tab ChiTieu trong Sheet để kiểm tra', 'Send failed, check the link': 'Gửi lỗi, kiểm tra link',
   'Save': 'Lưu',
@@ -861,16 +861,25 @@ $('#dash').onclick = e => { const it = e.target.closest('.item'); if (it && recB
 // ---------- mục tiêu tiết kiệm: tên, số tiền cần đạt, hạn chót; nạp thêm tiền để theo dõi tiến độ ----------
 const goals = () => getJSON('goals', []);
 const saveGoals = a => cfg.set('goals', JSON.stringify(a));
+const GOAL_ICONS = ['🎯', '✈️', '🏠', '💻', '🚗', '🎓', '💍', '🌴', '📱', '🎁'];
+const goalIcon = g => GOAL_ICONS[[...g.id].reduce((a, ch) => a + ch.charCodeAt(0), 0) % GOAL_ICONS.length];
 function renderGoals() {
-  const list = goals();
+  const list = goals(), C = 2 * Math.PI * 28;
   $('#goals').innerHTML = `<div class="gtop"><h2>${tr('Savings goals')}</h2><button class="gnew" data-g="new" aria-label="${tr('New goal')}">+</button></div>` +
-    (list.length ? list.map(g => {
-      const p = g.target ? Math.min(100, g.saved / g.target * 100) : 0;
-      return `<div class="card goal"><div class="gh"><div class="gn"><b>${esc(g.name)}</b>${g.due ? `<small>${tr('Due')} ${new Date(g.due + 'T00:00').toLocaleDateString(DLOC(), { day: 'numeric', month: 'short', year: 'numeric' })}</small>` : ''}</div>` +
-        `<button class="gdel" data-g="del" data-id="${g.id}" aria-label="${tr('Delete')}">🗑</button></div>` +
-        `<div class="gp"><span>${tr('Saved')}</span><b>${Math.round(p * 10) / 10}%</b></div><div class="gv"><b>${fmt(g.saved)}</b><small> / ${fmt(g.target)}</small></div>` +
-        `<div class="jbar"><i style="width:${p}%"></i></div><button class="ghost gadd" data-g="add" data-id="${g.id}">+ ${tr('Add money')}</button></div>`;
-    }).join('') : `<p class="hint">${tr('No goals yet')}</p>`);
+    (list.length ? `<div class="glist">` + list.map((g, i) => {
+      const raw = g.target ? g.saved / g.target * 100 : 0, p = Math.min(100, raw), done = raw >= 100, left = Math.max(0, g.target - g.saved);
+      let chip = '';
+      if (done) chip = `<span class="gchip win">🎉 ${tr('Goal reached')}</span>`;
+      else if (g.due) {
+        const days = Math.ceil((new Date(g.due + 'T00:00') - new Date(ymd(new Date()) + 'T00:00')) / 864e5);
+        chip = `<span class="gchip ${days < 0 ? 'late' : days <= 30 ? 'soon' : ''}">${days < 0 ? tr('Overdue') : days === 0 ? tr('Due today') : tr('{0} days left', days)}</span>`;
+      }
+      return `<div class="card goal ${done ? 'done' : ''}" style="animation-delay:${i * 60}ms"><div class="gring"><svg viewBox="0 0 64 64" width="72" height="72"><circle cx="32" cy="32" r="28" class="gbg"/><circle cx="32" cy="32" r="28" class="gfg" style="stroke-dasharray:${C.toFixed(1)};--off:${(C * (1 - p / 100)).toFixed(1)};--full:${C.toFixed(1)}"/></svg><span class="gem">${done ? '🏆' : goalIcon(g)}</span></div>` +
+        `<div class="gbody"><div class="gh"><div class="gn"><b>${esc(g.name)}</b>${chip}</div><button class="gdel" data-g="del" data-id="${g.id}" aria-label="${tr('Delete')}">🗑</button></div>` +
+        `<div class="gv"><b>${fmt(g.saved)}</b><small> / ${fmt(g.target)}</small></div>` +
+        `<div class="gbar"><i style="width:${p}%"></i></div>` +
+        `<div class="gfoot"><span><b>${Math.round(p)}%</b> · ${done ? tr('Completed') : tr('{0} to go', fmt(left))}</span><button class="gadd" data-g="add" data-id="${g.id}">+ ${tr('Add money')}</button></div></div></div>`;
+    }).join('') + `</div>` : `<div class="card gempty" data-g="new"><span class="gem big">🎯</span><div><b>${tr('Set your first goal')}</b><small>${tr('Save for a trip, a laptop, a rainy day…')}</small></div></div>`);
 }
 let goalDue = 12, goalJars = [];
 const goalNote = () => { const i = Number($('#gSrc').value); $('#gRem').textContent = i < 0 ? tr('Added from outside, no jar is reduced') : tr('Remaining in this jar: {0}', fmt(goalJars[i].remaining)); };
