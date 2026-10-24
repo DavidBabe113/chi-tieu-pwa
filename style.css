@@ -563,3 +563,10 @@ input[type=date]::-webkit-date-and-time-value{text-align:left}
 .pct b{min-width:50px;text-align:center;font:700 17px var(--font)}
 .stp{width:34px;height:34px;border:0;border-radius:50%;background:var(--fill);color:var(--accent);font:600 22px/1 var(--font);padding:0;display:grid;place-items:center}
 .stp:active{opacity:.55}
+
+/* ---------- v2.18.1: menu nhỏ của nút + ---------- */
+#addMenu{position:fixed;z-index:21;right:max(22px,calc(50% - 258px));bottom:calc(100px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:8px;align-items:flex-end}
+#addMenu[hidden]{display:none}
+#addMenu button{border:0;border-radius:980px;padding:11px 20px;background:var(--card);color:var(--accent);font:600 15px var(--font);box-shadow:0 6px 16px rgba(0,0,0,.2),0 0 0 1.5px var(--accent);animation:pop .18s var(--ease) both}
+#addMenu button[hidden]{display:none}
+@keyframes pop{from{opacity:0;transform:translateY(8px) scale(.9)}to{opacity:1;transform:none}}

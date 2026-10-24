@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.18.0';
+const VERSION = '2.18.1';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -338,7 +338,19 @@ addEventListener('touchend', e => {
 
 // ---------- quét QR ----------
 $('#btnScan').onclick = startScan;
-$('#btnManual').onclick = () => { cur = newRec(); renderCats(); show('cat'); };
+// Nút +: hiện nhỏ hai lựa chọn Income / Expense, chọn xong mới hiện hạng mục
+function addMenu() {
+  const m = $('#addMenu');
+  m.querySelectorAll('button').forEach(b => { b.textContent = tr(b.dataset.t === 'income' ? 'Income' : 'Expense'); b.hidden = !can(b.dataset.t === 'income' ? 'addIncome' : 'addExpense'); });
+  m.hidden = !m.hidden;
+}
+$('#btnManual').onclick = addMenu;
+$('#addMenu').onclick = e => {
+  const b = e.target.closest('button'); if (!b) return;
+  $('#addMenu').hidden = true;
+  cur = newRec(); cur.type = b.dataset.t; renderCats(); show('cat');
+};
+document.addEventListener('click', e => { if (!$('#addMenu').hidden && !e.target.closest('#addMenu,#btnManual')) $('#addMenu').hidden = true; });
 
 function newRec() {
   return { type: 'expense', by: me ? me.id : '', fromQr: false, acc: '', bin: '', id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), time: new Date().toISOString(), category: '', amount: '', note: '', payee: '', bank: '', photo: '', status: 'draft', synced: false };
