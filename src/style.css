@@ -585,3 +585,12 @@ input[type=date]::-webkit-date-and-time-value{text-align:left}
 .fab-save:not(.bad):not(.done){background:var(--cta);color:var(--on-cta)}
 h1,h2,.total,.ih{color:var(--fg)}
 .card{border:.5px solid var(--line)}
+
+/* ---------- v2.23: lịch chọn ngày trong app ---------- */
+.filters .datebtn{flex:1 1 0;min-width:0;margin:0;padding:10px;border:0;border-radius:12px;background:var(--fill);color:var(--muted);font:600 15px var(--font);text-align:left;min-height:44px}
+.filters .datebtn.set{color:var(--fg)}
+.cwd,.cgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center}
+.cwd span{font:600 12px var(--font);color:var(--muted);padding:4px 0}
+.cgrid button{aspect-ratio:1;border:0;border-radius:50%;background:none;color:var(--fg);font:500 16px var(--font);padding:0}
+.cgrid button.td{box-shadow:inset 0 0 0 1.5px var(--accent)}
+.cgrid button.on{background:var(--accent);color:var(--on-accent)}

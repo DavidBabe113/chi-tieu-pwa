@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.22.0';
+const VERSION = '2.23.0';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -96,7 +96,7 @@ const VI = {
   'Face ID failed, enter your PIN': 'Face ID không thành công, hãy nhập mã PIN', 'Face ID could not be turned on on this device': 'Không bật được Face ID trên thiết bị này',
   'To reset a forgotten PIN, delete the app icon and add it again from Safari. Data on this phone that is not synced yet is lost.': 'Quên mã PIN thì xoá icon app rồi thêm lại từ Safari. Dữ liệu trên máy chưa đồng bộ sẽ mất.',
   'Data': 'Dữ liệu', '📊 Open Google Sheet': '📊 Mở Google Sheet', 'Google Sheet file link': 'Link file Google Sheet',
-  'Google Apps Script link (Web App)': 'Link Google Apps Script (Web App)', 'Reset app': 'Đặt lại app', 'Reset the app? All transactions, photos and settings on this phone are deleted. Your Google Sheet is not touched.': 'Đặt lại app? Toàn bộ giao dịch, ảnh và cài đặt trên điện thoại này sẽ bị xoá. Google Sheet không bị ảnh hưởng.', 'Banks': 'Ngân hàng',
+  'Google Apps Script link (Web App)': 'Link Google Apps Script (Web App)', 'Reset app': 'Đặt lại app', 'Date': 'Ngày', 'Reset the app? All transactions, photos and settings on this phone are deleted. Your Google Sheet is not touched.': 'Đặt lại app? Toàn bộ giao dịch, ảnh và cài đặt trên điện thoại này sẽ bị xoá. Google Sheet không bị ảnh hưởng.', 'Banks': 'Ngân hàng',
   'One per line: Name (Brand) | app link. Edit if an app does not open.': 'Mỗi dòng: Tên (Thương hiệu) | link mở app. Sửa lại nếu app không mở được.',
   'Sent. Check the ChiTieu tab in your Sheet': 'Đã gửi. Mở tab ChiTieu trong Sheet để kiểm tra', 'Send failed, check the link': 'Gửi lỗi, kiểm tra link',
   'Save': 'Lưu',
@@ -784,7 +784,7 @@ async function renderTxn() {
   if (txnCat && !catOpts.includes(txnCat)) txnCat = '';
   $('#txnCat').innerHTML = `<option value="">${tr('All categories')}</option>` + catOpts.map(c => `<option value="${esc(c)}"${c === txnCat ? ' selected' : ''}>${esc(c)}</option>`).join('');
   if (txnDay && txnDay.slice(0, 7) !== viewYm) txnDay = '';
-  $('#txnDay').value = txnDay; $('#txnDayClear').hidden = !txnDay;
+  $('#txnDay').textContent = txnDay ? new Date(txnDay + 'T00:00').toLocaleDateString(DLOC(), { day: 'numeric', month: 'short', year: 'numeric' }) : tr('Date'); $('#txnDay').classList.toggle('set', !!txnDay); $('#txnDayClear').hidden = !txnDay;
   const items = ofType.filter(r => ymOf(r.time) === viewYm && (!txnCat || r.category === txnCat) && (!txnDay || ymd(new Date(r.time)) === txnDay)).sort((a, b) => b.time.localeCompare(a.time));
   const tot = sum(items);
   document.querySelectorAll('#segTxn button').forEach(b => b.classList.toggle('on', b.dataset.v === txnType));
@@ -803,7 +803,24 @@ async function renderTxn() {
 }
 bindMonthNav($('#txnHead'), () => { txnDay = ''; renderTxn(); });
 $('#txnCat').onchange = e => { txnCat = e.target.value; renderTxn(); };
-$('#txnDay').onchange = e => { txnDay = e.target.value; if (txnDay) viewYm = txnDay.slice(0, 7); renderTxn(); };
+// Lịch chọn ngày của app (theo ngôn ngữ đã chọn, không dùng bộ chọn ngày của hệ điều hành)
+let cal = { y: 0, m: 0 };
+function calendar() {
+  const first = new Date(cal.y, cal.m - 1, 1), lead = (first.getDay() + 6) % 7, dim = new Date(cal.y, cal.m, 0).getDate(), td = ymd(new Date());
+  const wd = Array.from({ length: 7 }, (_, i) => `<span>${new Date(2024, 0, 1 + i).toLocaleDateString(LOC(), { weekday: 'short' })}</span>`).join('');
+  const cells = Array(lead).fill('<i></i>').concat(Array.from({ length: dim }, (_, i) => {
+    const d = `${cal.y}-${String(cal.m).padStart(2, '0')}-${String(i + 1).padStart(2, '0')}`;
+    return `<button data-pd="${d}" class="${d === txnDay ? 'on' : d === td ? 'td' : ''}">${i + 1}</button>`;
+  })).join('');
+  $('#sheetBody').innerHTML = `<div class="mpk"><div class="mpy"><button data-cm="-1" aria-label="-1">‹</button><b>${first.toLocaleString(LOC(), { month: 'long', year: 'numeric' })}</b><button data-cm="1" aria-label="+1">›</button></div><div class="cwd">${wd}</div><div class="cgrid">${cells}</div></div>`;
+}
+$('#txnDay').onclick = () => { const d = txnDay || ymd(new Date()); cal = { y: Number(d.slice(0, 4)), m: Number(d.slice(5, 7)) }; openPanel(''); calendar(); };
+document.addEventListener('click', e => {
+  const cm = e.target.closest('#sheet [data-cm]');
+  if (cm) { const d = new Date(cal.y, cal.m - 1 + Number(cm.dataset.cm), 1); cal = { y: d.getFullYear(), m: d.getMonth() + 1 }; calendar(); return; }
+  const pd = e.target.closest('#sheet [data-pd]');
+  if (pd) { txnDay = pd.dataset.pd; viewYm = txnDay.slice(0, 7); renderTxn(); closeSheet(); }
+});
 $('#txnDayClear').onclick = () => { txnDay = ''; renderTxn(); };
 $('#mapList').onclick = e => { const it = e.target.closest('.item'); if (it && recById[it.dataset.id]) openSheet(recById[it.dataset.id]); };
 $('#txnList').onclick = e => { const it = e.target.closest('.item'); if (it && recById[it.dataset.id]) openSheet(recById[it.dataset.id]); };
