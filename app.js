@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.19.0';
+const VERSION = '2.19.1';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -152,7 +152,7 @@ const DEF_BANKS = [
 ].join('\n');
 const OLD_BANKS = 'Vietcombank | vietcombankmobile://\nMB Bank | mbbank://\nTechcombank | tcb://\nVPBank | vpbankneo://\nACB | acbone://\nBIDV | bidv.smartbanking.partner://\nTPBank | hydro://\nVietinBank | vietinbankipay://\nAgribank | agribankmobile://\nOCB | newomni-app://';
 // File Google Sheet chứa dữ liệu (chỉ mở được khi đăng nhập đúng tài khoản Google, Sheet không chia sẻ cho ai)
-const GOOGLE_CLIENT_ID = '';   // Google OAuth Client ID (công khai, không phải bí mật); có thể ghi đè trong Cài đặt > Advanced
+const GOOGLE_CLIENT_ID = '708051525318-keduc8dr3g1bsnfac4auue6looeggobl.apps.googleusercontent.com';   // Google OAuth Client ID (công khai, không phải bí mật); có thể ghi đè trong Cài đặt > Advanced
 const SHEET_FILE = 'https://docs.google.com/spreadsheets/d/1h6gpLCcJoevkHnPB9yo8R86ALhcuY2pb5Bjd_H8fLhw/edit';
 // Cài đặt cũ chưa chỉnh tay thì tự đổi sang mặc định mới
 if (cfg.get('cats', '').startsWith('⛽ Tiền xăng')) cfg.del('cats');
