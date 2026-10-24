@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.16.1';
+const VERSION = '2.17.0';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -805,6 +805,8 @@ function pinHtml(r, k = 0) {   // nhãn nhỏ: biểu tượng hạng mục + t�
   const note = r.note ? ' · ' + (r.note.length > 18 ? r.note.slice(0, 17) + '…' : r.note) : '';
   return `<div class="pin ${inc ? 'in' : 'out'}" style="margin-top:${-k * 30}px"><i>${esc(em)}</i><span>${esc(name)} ${inc ? '+' : '−'}${short(Number(r.amount))}${esc(note)}</span></div>`;
 }
+const locKeyOf = r => r.loc.lat.toFixed(4) + ',' + r.loc.lng.toFixed(4), locKey = locKeyOf;
+const _lk = r => r.loc.lat.toFixed(4) + ',' + r.loc.lng.toFixed(4);
 function renderMap(items) {
   const pts = [], withLoc = items.filter(r => r.loc && isFinite(r.loc.lat) && isFinite(r.loc.lng));
   $('#mapNote').textContent = withLoc.length ? '' : tr('No locations yet');
@@ -815,10 +817,16 @@ function renderMap(items) {
     leafLayer = L.layerGroup().addTo(leaf);
   }
   leafLayer.clearLayers();
+  const grp = {};
+  withLoc.forEach(r => { const k = locKey(r); (grp[k] = grp[k] || []).push(r); });
+  $('#mapList').innerHTML = Object.entries(grp).map(([k, g]) => {
+    const cs = [...new Set(g.map(r => r.category))];
+    return `<div class="item" data-info="place" data-arg="${k}"><div class="t"><b>📍 ${esc(cs[0])}${cs.length > 1 ? ' +' + (cs.length - 1) : ''}</b><small>${g.length} ${tr(g.length > 1 ? 'transactions' : 'transaction')}</small></div><div class="a">${fmt(sum(g))}</div></div>`;
+  }).join('');
   const seen = {};   // các giao dịch cùng một chỗ (làm tròn ~10 m) được xếp chồng lên nhau để không che nhau
   withLoc.forEach(r => {
     const p = [r.loc.lat, r.loc.lng], key = r.loc.lat.toFixed(4) + ',' + r.loc.lng.toFixed(4), k = seen[key] = (seen[key] ?? -1) + 1; pts.push(p);
-    L.marker(p, { icon: L.divIcon({ className: 'pinwrap', html: pinHtml(r, k), iconSize: [0, 0] }) }).on('click', () => openSheet(r)).addTo(leafLayer);
+    L.marker(p, { icon: L.divIcon({ className: 'pinwrap', html: pinHtml(r, k), iconSize: [0, 0] }) }).on('click', () => showInfo('place', key)).addTo(leafLayer);
   });
   setTimeout(() => {
     leaf.invalidateSize();
@@ -895,6 +903,13 @@ async function showInfo(kind, arg, ymArg) {
     html = head(tr('Payment places'), items.length) +
       (items.map(r => infoRow(r.category, (isInc(r) ? '+' : '') + fmt(r.amount),
         esc(new Date(r.time).toLocaleDateString(DLOC(), { day: 'numeric', month: 'short' }) + ' ' + new Date(r.time).toLocaleTimeString(DLOC(), { hour: '2-digit', minute: '2-digit' }) + (r.bank ? ' · ' + r.bank.replace(/^.*\((.+)\)$/, '$1') : '') + (r.note ? ' · ' + r.note : '')), isInc(r) ? 'pos' : 'neg', r.id)).join('') || `<p class="hint">${tr('No data yet')}</p>`);
+  } else if (kind === 'place') {
+    const items = all.filter(r => r.loc && locKeyOf(r) === arg && ymOf(r.time) === viewYm && (!txnCat || r.category === txnCat) && (!txnDay || ymd(new Date(r.time)) === txnDay)).sort((a, b) => b.time.localeCompare(a.time));
+    const [la, ln] = arg.split(',');
+    html = head(tr('Payment places'), fmt(sum(items))) +
+      `<a class="ghost linkbtn" href="https://www.google.com/maps/search/?api=1&query=${la},${ln}" target="_blank" rel="noopener">📍 ${tr('Open in Google Maps')}</a>` +
+      items.map(r => infoRow(r.category, (isInc(r) ? '+' : '') + fmt(r.amount),
+        esc(new Date(r.time).toLocaleDateString(DLOC(), { day: 'numeric', month: 'short' }) + ' ' + new Date(r.time).toLocaleTimeString(DLOC(), { hour: '2-digit', minute: '2-digit' }) + (r.note ? ' · ' + r.note : '')), isInc(r) ? 'pos' : 'neg', r.id)).join('');
   } else if (kind === 'bank' || kind === 'wallet') {
     const key = r => kind === 'bank' ? (r.bank || tr('Cash / no bank')) : (r.wallet || tr('No wallet'));
     const items = inM(viewYm, r => !isInc(r) && key(r) === arg).sort((a, b) => b.time.localeCompare(a.time));
@@ -993,21 +1008,13 @@ function renderDash(all) {
 
   const days = Array(dim).fill(0); m.forEach(r => days[new Date(r.time).getDate() - 1] += Number(r.amount));
   const dmax = Math.max(1, ...days);
-  // Chi theo ngày dạng biểu đồ tròn: mỗi miếng là một ngày (6 ngày chi nhiều nhất + "ngày còn lại"); chạm vào ngày để xem chi tiết
-  const cntD = Array(dim).fill(0);
-  m.forEach(r => { cntD[new Date(r.time).getDate() - 1]++; });
-  const peakDay = days.indexOf(dmax) + 1, active = cntD.filter(Boolean).length;
-  const dayEntries = days.map((v, i) => [i + 1, v]).filter(x => x[1] > 0).sort((a, b) => b[1] - a[1]);
-  const topDays = dayEntries.slice(0, 6), otherDays = dayEntries.slice(6), otherSum = otherDays.reduce((a, x) => a + x[1], 0);
-  const dSlices = topDays.map(([d, v]) => [d, v]).concat(otherSum ? [['other', otherSum]] : []);
-  const dColors = [...PAL.slice(0, 6), '#9ca3af'];
-  const dLabel = d => new Date(y, mo - 1, d).toLocaleDateString(DLOC(), { weekday: 'short', day: 'numeric', month: 'short' });
+  const peakDay = days.indexOf(dmax) + 1, active = days.filter(Boolean).length;
   const dYmd = d => `${y}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-  h += `<h2>${tr('Daily spending')}</h2><div class="card">` +
-    `<div class="chart">${donut(dSlices, total, dColors)}<div class="legend">${dSlices.map(([d, v], i) => d === 'other'
-      ? `<div class="lg"><i style="background:${dColors[i]}"></i><span>${tr('Other days')} (${otherDays.length})</span><b>${Math.round(v / total * 100)}%</b></div>`
-      : `<div class="lg" data-info="day" data-arg="${dYmd(d)}"><i style="background:${dColors[i]}"></i><span>${esc(dLabel(d))} · ${short(v)}</span><b>${Math.round(v / total * 100)}%</b></div>`).join('')}</div></div>` +
-    `<div class="dstats"><div><span>${tr('Peak day')}</span><b>${peakDay}/${mo}</b></div><div><span>${tr('Highest')}</span><b>${short(dmax)}</b></div><div><span>${tr('Active days')}</span><b>${active}/${elapsed}</b></div></div></div>`;
+  const axD = niceAxis(dmax), pxD = v => v ? Math.max(3, Math.round(v / axD.top * 150)) : 0;
+  h += `<h2>${tr('Daily spending')}</h2><div class="card"><div class="ychart"><div class="ygrid">${axisLines(axD)}</div><div class="ycols dcols">` +
+    days.map((v, i) => `<div class="ycol ${v ? '' : 'z'}"${v ? ` data-info="day" data-arg="${dYmd(i + 1)}"` : ''}><div class="ypair"><div class="yb exp" style="height:${pxD(v)}px"></div></div>` +
+      (i === 0 || (i + 1) % 5 === 0 ? `<span class="ycl">${i + 1}</span>` : '') + `</div>`).join('') +
+    `</div></div><div class="dstats"><div><span>${tr('Peak day')}</span><b>${peakDay}/${mo}</b></div><div><span>${tr('Highest')}</span><b>${short(dmax)}</b></div><div><span>${tr('Active days')}</span><b>${active}/${elapsed}</b></div></div></div>`;
 
   const byBank = Object.entries(sumBy(m, r => r.bank || tr('Cash / no bank'))).sort((a, b) => b[1] - a[1]);
   const bmax = byBank[0][1];

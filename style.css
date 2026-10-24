@@ -542,3 +542,14 @@ input[type=date]::-webkit-date-and-time-value{text-align:left}
 #payBox .grid button.on{box-shadow:0 0 0 2.5px var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--card))}
 #payBox .grid{margin-bottom:6px}
 #payBox .seg{margin-top:2px}
+
+/* ---------- v2.17: ô hạng mục ngắn lại chừa chỗ cho ô ngày; cột chi theo ngày; danh sách nơi thanh toán ---------- */
+.filters .jsel{flex:0 1 124px!important;width:124px!important;padding:12px 8px!important;font-size:14px!important;text-overflow:ellipsis}
+.filters input[type=date]{flex:1 1 0!important;max-width:none!important;min-width:0!important}
+.dcols{gap:2px}
+.dcols .ycol{border-radius:4px}
+.dcols .yb{width:100%;min-width:2px;border-radius:3px 3px 1px 1px}
+.dcols .ycl{font-size:11px;left:50%;transform:translateX(-50%)}
+.dcols .ycol.z{cursor:default}
+#mapList{margin-top:14px}
+.linkbtn{display:block;text-align:center;margin:10px 0 4px;text-decoration:none}
