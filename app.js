@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.18.1';
+const VERSION = '2.19.0';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -1211,6 +1211,30 @@ function editTx(r) {
 }
 function hideSheet() { $('#sheet').hidden = true; document.body.classList.remove('noscroll'); }
 const closeSheet = () => { if (!$('#sheet').hidden) history.back(); };
+// Chạm vào tháng/năm trên thanh chuyển tháng → bảng lịch chọn tháng khác
+let pickYear = 0;
+function monthPicker() {
+  const now = nowYm(), cy = Number(now.slice(0, 4)), cm = Number(now.slice(5));
+  const vy = Number(viewYm.slice(0, 4)), vm = Number(viewYm.slice(5));
+  const mn = m => new Date(2024, m - 1, 1).toLocaleString(LOC(), { month: 'short' });
+  $('#sheetBody').innerHTML = `<div class="mpk"><div class="mpy"><button data-yr="-1" aria-label="-1">‹</button><b>${pickYear}</b><button data-yr="1" ${pickYear >= cy ? 'disabled' : ''} aria-label="+1">›</button></div><div class="mpg">` +
+    Array.from({ length: 12 }, (_, i) => i + 1).map(m => {
+      const fut = pickYear > cy || (pickYear === cy && m > cm);
+      return `<button data-pm="${m}" class="${pickYear === vy && m === vm ? 'on' : ''}" ${fut ? 'disabled' : ''}>${mn(m)}</button>`;
+    }).join('') + `</div></div>`;
+}
+document.addEventListener('click', e => {
+  const sp = e.target.closest('.mmid span');
+  if (sp && $('#sheet').hidden) { pickYear = Number(viewYm.slice(0, 4)); openPanel(''); monthPicker(); return; }
+  const yb = e.target.closest('#sheet [data-yr]');
+  if (yb && !yb.disabled) { pickYear += Number(yb.dataset.yr); monthPicker(); return; }
+  const pb = e.target.closest('#sheet [data-pm]');
+  if (pb && !pb.disabled) {
+    viewYm = pickYear + '-' + String(pb.dataset.pm).padStart(2, '0');
+    if (curView === 'home') renderHome(); else if (curView === 'txn') { txnDay = ''; renderTxn(); } else if (curView === 'jars') renderJars(); else if (curView === 'cats') renderCategories();
+    closeSheet();
+  }
+});
 $('#sheetClose').onclick = closeSheet;
 $('#sheet').onclick = e => { if (e.target.id === 'sheet') closeSheet(); };
 

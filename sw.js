@@ -1,4 +1,4 @@
-const CACHE = 'chitieu-v46';
+const CACHE = 'chitieu-v47';
 const SHELL = ['./', 'index.html', 'style.css', 'app.js', 'vendor/jsQR.js', 'vendor/leaflet.js', 'vendor/leaflet.css', 'scan-worker.js', 'manifest.webmanifest', 'icon-180.png', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', e => {
