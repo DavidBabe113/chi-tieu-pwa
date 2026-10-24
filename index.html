@@ -88,12 +88,6 @@
   </section>
 
   <section id="v-settings" hidden>
-    <h2>Account</h2>
-    <div class="card verrow"><span>Signed in as</span><b id="whoAmI"></b></div>
-    <button id="chgPw" class="ghost">Change password</button>
-    <button id="linkGoogle" class="ghost" hidden>Link my Google account</button>
-    <button id="logoutBtn" class="ghost">Log out</button>
-
     <h2>Language</h2>
     <div class="seg" id="segLang"><button data-v="en">English</button><button data-v="vi">Tiếng Việt</button></div>
     <h2>Appearance</h2>
@@ -103,16 +97,6 @@
     <div class="card"><label class="sw"><span>Save payment location</span><input id="locSw" type="checkbox"><i></i></label></div>
 
     <div id="adminTop">
-      <h2>Members</h2>
-      <div id="memberList"></div>
-      <div class="card addcat">
-        <div class="arow">
-          <label class="nm">Google email or username<input id="mName" autocapitalize="none" autocorrect="off" autocomplete="off" inputmode="email"></label>
-          <label class="nm">Password (leave empty for a Google email)<input id="mPass" type="password" autocomplete="new-password"></label>
-        </div>
-        <select id="mRole" class="jsel wide" aria-label="Role"><option value="member">Member</option><option value="admin">Admin</option></select>
-        <button id="addMember" class="big">Add member</button>
-      </div>
       <h2>Security</h2>
       <div class="card verrow"><span>PIN lock</span><b id="pinState"></b></div>
       <button id="pinSet" class="ghost">Set PIN</button>
@@ -123,6 +107,7 @@
       <button id="faceOffBtn" class="ghost" hidden>Turn off Face ID</button>
       <h2>Data</h2>
       <a id="openSheetLink" class="ghost linkbtn" target="_blank" rel="noopener">📊 Open Google Sheet</a>
+      <button id="clearData" class="ghost danger">Delete all data</button>
     </div>
 
     <h2>About</h2>
@@ -133,9 +118,7 @@
       <details class="adv">
         <summary>Advanced</summary>
         <label>Google Sheet file link<input id="sheetFile" placeholder="https://docs.google.com/spreadsheets/d/…/edit"></label>
-        <label>Google Client ID<input id="gClientId" placeholder="123456789-abc….apps.googleusercontent.com"></label>
         <label>Google Apps Script link (Web App)<input id="sheetUrl" placeholder="https://script.google.com/macros/s/…/exec"></label>
-        <button id="testSheet" class="ghost">Send a test row</button>
         <button id="saveAdv" class="big">Save</button>
       </details>
     </div>
@@ -159,22 +142,6 @@
   <div class="sheet-card" role="dialog" aria-modal="true">
     <button id="sheetClose" class="icon sheet-x" aria-label="Close">×</button>
     <div id="sheetBody"></div>
-  </div>
-</div>
-
-<div id="login" class="lock" hidden>
-  <div class="lock-card">
-    <div class="lock-ic">👤</div>
-    <h2 id="lgTitle">Sign in</h2>
-    <div id="gBtn" class="gbtn" hidden></div>
-    <p id="gOr" class="or" hidden>or</p>
-    <input id="lgOld" type="password" placeholder="Current password" autocomplete="current-password" hidden>
-    <input id="lgUser" placeholder="Username" autocapitalize="none" autocorrect="off" autocomplete="username">
-    <input id="lgPass" type="password" placeholder="Password" autocomplete="current-password">
-    <input id="lgPass2" type="password" placeholder="Confirm password" autocomplete="new-password" hidden>
-    <p id="lgMsg" class="padmsg"></p>
-    <button id="lgGo" class="face">Sign in</button>
-    <button id="lgCancel" class="link" hidden>Cancel</button>
   </div>
 </div>
 

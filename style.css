@@ -299,10 +299,6 @@ details.adv[open] summary::after{transform:rotate(90deg)}
 .lock-card input::placeholder{color:rgba(255,255,255,.6)}
 .lock-card input:focus{box-shadow:0 0 0 3px rgba(255,255,255,.28)}
 .lock-card .face{width:100%}
-.gbtn{display:flex;justify-content:center;margin:4px 0 8px;min-height:44px}
-.or{margin:2px 0 8px;color:rgba(255,255,255,.7);font-size:14px}
-.member{padding:14px 16px}
-.mhead{display:flex;align-items:center;gap:10px;margin-bottom:6px}
 .mini{padding:7px 12px;border:0;border-radius:980px;background:var(--fill);font:600 13px var(--font);color:var(--link);flex:none}
 .sw{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0;padding:11px 0;border-top:.5px solid var(--line);font:400 16px var(--font);color:var(--fg);position:relative;cursor:pointer}
 .sw input{position:absolute;opacity:0;pointer-events:none;width:1px;height:1px}
@@ -581,3 +577,5 @@ input[type=date]::-webkit-date-and-time-value{text-align:left}
 .mpg button{padding:15px 0;border:0;border-radius:14px;background:var(--fill);color:var(--fg);font:600 16px var(--font)}
 .mpg button.on{background:var(--accent);color:var(--on-accent)}
 .mpg button:disabled{opacity:.3}
+
+.ghost.danger{color:#dc2626}

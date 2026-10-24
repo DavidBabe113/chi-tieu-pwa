@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.19.1';
+const VERSION = '2.20.0';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -96,7 +96,7 @@ const VI = {
   'Face ID failed, enter your PIN': 'Face ID không thành công, hãy nhập mã PIN', 'Face ID could not be turned on on this device': 'Không bật được Face ID trên thiết bị này',
   'To reset a forgotten PIN, delete the app icon and add it again from Safari. Data on this phone that is not synced yet is lost.': 'Quên mã PIN thì xoá icon app rồi thêm lại từ Safari. Dữ liệu trên máy chưa đồng bộ sẽ mất.',
   'Data': 'Dữ liệu', '📊 Open Google Sheet': '📊 Mở Google Sheet', 'Google Sheet file link': 'Link file Google Sheet',
-  'Google Apps Script link (Web App)': 'Link Google Apps Script (Web App)', 'Send a test row': 'Gửi thử 1 dòng', 'Banks': 'Ngân hàng',
+  'Google Apps Script link (Web App)': 'Link Google Apps Script (Web App)', 'Delete all data': 'Xoá toàn bộ dữ liệu', 'Delete all transactions and photos on this phone? This cannot be undone.': 'Xoá toàn bộ giao dịch và ảnh trên điện thoại này? Không thể hoàn tác.', 'Banks': 'Ngân hàng',
   'One per line: Name (Brand) | app link. Edit if an app does not open.': 'Mỗi dòng: Tên (Thương hiệu) | link mở app. Sửa lại nếu app không mở được.',
   'Sent. Check the ChiTieu tab in your Sheet': 'Đã gửi. Mở tab ChiTieu trong Sheet để kiểm tra', 'Send failed, check the link': 'Gửi lỗi, kiểm tra link',
   'Save': 'Lưu',
@@ -152,7 +152,6 @@ const DEF_BANKS = [
 ].join('\n');
 const OLD_BANKS = 'Vietcombank | vietcombankmobile://\nMB Bank | mbbank://\nTechcombank | tcb://\nVPBank | vpbankneo://\nACB | acbone://\nBIDV | bidv.smartbanking.partner://\nTPBank | hydro://\nVietinBank | vietinbankipay://\nAgribank | agribankmobile://\nOCB | newomni-app://';
 // File Google Sheet chứa dữ liệu (chỉ mở được khi đăng nhập đúng tài khoản Google, Sheet không chia sẻ cho ai)
-const GOOGLE_CLIENT_ID = '708051525318-keduc8dr3g1bsnfac4auue6looeggobl.apps.googleusercontent.com';   // Google OAuth Client ID (công khai, không phải bí mật); có thể ghi đè trong Cài đặt > Advanced
 const SHEET_FILE = 'https://docs.google.com/spreadsheets/d/1h6gpLCcJoevkHnPB9yo8R86ALhcuY2pb5Bjd_H8fLhw/edit';
 // Cài đặt cũ chưa chỉnh tay thì tự đổi sang mặc định mới
 if (cfg.get('cats', '').startsWith('⛽ Tiền xăng')) cfg.del('cats');
@@ -303,7 +302,7 @@ let sw = null;
 const swReset = el => { el.style.transition = ''; el.style.transform = ''; el.style.opacity = ''; };
 addEventListener('touchstart', e => {
   sw = null;
-  if (!(depth === 0 && TOP.includes(curView) && TABKEYS.length > 1 && $('#sheet').hidden && $('#lock').hidden && $('#login').hidden)) return;
+  if (!(depth === 0 && TOP.includes(curView) && TABKEYS.length > 1 && $('#sheet').hidden && $('#lock').hidden)) return;
   const t = e.touches[0];
   if (t.clientX < 28 || e.target.closest('input,textarea,select,.cols,.dwrap')) return;
   sw = { x: t.clientX, y: t.clientY, t: Date.now(), axis: '', dx: 0, raf: 0, el: $('#v-' + curView) };
@@ -1171,7 +1170,7 @@ async function openSheet(r) {
     row('Note', r.note) +
     (r.loc ? `<div class="drow"><span>${tr('Location')}</span><b><a href="https://www.google.com/maps/search/?api=1&query=${r.loc.lat},${r.loc.lng}" target="_blank" rel="noopener">${tr('Open in Google Maps')}</a></b></div>` : '') +
     '<div id="sheetPhoto"></div>' +
-    (r.status === 'done' && (isAdmin() || !r.by || (me && r.by === me.id)) ? `<button id="editTx" class="ghost">${tr('Edit')}</button>` : '');
+    (r.status === 'done' && true ? `<button id="editTx" class="ghost">${tr('Edit')}</button>` : '');
   const et = $('#editTx'); if (et) et.onclick = () => editTx(r);
   const wasHidden = $('#sheet').hidden;
   $('#sheet').hidden = false;
@@ -1241,12 +1240,8 @@ $('#sheet').onclick = e => { if (e.target.id === 'sheet') closeSheet(); };
 // ---------- cài đặt: ngôn ngữ, giao diện, bảo mật, dữ liệu, phiên bản (+ nâng cao thu gọn) ----------
 function renderSettings() {
   $('#verText').textContent = VERSION;
-  $('#whoAmI').textContent = me ? (me.email || me.name) + ' · ' + tr(me.role === 'admin' ? 'Admin' : 'Member') : '';
-  $('#linkGoogle').hidden = !(me && !me.email && gClientId());
-  renderMembers();
   $('#openSheetLink').href = cfg.get('sheetFile', SHEET_FILE);
   $('#sheetFile').value = cfg.get('sheetFile', SHEET_FILE);
-  $('#gClientId').value = cfg.get('gClientId', GOOGLE_CLIENT_ID);
   $('#pinState').textContent = tr(hasPin() ? 'On' : 'Off');
   $('#pinSet').hidden = hasPin(); $('#pinChange').hidden = !hasPin(); $('#pinOff').hidden = !hasPin();
   // Face ID chỉ hiện khi đã có PIN (làm dự phòng) và thiết bị hỗ trợ
@@ -1270,14 +1265,14 @@ document.querySelectorAll('#segTheme button').forEach(b => b.onclick = () => {
 $('#locSw').onchange = e => cfg.set('locOn', e.target.checked ? '1' : '0');
 $('#saveAdv').onclick = () => {
   cfg.set('sheetFile', $('#sheetFile').value.trim() || SHEET_FILE);
-  cfg.set('gClientId', $('#gClientId').value.trim());
   cfg.set('sheetUrl', $('#sheetUrl').value.trim());
   markAllJars().then(sync); goTop('home');
 };
-$('#testSheet').onclick = async () => {
-  cfg.set('sheetUrl', $('#sheetUrl').value.trim());
-  const ok = await post({ id: 'test-' + Date.now(), time: new Date().toISOString(), category: 'TEST', amount: 0, note: 'test row', payee: '', bank: '', photo: '' });
-  toast(tr(ok ? 'Sent. Check the ChiTieu tab in your Sheet' : 'Send failed, check the link'));
+$('#clearData').onclick = async () => {   // xoá toàn bộ giao dịch + ảnh trong máy (cài đặt, hạng mục, PIN giữ nguyên); Google Sheet không bị đụng tới
+  if (!confirm(tr('Delete all transactions and photos on this phone? This cannot be undone.'))) return;
+  await Promise.all([tx('records', 'readwrite', st => st.clear()), tx('photos', 'readwrite', st => st.clear())]);
+  ['users', 'session', 'gClientId'].forEach(k => cfg.del(k));
+  goTop('home'); renderHome();
 };
 $('#updateApp').onclick = async () => {   // xoá service worker + cache rồi tải lại để lấy bản mới nhất
   try {
@@ -1372,202 +1367,19 @@ document.addEventListener('visibilitychange', () => {
   else if (!$('#lock').hidden && lockMode === 'verify' && faceOn()) tryFace(true);   // quay lại thì thử Face ID
 });
 
-// ---------- tài khoản admin / member ----------
-// Khoá phía app, dữ liệu dùng chung trên máy này. Admin thấy và làm mọi thứ; member bị giới hạn theo các quyền admin bật cho họ.
-// Lưu ý: vì chạy hoàn toàn trên máy nên đây là lớp phân quyền giao diện, không chống được người cố tình xoá dữ liệu app rồi tạo lại.
-const PERMS = [
-  ['addExpense', 'Add expenses', true], ['addIncome', 'Add income', false], ["seeAll", "See everyone's transactions", false],
-  ['viewDash', 'See the Dashboard', true], ['viewJars', 'See 6 Jars', true], ['editJars', 'Edit jar percentages', false], ['editCats', 'Manage categories', false],
-];
-const users = () => getJSON('users', []);
-const saveUsers = a => cfg.set('users', JSON.stringify(a));
-let me = null, TABKEYS = ['home'];
-const isAdmin = () => !!me && me.role === 'admin';
-const can = k => isAdmin() || !!(me && me.perms && me.perms[k]);
-const adminId = () => (users().find(u => u.role === 'admin') || {}).id;
-const mine = r => !!me && (r.by || adminId()) === me.id;   // giao dịch cũ chưa có người tạo thuộc về admin
-const uid = () => 'u' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
-const defPerms = role => Object.fromEntries(PERMS.map(([k, , d]) => [k, role === 'admin' ? true : d]));
-async function pwHash(pw, salt) {
-  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveBits']);
-  const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', salt: new TextEncoder().encode(salt), iterations: 100000, hash: 'SHA-256' }, key, 256);
-  return [...new Uint8Array(bits)].map(x => x.toString(16).padStart(2, '0')).join('');
-}
-
-// Áp quyền của người đang đăng nhập lên giao diện
+// ---------- người dùng: app chạy mặc định với vai trò member (không đăng nhập); admin/member quản lý ở phần mềm khác ----------
+let TABKEYS = ['home', 'txn', 'jars', 'cats'];
+const legacyAdmin = () => (getJSON('users', []).find(u => u.role === 'admin') || {}).id;   // dữ liệu cũ gắn với tài khoản admin trước đây
+const me = { id: legacyAdmin() || 'local', name: 'Member', role: 'member' };
+const isAdmin = () => false;
+const can = () => true;
+const mine = () => true;
+const adminId = () => me.id;
 function applyPermissions() {
-  TABKEYS = ['home', 'txn'].concat(can('viewJars') ? ['jars'] : [], can('editCats') ? ['cats'] : []);
-  document.querySelectorAll('#tabs button').forEach(b => b.hidden = !TABKEYS.includes(b.dataset.tab));
+  document.querySelectorAll('#tabs button').forEach(b => b.hidden = false);
   $('#tabs').style.setProperty('--n', TABKEYS.length);
-  $('#btnScan').hidden = !can('addExpense');
-  $('#btnManual').hidden = !(can('addExpense') || can('addIncome'));
-  $('#dash').hidden = !can('viewDash');
-  $('#adminTop').hidden = !isAdmin(); $('#adminAdv').hidden = !isAdmin();
 }
-
-// Màn đăng nhập / tạo admin / đổi mật khẩu
-let lgMode = 'login', lgFails = 0, lgLockedUntil = 0;
-const lgSay = m => { $('#lgMsg').textContent = m ? tr(m) : ''; };
-function openLogin(mode, cancelable) {
-  lgMode = mode;
-  const set = mode === 'setup', chg = mode === 'changepw';
-  $('#lgTitle').textContent = tr(set ? 'Create your admin account' : chg ? 'Change password' : 'Sign in');
-  $('#lgOld').hidden = !chg; $('#lgUser').hidden = chg; $('#lgPass2').hidden = !(set || chg); $('#lgPass').hidden = false; $('#lgGo').hidden = false;
-  $('#lgOld').placeholder = tr('Current password'); $('#lgUser').placeholder = tr('Username');
-  $('#lgPass').placeholder = tr(chg ? 'New password' : 'Password'); $('#lgPass2').placeholder = tr('Confirm password');
-  ['lgOld', 'lgUser', 'lgPass', 'lgPass2'].forEach(id => $('#' + id).value = '');
-  if (set) $('#lgUser').value = 'admin';
-  lgSay(set ? 'This account will be the administrator. Choose a password you will remember.' : '');
-  $('#lgGo').textContent = tr(set ? 'Create account' : chg ? 'Save password' : 'Sign in');
-  $('#lgCancel').hidden = !cancelable;
-  const link = mode === 'link';
-  ['lgUser', 'lgPass', 'lgGo'].forEach(id => { if (link) $('#' + id).hidden = true; });
-  if (link) $('#lgTitle').textContent = tr('Link my Google account');
-  $('#gBtn').hidden = true; $('#gOr').hidden = true;
-  if (!chg && !link) showGoogle('#gBtn', loginWithEmail).then(ok => { $('#gOr').hidden = !ok; });
-  $('#login').hidden = false;
-}
-function signIn(u) {
-  me = u; cfg.set('session', u.id); lgFails = 0;
-  $('#login').hidden = true;
-  applyPermissions(); show('home', false); sync();
-}
-async function lgSubmit() {
-  if (Date.now() < lgLockedUntil) { $('#lgMsg').textContent = tr('Too many attempts. Wait {0}s', Math.ceil((lgLockedUntil - Date.now()) / 1000)); return; }
-  const name = $('#lgUser').value.trim(), pw = $('#lgPass').value, pw2 = $('#lgPass2').value;
-  if (lgMode === 'setup') {
-    if (!name) return lgSay('Enter a name first');
-    if (pw.length < 4) return lgSay('Password must have at least 4 characters');
-    if (pw !== pw2) return lgSay('Passwords do not match');
-    const salt = uid(), u = { id: uid(), name, role: 'admin', perms: defPerms('admin'), salt, hash: await pwHash(pw, salt) };
-    saveUsers([u]); return signIn(u);
-  }
-  if (lgMode === 'changepw') {
-    if (await pwHash($('#lgOld').value, me.salt) !== me.hash) return lgSay('Wrong current password');
-    if (pw.length < 4) return lgSay('Password must have at least 4 characters');
-    if (pw !== pw2) return lgSay('Passwords do not match');
-    const salt = uid(), list = users(), i = list.findIndex(x => x.id === me.id);
-    list[i].salt = salt; list[i].hash = await pwHash(pw, salt); saveUsers(list); me = list[i];
-    $('#login').hidden = true; return;
-  }
-  const u = users().find(x => x.name.toLowerCase() === name.toLowerCase());
-  if (!u || !u.hash || await pwHash(pw, u.salt) !== u.hash) {
-    if (++lgFails >= 5) { lgFails = 0; lgLockedUntil = Date.now() + 30000; }
-    return lgSay('Wrong username or password');
-  }
-  signIn(u);
-}
-$('#lgGo').onclick = lgSubmit;
-['lgUser', 'lgPass', 'lgPass2', 'lgOld'].forEach(id => $('#' + id).addEventListener('keydown', e => { if (e.key === 'Enter') lgSubmit(); }));
-$('#lgCancel').onclick = () => { $('#login').hidden = true; };
-function logout() { me = null; cfg.del('session'); applyPermissions(); show('home', false); openLogin('login'); }
-$('#logoutBtn').onclick = logout;
-$('#chgPw').onclick = () => openLogin('changepw', true);
-// ---------- đăng nhập bằng tài khoản Google (Google Identity Services) ----------
-// Cần Google Client ID (admin dán trong Cài đặt > Advanced). Email Google được xác thực qua tokeninfo của Google;
-// tài khoản được nhận diện theo email: admin là email đã liên kết, member là email admin đã thêm.
-const gClientId = () => (cfg.get('gClientId', GOOGLE_CLIENT_ID) || '').trim();
-let gisReady = null;
-const loadGis = () => gisReady ??= new Promise((res, rej) => {
-  if (window.google && google.accounts && google.accounts.id) return res();
-  const s = document.createElement('script'); s.src = 'https://accounts.google.com/gsi/client'; s.async = true; s.onload = res; s.onerror = () => { gisReady = null; rej(new Error('gis')); };
-  document.head.append(s);
-});
-async function googleEmail(credential) {   // trả về email đã được Google xác thực, hoặc ném lỗi
-  const r = await fetch('https://oauth2.googleapis.com/tokeninfo?id_token=' + encodeURIComponent(credential));
-  if (!r.ok) throw new Error('token');
-  const j = await r.json();
-  if (j.aud !== gClientId() || String(j.email_verified) !== 'true' || Number(j.exp) * 1000 < Date.now() || !j.email) throw new Error('invalid');
-  return String(j.email).toLowerCase();
-}
-let gCallback = null;
-async function showGoogle(target, onEmail) {   // vẽ nút "Sign in with Google" vào phần tử target
-  const el = $(target); el.hidden = true; el.innerHTML = '';
-  if (!gClientId()) return false;
-  try {
-    await loadGis();
-    gCallback = async r => {
-      try { await onEmail(await googleEmail(r.credential)); } catch { lgSay('Google sign-in failed'); }
-    };
-    google.accounts.id.initialize({ client_id: gClientId(), callback: r => gCallback(r), auto_select: false });
-    google.accounts.id.renderButton(el, { theme: 'filled_blue', size: 'large', shape: 'pill', text: 'signin_with', width: 280 });
-    el.hidden = false; return true;
-  } catch { return false; }
-}
-// Đăng nhập: email phải thuộc một tài khoản; lần đầu (chưa có ai) thì email này trở thành admin
-async function loginWithEmail(email) {
-  const list = users();
-  let u = list.find(x => (x.email || '').toLowerCase() === email);
-  if (!u && !list.length) {
-    u = { id: uid(), name: email.split('@')[0], email, role: 'admin', perms: defPerms('admin') };
-    saveUsers([u]);
-  }
-  if (!u) return lgSay('This Google account is not on the member list');
-  signIn(u);
-}
-// Liên kết Google với tài khoản đang đăng nhập (admin dùng để sau này vào bằng Google)
-async function linkGoogle(email) {
-  const list = users();
-  if (list.some(x => x.id !== me.id && (x.email || '').toLowerCase() === email)) return toast(tr('That username is already taken'));
-  const i = list.findIndex(x => x.id === me.id); list[i].email = email; saveUsers(list); me = list[i];
-  $('#login').hidden = true; renderSettings();
-}
-$('#linkGoogle').onclick = async () => {
-  openLogin('link', true);
-  if (!(await showGoogle('#gBtn', linkGoogle))) { lgSay('Google sign-in failed'); }
-};
-
-
-// Quản lý member (chỉ admin)
-function renderMembers() {
-  const box = $('#memberList'); if (!isAdmin()) { box.innerHTML = ''; return; }
-  box.innerHTML = users().map(u => {
-    const self = u.id === me.id;
-    return `<div class="card member"><div class="mhead"><div class="cn">${esc(u.name)}<small>${tr(u.role === 'admin' ? 'Admin' : 'Member')}${self ? ' · ' + tr('You') : ''}</small></div>` +
-      (self ? '' : `<button class="mini" data-act="reset" data-id="${u.id}">${tr('Reset password')}</button><button class="cdel" data-act="del" data-id="${u.id}" aria-label="${tr('Remove')}">✕</button>`) + '</div>' +
-      (u.role === 'admin' ? '' :
-        PERMS.map(([k, label]) => `<label class="sw"><span>${tr(label)}</span><input type="checkbox" data-act="perm" data-id="${u.id}" data-k="${k}" ${u.perms && u.perms[k] ? 'checked' : ''}><i></i></label>`).join('')) + '</div>';
-  }).join('');
-}
-$('#memberList').addEventListener('change', e => {
-  const t = e.target; if (!isAdmin() || t.dataset.act !== 'perm') return;
-  const list = users(), u = list.find(x => x.id === t.dataset.id); if (!u) return;
-  u.perms = u.perms || {}; u.perms[t.dataset.k] = t.checked; saveUsers(list);
-});
-$('#memberList').addEventListener('click', async e => {
-  const b = e.target.closest('[data-act]'); if (!b || !isAdmin() || b.dataset.act === 'perm') return;
-  const list = users(), u = list.find(x => x.id === b.dataset.id); if (!u || u.id === me.id) return;
-  if (b.dataset.act === 'del') {
-    if (!confirm(tr('Remove this member? Their transactions stay.'))) return;
-    saveUsers(list.filter(x => x.id !== u.id)); renderMembers(); return;
-  }
-  if (b.dataset.act === 'reset') {
-    const pw = prompt(tr('New password for {0}', u.name)); if (!pw) return;
-    if (pw.length < 4) { toast(tr('Password must have at least 4 characters')); return; }
-    u.salt = uid(); u.hash = await pwHash(pw, u.salt); saveUsers(list);
-  }
-});
-$('#addMember').onclick = async () => {
-  if (!isAdmin()) return;
-  const id = $('#mName').value.trim(), pw = $('#mPass').value, role = $('#mRole').value === 'admin' ? 'admin' : 'member';
-  if (!id) { toast(tr('Enter a name first')); return; }
-  const isMail = id.includes('@'), list = users();
-  if (isMail && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(id)) { toast(tr('Google sign-in failed')); return; }
-  if (!isMail && pw.length < 4) { toast(tr('Password must have at least 4 characters')); return; }
-  if (list.some(x => x.name.toLowerCase() === id.toLowerCase() || (x.email || '') === id.toLowerCase())) { toast(tr('That username is already taken')); return; }
-  const u = { id: uid(), name: id, role, perms: defPerms(role) };
-  if (isMail) u.email = id.toLowerCase(); else { u.salt = uid(); u.hash = await pwHash(pw, u.salt); }
-  list.push(u); saveUsers(list);
-  $('#mName').value = ''; $('#mPass').value = ''; renderMembers();
-};
-function initAccount() {
-  const sid = cfg.get('session', ''); me = users().find(u => u.id === sid) || null;
-  applyPermissions();
-  show('home', false);
-  if (!users().length) openLogin('setup');
-  else if (!me) openLogin('login');
-  else sync();
-}
+function initAccount() { applyPermissions(); show('home', false); sync(); }
 
 // ---------- khởi động ----------
 if (hasPin()) openLock('verify');
