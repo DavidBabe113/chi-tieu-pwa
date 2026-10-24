@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.32.0';
+const VERSION = '2.32.1';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -833,7 +833,6 @@ document.addEventListener('click', e => {
   if (pd) { txnDay = pd.dataset.pd; viewYm = txnDay.slice(0, 7); renderTxn(); closeSheet(); }
 });
 $('#txnDayClear').onclick = () => { txnDay = ''; renderTxn(); };
-$('#mapList').onclick = e => { const it = e.target.closest('.item'); if (it && recById[it.dataset.id]) openSheet(recById[it.dataset.id]); };
 $('#txnList').onclick = e => { const it = e.target.closest('.item'); if (it && recById[it.dataset.id]) openSheet(recById[it.dataset.id]); };
 $('#txnToday').onclick = () => { viewYm = nowYm(); txnDay = ymd(new Date()); renderTxn(); window.scrollTo({ top: 0, behavior: 'smooth' }); };   // Today: lọc đúng hôm nay
 document.querySelectorAll('#segTxn button').forEach(b => b.onclick = () => { txnType = b.dataset.v; renderTxn(); });
@@ -857,7 +856,6 @@ function renderMap(items) {
     leafLayer = L.layerGroup().addTo(leaf);
   }
   leafLayer.clearLayers();
-  fillDays($('#mapList'), withLoc);
   const seen = {};   // các giao dịch cùng một chỗ (làm tròn ~10 m) được xếp chồng lên nhau để không che nhau
   withLoc.forEach(r => {
     const p = [r.loc.lat, r.loc.lng], key = r.loc.lat.toFixed(4) + ',' + r.loc.lng.toFixed(4), k = seen[key] = (seen[key] ?? -1) + 1; pts.push(p);
