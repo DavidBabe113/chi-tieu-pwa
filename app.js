@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.7.1';
+const VERSION = '2.8.0';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -34,7 +34,7 @@ const VI = {
   'Wrong username or password': 'Sai tên đăng nhập hoặc mật khẩu', 'Wrong current password': 'Sai mật khẩu hiện tại', 'Password must have at least 4 characters': 'Mật khẩu cần ít nhất 4 ký tự',
   'Passwords do not match': 'Hai mật khẩu không khớp', 'That username is already taken': 'Tên đăng nhập này đã có',
   'Add expenses': 'Thêm chi tiêu', 'Add income': 'Thêm khoản thu', "See everyone's transactions": 'Xem giao dịch của mọi người', 'See the Dashboard': 'Xem bảng tổng hợp',
-  'See 6 Jars': 'Xem 6 hũ', 'Edit jar percentages': 'Sửa tỷ lệ các hũ', 'Manage categories': 'Quản lý danh mục', 'Transactions': 'Giao dịch', 'Remaining': 'Còn lại', 'Financial Tracking': 'Theo dõi tài chính', 'By month': 'Theo tháng', 'Balance': 'Số dư', 'Days elapsed': 'Số ngày đã qua', 'Category': 'Hạng mục', 'Edit': 'Sửa', 'Save changes': 'Lưu thay đổi', 'Time': 'Giờ', 'Enter an amount': 'Nhập số tiền', 'Active days': 'Ngày có chi', 'Per active day': 'TB ngày có chi', 'No spending': 'Không chi', 'transactions': 'giao dịch', 'transaction': 'giao dịch', 'No bank found': 'Không tìm thấy ngân hàng', 'Search bank': 'Tìm ngân hàng', 'Total money': 'Tổng số tiền', 'Spent so far': 'Đã chi tổng cộng', 'Spent in {0}': 'Đã chi trong {0}', 'Income in {0}': 'Thu nhập trong {0}', 'Spending chart': 'Biểu đồ chi tiêu', 'Peak day': 'Ngày chi nhiều nhất',
+  'See 6 Jars': 'Xem 6 hũ', 'Edit jar percentages': 'Sửa tỷ lệ các hũ', 'Manage categories': 'Quản lý danh mục', 'Transactions': 'Giao dịch', 'Remaining': 'Còn lại', 'Location': 'Vị trí', 'Open in Maps': 'Mở bản đồ', 'Save payment location': 'Lưu vị trí khi thanh toán', 'Privacy': 'Quyền riêng tư', 'Financial Tracking': 'Theo dõi tài chính', 'By month': 'Theo tháng', 'Balance': 'Số dư', 'Days elapsed': 'Số ngày đã qua', 'Category': 'Hạng mục', 'Edit': 'Sửa', 'Save changes': 'Lưu thay đổi', 'Time': 'Giờ', 'Enter an amount': 'Nhập số tiền', 'Active days': 'Ngày có chi', 'Per active day': 'TB ngày có chi', 'No spending': 'Không chi', 'transactions': 'giao dịch', 'transaction': 'giao dịch', 'No bank found': 'Không tìm thấy ngân hàng', 'Search bank': 'Tìm ngân hàng', 'Total money': 'Tổng số tiền', 'Spent so far': 'Đã chi tổng cộng', 'Spent in {0}': 'Đã chi trong {0}', 'Income in {0}': 'Thu nhập trong {0}', 'Spending chart': 'Biểu đồ chi tiêu', 'Peak day': 'Ngày chi nhiều nhất',
   'Bank name': 'Tên ngân hàng', 'App link': 'Liên kết mở app', 'Add a bank…': 'Thêm ngân hàng…', 'Custom bank': 'Ngân hàng khác (tự nhập)', 'Banks': 'Ngân hàng', 'Remove': 'Xoá', 'No data yet': 'Chưa có dữ liệu', 'Previous month': 'Tháng trước', 'Next month': 'Tháng sau',
   'Today': 'Hôm nay', 'Yesterday': 'Hôm qua', 'No transactions in this month.': 'Chưa có giao dịch trong tháng này.',
   '⏳ pending': '⏳ chờ đồng bộ', 'Did the transfer go through?': 'Giao dịch đã thành công?', 'Cancel': 'Huỷ', 'Done': 'Xong',
@@ -250,7 +250,7 @@ function show(v, mode = true) {
   $('#fabs').hidden = !(v === 'home' || v === 'txn');
   if (v !== 'jars') $('#saveMonth').hidden = true;
   document.querySelectorAll('main > section').forEach(s => s.hidden = s.id !== 'v-' + v);
-  $('#title').textContent = tr(TITLES[v]);
+  $('#title').textContent = tr(TOP.includes(v) ? 'Financial Tracking' : TITLES[v]);   // cả 4 tab chính dùng chung tiêu đề app
   $('#back').hidden = !inner;
   $('#openSettings').hidden = inner;
   $('#tabs').hidden = inner || TABKEYS.length < 2;
@@ -489,6 +489,11 @@ function openDetail() {
   const inc = cur.type === 'income';   // khoản thu: không ảnh, không ngân hàng
   $('.photo').hidden = inc; $('#toBank').hidden = inc; $('#saveOnly').hidden = inc; $('#saveIncome').hidden = !inc;
   show('detail');
+  // Ghi lại vị trí lúc nhập số tiền (cần bạn cho phép định vị; tắt được trong Cài đặt)
+  const rec = cur; rec.loc = null;
+  if (cfg.get('locOn', '1') !== '0' && navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(p => { rec.loc = { lat: +p.coords.latitude.toFixed(5), lng: +p.coords.longitude.toFixed(5), acc: Math.round(p.coords.accuracy) }; }, () => {}, { enableHighAccuracy: true, timeout: 10000, maximumAge: 120000 });
+  }
 }
 $('#amount').oninput = e => {
   const d = e.target.value.replace(/\D/g, '');
@@ -1097,6 +1102,7 @@ async function openSheet(r) {
     `<div class="d-cat">${esc(r.category)}</div><div class="d-amt ${isInc(r) ? 'in' : ''}">${isInc(r) ? '+' : ''}${fmt(r.amount)}</div>` +
     row('Category', r.category) + row('Type', isInc(r) ? tr('Income') : tr('Expense')) + row('Date', new Date(r.time).toLocaleDateString(DLOC())) + row('Time', new Date(r.time).toLocaleTimeString(DLOC(), { hour: '2-digit', minute: '2-digit' })) + row('Bank', r.bank) + row('Payee', r.payee) +
     row('Note', r.note) +
+    (r.loc ? `<div class="drow"><span>${tr('Location')}</span><b><a href="https://maps.apple.com/?ll=${r.loc.lat},${r.loc.lng}&q=${encodeURIComponent(r.category)}" target="_blank" rel="noopener">${tr('Open in Maps')}</a></b></div>` : '') +
     '<div id="sheetPhoto"></div>' +
     (r.status === 'done' && (isAdmin() || !r.by || (me && r.by === me.id)) ? `<button id="editTx" class="ghost">${tr('Edit')}</button>` : '');
   const et = $('#editTx'); if (et) et.onclick = () => editTx(r);
@@ -1167,6 +1173,7 @@ function renderSettings() {
   });
   $('#sheetUrl').value = cfg.get('sheetUrl', '');
   renderBankEditor();
+  $('#locSw').checked = cfg.get('locOn', '1') !== '0';
   document.querySelectorAll('#segLang button').forEach(b => b.classList.toggle('on', b.dataset.v === lang));
   document.querySelectorAll('#segTheme button').forEach(b => b.classList.toggle('on', b.dataset.v === cfg.get('theme', 'auto')));
 }
@@ -1199,6 +1206,7 @@ document.querySelectorAll('#segLang button').forEach(b => b.onclick = () => {
 document.querySelectorAll('#segTheme button').forEach(b => b.onclick = () => {
   cfg.set('theme', b.dataset.v); applyTheme(); renderSettings();
 });
+$('#locSw').onchange = e => cfg.set('locOn', e.target.checked ? '1' : '0');
 $('#saveAdv').onclick = () => {
   cfg.set('sheetFile', $('#sheetFile').value.trim() || SHEET_FILE);
   cfg.set('gClientId', $('#gClientId').value.trim());
