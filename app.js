@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.10.0';
+const VERSION = '2.11.0';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -21,7 +21,7 @@ const VI = {
   'Scan QR': 'Quét QR', 'Choose category': 'Chọn danh mục', 'Details': 'Chi tiết', 'Choose bank': 'Chọn ngân hàng',
   'Photo library': 'Thư viện ảnh', 'Settings': 'Cài đặt', 'Back': 'Quay lại', 'Close': 'Đóng', 'Add manually': 'Nhập tay',
   // tổng quan
-  'Spent this month': 'Đã chi tháng này', 'Dashboard': 'Bảng tổng hợp', 'Monthly summary': 'Tổng hợp theo tháng', 'Each bar is one day of the month. Touch a bar to see that day.': 'Mỗi cột là một ngày trong tháng. Chạm vào cột để xem ngày đó.', 'Wallet': 'Ví', 'Wallets': 'Ví', 'Payments': 'Thanh toán', '+ Add wallet': '+ Thêm ví', 'No wallet': 'Chưa chọn ví', 'By wallet': 'Theo ví', 'Wallet name': 'Tên ví', 'Savings rate': 'Tỷ lệ thiết kiệm', 'Projected remaining': 'Dự kiến còn lại', 'Total income': 'Tổng thu nhập', 'Total spending': 'Tổng chi tiêu tháng', 'Average per day': 'Trung bình mỗi ngày',
+  'Spent this month': 'Đã chi tháng này', 'Dashboard': 'Bảng tổng hợp', 'Monthly summary': 'Tổng hợp theo tháng', 'Each bar is one day of the month. Touch a bar to see that day.': 'Mỗi cột là một ngày trong tháng. Chạm vào cột để xem ngày đó.', 'Places in {0}': 'Số nơi thanh toán trong {0}', 'Places on {0}': 'Số nơi thanh toán ngày {0}', 'Map': 'Bản đồ', 'Wallet': 'Ví', 'Wallets': 'Ví', 'Payments': 'Thanh toán', '+ Add wallet': '+ Thêm ví', 'No wallet': 'Chưa chọn ví', 'By wallet': 'Theo ví', 'Wallet name': 'Tên ví', 'Savings rate': 'Tỷ lệ thiết kiệm', 'Projected remaining': 'Dự kiến còn lại', 'Total income': 'Tổng thu nhập', 'Total spending': 'Tổng chi tiêu tháng', 'Average per day': 'Trung bình mỗi ngày',
   'Link my Google account': 'Liên kết tài khoản Google của tôi', 'Google Client ID': 'Google Client ID', 'Google email or username': 'Email Google hoặc tên đăng nhập',
   'Password (leave empty for a Google email)': 'Mật khẩu (bỏ trống nếu dùng email Google)', 'This Google account is not on the member list': 'Tài khoản Google này chưa có trong danh sách thành viên',
   'Google sign-in failed': 'Đăng nhập Google không thành công', 'or': 'hoặc',
@@ -234,7 +234,7 @@ function toast(msg, ms = 2600) {
 }
 
 // ---------- điều hướng (dùng lịch sử trình duyệt để vuốt cạnh trái = quay lại) ----------
-const TITLES = { home: 'Financial Tracking', map: 'Payment map', txn: 'Transactions', jars: '6 Jars', cats: 'Categories', scan: 'Scan QR', cat: 'Choose category', detail: 'Details', bank: 'Choose bank', settings: 'Settings' };
+const TITLES = { home: 'Financial Tracking', txn: 'Transactions', jars: '6 Jars', cats: 'Categories', scan: 'Scan QR', cat: 'Choose category', detail: 'Details', bank: 'Choose bank', settings: 'Settings' };
 const TOP = ['home', 'txn', 'jars', 'cats'];
 let depth = 0, pendingTop = null, lastBack = 0, dir = 'fwd';
 try { history.replaceState({ v: 'home', d: 0 }, ''); } catch {}
@@ -265,7 +265,6 @@ function show(v, mode = true) {
   window.scrollTo(0, 0);
   if (v === 'home') renderHome();
   if (v === 'txn') renderTxn();
-  if (v === 'map') renderMap();
   if (v === 'jars') renderJars();
   if (v === 'cats') renderCategories();
   if (v === 'settings') renderSettings();
@@ -776,16 +775,16 @@ async function renderHome() {
 }
 bindMonthNav($('#stats'), renderHome);
 
-// ---------- Giao dịch: lịch sử theo tháng, hai tab nhỏ Chi tiêu / Thu nhập ----------
+// ---------- Giao dịch: ba mục Chi tiêu / Thu nhập / Bản đồ ----------
 let txnType = 'out', txnCat = '', txnDay = '';
 async function renderTxn() {
   const all = await doneRecs();
   all.forEach(r => recById[r.id] = r);
   const totalInc = sum(all.filter(isInc)), totalExp = sum(all.filter(r => !isInc(r)));
-  const inc = txnType === 'in';
+  const mapMode = txnType === 'map', inc = txnType === 'in';
   // ô chọn hạng mục: danh mục đã cài + danh mục có trong dữ liệu của loại này
-  const ofType = all.filter(r => isInc(r) === inc);
-  const catOpts = [...new Set([...(inc ? icats() : cats()), ...ofType.map(r => r.category)])].filter(Boolean);
+  const ofType = mapMode ? all : all.filter(r => isInc(r) === inc);
+  const catOpts = [...new Set([...(mapMode ? [...cats(), ...icats()] : inc ? icats() : cats()), ...ofType.map(r => r.category)])].filter(Boolean);
   if (txnCat && !catOpts.includes(txnCat)) txnCat = '';
   $('#txnCat').innerHTML = `<option value="">${tr('All categories')}</option>` + catOpts.map(c => `<option value="${esc(c)}"${c === txnCat ? ' selected' : ''}>${esc(c)}</option>`).join('');
   if (txnDay && txnDay.slice(0, 7) !== viewYm) txnDay = '';
@@ -793,6 +792,12 @@ async function renderTxn() {
   const items = ofType.filter(r => ymOf(r.time) === viewYm && (!txnCat || r.category === txnCat) && (!txnDay || ymd(new Date(r.time)) === txnDay)).sort((a, b) => b.time.localeCompare(a.time));
   const tot = sum(items);
   document.querySelectorAll('#segTxn button').forEach(b => b.classList.toggle('on', b.dataset.v === txnType));
+  $('#txnList').hidden = mapMode; $('#txnMapBox').hidden = !mapMode;
+  if (mapMode) {
+    const n = items.filter(r => r.loc).length;
+    $('#txnHead').innerHTML = monthNav('') + `<div class="hl">${tr(txnDay ? 'Places on {0}' : 'Places in {0}', txnDay ? new Date(txnDay + 'T00:00').toLocaleDateString(DLOC(), { day: 'numeric', month: 'short' }) : monthLabel(viewYm))}</div><b class="total">${n}</b>`;
+    renderMap(items); return;
+  }
   $('#txnHead').innerHTML = monthNav('') +
     `<div class="hl">${tr(inc ? 'Income in {0}' : 'Spent in {0}', monthLabel(viewYm))}</div><b class="total" data-key="txn-sum" data-count="${tot}">${fmt(tot)}</b>` +
     `<div class="duo w"><div><span>${tr('Remaining')}</span><b>${fmt(totalInc - totalExp)}</b></div><div><span>${tr(inc ? 'Income' : 'Expense')}</span><b>${items.length}</b></div></div>`;
@@ -809,10 +814,15 @@ $('#txnToday').onclick = () => { viewYm = nowYm(); txnDay = ymd(new Date()); ren
 document.querySelectorAll('#segTxn button').forEach(b => b.onclick = () => { txnType = b.dataset.v; renderTxn(); });
 // ---------- bản đồ các nơi đã thanh toán (Leaflet + OpenStreetMap; vị trí chỉ đọc từ dữ liệu trong máy) ----------
 let leaf = null, leafLayer = null;
-async function renderMap() {
-  const all = (await doneRecs()).filter(r => r.loc && isFinite(r.loc.lat) && isFinite(r.loc.lng));
-  all.forEach(r => recById[r.id] = r);
-  $('#mapNote').textContent = all.length ? tr('{0} places with a saved location. Tap a pin for details.', all.length) : tr('No locations saved yet. A location is saved when you enter an amount (allow location access).');
+const hasEmoji = t => /^\p{Extended_Pictographic}/u.test(t);
+function pinHtml(r) {   // nhãn nhỏ: biểu tượng hạng mục + tên + số tiền + ghi chú ngắn
+  const inc = isInc(r), em = hasEmoji(r.category) ? r.category.split(' ')[0] : '📍', name = (hasEmoji(r.category) ? r.category.split(' ').slice(1).join(' ') : r.category) || r.category;
+  const note = r.note ? ' · ' + (r.note.length > 18 ? r.note.slice(0, 17) + '…' : r.note) : '';
+  return `<div class="pin ${inc ? 'in' : 'out'}"><i>${esc(em)}</i><span>${esc(name)} ${inc ? '+' : '−'}${short(Number(r.amount))}${esc(note)}</span></div>`;
+}
+function renderMap(items) {
+  const pts = [], withLoc = items.filter(r => r.loc && isFinite(r.loc.lat) && isFinite(r.loc.lng));
+  $('#mapNote').textContent = withLoc.length ? tr('{0} places with a saved location. Tap a pin for details.', withLoc.length) : tr('No locations saved yet. A location is saved when you enter an amount (allow location access).');
   if (typeof L === 'undefined') { $('#mapNote').textContent = tr('The map could not load. Check your connection.'); return; }
   if (!leaf) {
     leaf = L.map('map', { zoomControl: true, attributionControl: true }).setView([16.05, 108.2], 5);
@@ -820,19 +830,15 @@ async function renderMap() {
     leafLayer = L.layerGroup().addTo(leaf);
   }
   leafLayer.clearLayers();
-  const pts = [];
-  all.forEach(r => {
-    const inc = isInc(r), p = [r.loc.lat, r.loc.lng]; pts.push(p);
-    L.circleMarker(p, { radius: 9, color: '#fff', weight: 2, fillColor: inc ? '#16a34a' : '#dc2626', fillOpacity: 0.95 })
-      .bindTooltip(`${r.category} · ${inc ? '+' : ''}${fmt(r.amount)}`, { direction: 'top' })
-      .on('click', () => openSheet(r)).addTo(leafLayer);
+  withLoc.forEach(r => {
+    const p = [r.loc.lat, r.loc.lng]; pts.push(p);
+    L.marker(p, { icon: L.divIcon({ className: 'pinwrap', html: pinHtml(r), iconSize: [0, 0] }) }).on('click', () => openSheet(r)).addTo(leafLayer);
   });
   setTimeout(() => {
     leaf.invalidateSize();
-    if (pts.length === 1) leaf.setView(pts[0], 16); else if (pts.length) leaf.fitBounds(pts, { padding: [40, 40], maxZoom: 16 });
+    if (pts.length === 1) leaf.setView(pts[0], 16); else if (pts.length) leaf.fitBounds(pts, { padding: [50, 50], maxZoom: 16 });
   }, 60);
 }
-$('#txnMap').onclick = () => show('map');
 $('#dateToday').onclick = () => { $('#dateIn').value = ymd(new Date()); };
 $('#dash').onclick = e => { const it = e.target.closest('.item'); if (it && recById[it.dataset.id]) openSheet(recById[it.dataset.id]); };
 

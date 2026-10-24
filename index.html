@@ -44,15 +44,11 @@
   </section>
 
   <section id="v-txn" hidden>
-    <div class="toprow"><div class="seg" id="segTxn"><button data-v="out" class="on">Expense</button><button data-v="in">Income</button></div><button id="txnToday" class="todaybtn">Today</button><button id="txnMap" class="icon mapbtn" aria-label="Payment map"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg></button></div>
+    <div class="toprow"><div class="seg" id="segTxn"><button data-v="out" class="on">Expense</button><button data-v="in">Income</button><button data-v="map">Map</button></div><button id="txnToday" class="todaybtn">Today</button></div>
     <div class="filters"><select id="txnCat" class="jsel" aria-label="Category"></select><input id="txnDay" type="date" aria-label="Date"><button id="txnDayClear" class="icon" hidden aria-label="All days">✕</button></div>
     <div id="txnHead" class="card hero"></div>
     <div id="txnList"></div>
-  </section>
-
-  <section id="v-map" hidden>
-    <p id="mapNote" class="hint"></p>
-    <div id="map"></div>
+    <div id="txnMapBox" hidden><p id="mapNote" class="hint"></p><div id="map"></div></div>
   </section>
 
   <section id="v-scan" hidden>
