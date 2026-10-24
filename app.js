@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.13.0';
+const VERSION = '2.13.2';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -1193,7 +1193,7 @@ function editTx(r) {
   $('#sheetBody').innerHTML = `<div class="d-cat">${tr('Edit')}</div>` +
     `<div class="chips">${list.map((c, i) => `<button class="chip ${c === pick ? 'on' : ''}" data-i="${i}">${esc(c)}</button>`).join('')}</div>` +
     `<label>${tr('Amount (₫)')}<input id="eAmt" inputmode="numeric" value="${esc(String(r.amount))}"></label>` +
-    `<div class="daterow"><label>${tr('Date')}<input id="eDate" type="date" value="${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}"></label><button id="eToday" class="todaybtn" type="button">${tr('Today')}</button></div>` +
+    `<label for="eDate">${tr('Date')}</label><div class="daterow"><input id="eDate" type="date" value="${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}"><button id="eToday" class="todaybtn" type="button">${tr('Today')}</button></div>` +
     `<label>${tr('Time')}<input id="eTime" type="time" value="${pad2(d.getHours())}:${pad2(d.getMinutes())}"></label>` +
     `<label>${tr('Note')}<input id="eNote" value="${esc(r.note || '')}"></label>` +
     `<button id="eSave" class="big">${tr('Save changes')}</button>`;

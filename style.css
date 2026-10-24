@@ -433,9 +433,9 @@ body[data-dir="prev"] main>section:not([hidden]){animation:slidePrev .26s var(--
 .filters input[type=date]{flex:none;width:auto;margin:0;padding:10px 10px;font-size:15px;border-radius:12px;background:var(--fill);box-shadow:none}
 .filters .icon{flex:none}
 .mapbtn{flex:none;color:var(--accent)}
-.daterow{display:flex;align-items:flex-end;gap:10px}
-.daterow label{flex:1;min-width:0}
-.daterow .todaybtn{flex:none;height:48px;margin-bottom:0}
+.daterow{display:flex;align-items:stretch;gap:10px;width:100%;max-width:100%}
+.daterow input[type=date]{flex:1 1 auto;min-width:0;width:auto;margin:0;text-align:left;-webkit-appearance:none;appearance:none;min-height:50px}
+.daterow .todaybtn{flex:none;margin:0;padding:0 20px;white-space:nowrap;align-self:stretch;display:flex;align-items:center;justify-content:center}
 #map{position:relative;z-index:0;height:calc(100vh - 250px);min-height:320px;border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow)}
 
 .h2m{font:600 15px var(--font);color:var(--muted);margin-left:6px;letter-spacing:0}
@@ -495,3 +495,21 @@ main{overflow-x:clip}
 
 .lg[data-info]{cursor:pointer}
 .lg[data-info]:active{opacity:.6}
+
+/* ô chọn ngày: chữ căn trái, không tràn khỏi khung, cùng một kiểu ở mọi nơi */
+input[type=date]{text-align:left;-webkit-appearance:none;appearance:none;min-width:0;max-width:100%}
+input[type=date]::-webkit-date-and-time-value{text-align:left}
+.todaybtn{white-space:nowrap}
+.toprow{align-items:stretch}
+.toprow .todaybtn{display:flex;align-items:center;padding:0 16px}
+.filters{align-items:stretch}
+.filters input[type=date]{min-height:44px}
+
+/* ---------- v2.13.1: nút quét QR đơn giản; nút chụp ảnh nằm cùng vị trí nút quét ---------- */
+.fab-scan{background:var(--accent);box-shadow:0 6px 18px rgba(0,0,128,.28)}
+.fab-scan svg{width:32px;height:32px}
+#v-detail .photo{margin:0}
+#v-detail .snap{position:fixed;z-index:20;left:50%;bottom:calc(22px + env(safe-area-inset-bottom));transform:translateX(-50%);width:76px;height:76px;margin:0;background:var(--accent);box-shadow:0 6px 18px rgba(0,0,128,.28)}
+#v-detail .snap:active{transform:translateX(-50%) scale(.94)}
+#v-detail .snap svg{width:32px;height:32px}
+#v-detail{padding-bottom:110px}
