@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.17.2';
+const VERSION = '2.18.0';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -672,8 +672,8 @@ const weekdayName = i => new Date(2024, 0, 7 + i).toLocaleDateString(LOC(), { we
 const catName = c => (c.split(' ').slice(1).join(' ') || c).toLowerCase();
 const recById = {};
 // Thanh chuyển tháng: ‹ tháng › và nút nhỏ "Today" (chỉ hiện khi đang xem tháng khác) để về tháng hiện tại
-const monthNav = id => `<div class="mnav ${id}"><button data-m="-1" aria-label="${tr('Previous month')}">‹</button>` +
-  `<div class="mmid"><span>${monthLabel(viewYm)}</span>${viewYm !== nowYm() ? `<button class="tdy" data-today="1">${tr('Today')}</button>` : ''}</div>` +
+const monthNav = (id, noToday) => `<div class="mnav ${id}"><button data-m="-1" aria-label="${tr('Previous month')}">‹</button>` +
+  `<div class="mmid"><span>${monthLabel(viewYm)}</span>${!noToday && viewYm !== nowYm() ? `<button class="tdy" data-today="1">${tr('Today')}</button>` : ''}</div>` +
   `<button data-m="1" aria-label="${tr('Next month')}" ${viewYm >= nowYm() ? 'disabled' : ''}>›</button></div>`;
 function monthClick(e) {   // trả về true nếu bấm vào nút chuyển tháng / Today
   const b = e.target.closest('[data-m],[data-today]');
@@ -780,10 +780,10 @@ async function renderTxn() {
   $('#txnList').hidden = mapMode; $('#txnMapBox').hidden = !mapMode;
   if (mapMode) {
     const n = items.filter(r => r.loc).length;
-    $('#txnHead').innerHTML = monthNav('') + `<div class="hl" data-info="places">${tr(txnDay ? 'Places on {0}' : 'Places in {0}', txnDay ? new Date(txnDay + 'T00:00').toLocaleDateString(DLOC(), { day: 'numeric', month: 'short' }) : monthLabel(viewYm))}</div><b class="total" data-info="places">${n}</b>`;
+    $('#txnHead').innerHTML = monthNav('', true) + `<div class="hl" data-info="places">${tr(txnDay ? 'Places on {0}' : 'Places in {0}', txnDay ? new Date(txnDay + 'T00:00').toLocaleDateString(DLOC(), { day: 'numeric', month: 'short' }) : monthLabel(viewYm))}</div><b class="total" data-info="places">${n}</b>`;
     renderMap(items); return;
   }
-  $('#txnHead').innerHTML = monthNav('') +
+  $('#txnHead').innerHTML = monthNav('', true) +
     `<div class="hl">${tr(inc ? 'Income in {0}' : 'Spent in {0}', monthLabel(viewYm))}</div><b class="total" data-key="txn-sum" data-count="${tot}">${fmt(tot)}</b>` +
     `<div class="duo w"><div><span>${tr('Remaining')}</span><b>${fmt(totalInc - totalExp)}</b></div><div><span>${tr(inc ? 'Income' : 'Expense')}</span><b>${items.length}</b></div></div>`;
   runCounts($('#txnHead'));
@@ -794,6 +794,7 @@ bindMonthNav($('#txnHead'), () => { txnDay = ''; renderTxn(); });
 $('#txnCat').onchange = e => { txnCat = e.target.value; renderTxn(); };
 $('#txnDay').onchange = e => { txnDay = e.target.value; if (txnDay) viewYm = txnDay.slice(0, 7); renderTxn(); };
 $('#txnDayClear').onclick = () => { txnDay = ''; renderTxn(); };
+$('#mapList').onclick = e => { const it = e.target.closest('.item'); if (it && recById[it.dataset.id]) openSheet(recById[it.dataset.id]); };
 $('#txnList').onclick = e => { const it = e.target.closest('.item'); if (it && recById[it.dataset.id]) openSheet(recById[it.dataset.id]); };
 $('#txnToday').onclick = () => { viewYm = nowYm(); txnDay = ymd(new Date()); renderTxn(); window.scrollTo({ top: 0, behavior: 'smooth' }); };   // Today: lọc đúng hôm nay
 document.querySelectorAll('#segTxn button').forEach(b => b.onclick = () => { txnType = b.dataset.v; renderTxn(); });
@@ -817,12 +818,7 @@ function renderMap(items) {
     leafLayer = L.layerGroup().addTo(leaf);
   }
   leafLayer.clearLayers();
-  const grp = {};
-  withLoc.forEach(r => { const k = locKey(r); (grp[k] = grp[k] || []).push(r); });
-  $('#mapList').innerHTML = Object.entries(grp).map(([k, g]) => {
-    const cs = [...new Set(g.map(r => r.category))];
-    return `<div class="item" data-info="place" data-arg="${k}"><div class="t"><b>📍 ${esc(cs[0])}${cs.length > 1 ? ' +' + (cs.length - 1) : ''}</b><small>${g.length} ${tr(g.length > 1 ? 'transactions' : 'transaction')}</small></div><div class="a">${fmt(sum(g))}</div></div>`;
-  }).join('');
+  fillDays($('#mapList'), withLoc);
   const seen = {};   // các giao dịch cùng một chỗ (làm tròn ~10 m) được xếp chồng lên nhau để không che nhau
   withLoc.forEach(r => {
     const p = [r.loc.lat, r.loc.lng], key = r.loc.lat.toFixed(4) + ',' + r.loc.lng.toFixed(4), k = seen[key] = (seen[key] ?? -1) + 1; pts.push(p);
@@ -934,7 +930,7 @@ document.addEventListener('click', e => {
 });
 
 // ---------- Dashboard (nằm cuối tab Tổng quan): thu nhập, chênh lệch và phân tích ----------
-const PAL = ['#2f2fc4', '#14b8a6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16', '#ec4899'];
+const PAL = ['#2563eb', '#14b8a6', '#f59e0b', '#ef4444', '#0ea5e9', '#06b6d4', '#84cc16', '#ec4899'];
 const short = n => n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 0 : 1).replace(/\.0$/, '') + 'M' : n >= 1e3 ? Math.round(n / 1e3) + 'k' : String(Math.round(n));
 function sumBy(arr, f) { const o = {}; arr.forEach(r => { const k = f(r); o[k] = (o[k] || 0) + Number(r.amount); }); return o; }
 
@@ -1048,7 +1044,7 @@ async function renderJars() {
     `</div><h2>${tr('Jars')}</h2>`;
   JAR_KEYS.forEach((k, i) => {
     h += `<div class="card jar" data-i="${i}"><div class="jtop"><span class="jic">${JAR_ICONS[i]}</span><div class="jn">${esc(jarName(i))}<small data-alloc></small></div>` +
-      `<label class="pct"><input type="number" inputmode="decimal" step="0.5" min="0" max="100" data-pct="${i}" value="${draftPct[i]}" ${can('editJars') ? '' : 'disabled'}><span>%</span></label></div>` +
+      `<div class="pct">${can('editJars') ? `<button class="stp" data-step="-5" data-i="${i}" aria-label="-5%">−</button>` : ''}<b data-pctv="${i}">${draftPct[i]}%</b>${can('editJars') ? `<button class="stp" data-step="5" data-i="${i}" aria-label="+5%">+</button>` : ''}</div></div>` +
       `<div class="jbar"><i data-bar></i></div><div class="jsub"><span data-spent></span><b data-left></b></div></div>`;
   });
   h += `<div id="jarNote"></div>`;
@@ -1078,12 +1074,15 @@ function paintJars() {
   btn.disabled = !ok || isSame; btn.hidden = !(can('editJars') && curView === 'jars');
   $('#jarNote').innerHTML = c.unassigned > 0 ? `<div class="card jsub">${tr('Not in any jar: <b>{0}</b>', fmt(c.unassigned))}</div>` : '';
 }
-$('#jarsBody').addEventListener('input', e => {
-  const i = e.target.dataset?.pct; if (i === undefined) return;
-  draftPct[Number(i)] = Math.max(0, Math.min(100, Number(e.target.value) || 0));
-  paintJars();
+$('#jarsBody').addEventListener('click', e => {
+  const st = e.target.closest('[data-step]');
+  if (st) {
+    const i = Number(st.dataset.i);
+    draftPct[i] = Math.max(0, Math.min(100, (Number(draftPct[i]) || 0) + Number(st.dataset.step)));
+    $(`[data-pctv="${i}"]`).textContent = draftPct[i] + '%'; paintJars(); return;
+  }
+  if (monthClick(e)) renderJars();
 });
-$('#jarsBody').addEventListener('click', e => { if (monthClick(e)) renderJars(); });
 $('#saveMonth').onclick = () => {
   if (!can('editJars') || $('#saveMonth').disabled) return;
   const s = pctSaved(); s[viewYm] = draftPct.slice(); cfg.set('jarpct', JSON.stringify(s));

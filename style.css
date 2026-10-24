@@ -379,7 +379,7 @@ body[data-dir="prev"] main>section:not([hidden]){animation:slidePrev .26s var(--
 .dc{flex:1;min-width:0;height:128px;display:flex;align-items:flex-end;border-radius:4px;cursor:pointer}
 .dc.sel{background:color-mix(in srgb,var(--accent) 10%,transparent)}
 .dbar{width:100%;min-width:2px;border-radius:4px 4px 1px 1px;background:linear-gradient(180deg,var(--accent2),var(--accent));opacity:.9;transform-origin:bottom;animation:growY .6s var(--ease) both;transition:opacity .15s,filter .15s}
-.dbar.we{background:linear-gradient(180deg,#8b5cf6,#6d3fe0)}
+.dbar.we{background:linear-gradient(180deg,#3b82f6,#1d4ed8)}
 .dbar.peak{background:linear-gradient(180deg,#fbbf24,#f59e0b)}
 .dbar.tod{box-shadow:0 0 0 1.5px var(--fg)}
 .dbar.fut{opacity:.25}
@@ -557,3 +557,9 @@ input[type=date]::-webkit-date-and-time-value{text-align:left}
 /* v2.17.1: nút + nổi bật nhẹ */
 .fab-add{width:56px;height:56px;font-weight:400;color:var(--accent);background:var(--card);box-shadow:0 6px 16px rgba(0,0,128,.22),0 0 0 2px var(--accent)}
 .fab-add:active{transform:scale(.94)}
+
+/* ---------- v2.18: chỉnh % hũ bằng nút -/+ 5% ---------- */
+.pct{gap:6px}
+.pct b{min-width:50px;text-align:center;font:700 17px var(--font)}
+.stp{width:34px;height:34px;border:0;border-radius:50%;background:var(--fill);color:var(--accent);font:600 22px/1 var(--font);padding:0;display:grid;place-items:center}
+.stp:active{opacity:.55}
