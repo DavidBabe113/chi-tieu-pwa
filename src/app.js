@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.47.0';
+const VERSION = '2.47.1';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -1114,7 +1114,7 @@ async function showInfo(kind, arg, ymArg) {
   let html = '';
   if (kind === 'income' || kind === 'spent') {
     const f = kind === 'income' ? incOf : expOf, tot = kind === 'income' ? sum(all.filter(isInc)) : sum(all.filter(r => !isInc(r)));
-    html = head(tr(kind === 'income' ? 'Total money' : 'Spent so far'), fmt(tot), kind === 'income' ? 'in' : '') + `<h3 class="ih">${tr('By month')}</h3>` +
+    html = head(tr(kind === 'income' ? 'Total money' : 'Total spent'), fmt(tot), kind === 'income' ? 'in' : '') + `<h3 class="ih">${tr('By month')}</h3>` +
       ([...months].reverse().map(ym => infoRow(monthLabel(ym), fmt(f(ym)), '', kind === 'income' ? 'pos' : 'neg')).join('') || `<p class="hint">${tr('No data yet')}</p>`);
   } else if (kind === 'remain') {
     let cum = 0; const rows = months.map(ym => { const n = incOf(ym) - expOf(ym); cum += n; return infoRow(monthLabel(ym), (n >= 0 ? '+' : '') + fmt(n), `${tr('Balance')} ${fmt(cum)}`, n < 0 ? 'neg' : 'pos'); }).reverse();
