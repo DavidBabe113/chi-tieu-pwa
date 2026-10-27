@@ -657,3 +657,12 @@ header{background:color-mix(in srgb,var(--bg) 78%,transparent)}
   .fab-add{bottom:calc(92px + env(safe-area-inset-bottom))}
   main{padding-bottom:calc(190px + env(safe-area-inset-bottom))}
 }
+
+/* v2.44: ở trang Giao dịch, hàng Chi tiêu/Thu nhập/Ảnh + bộ lọc nằm sát đáy, ngay trên thanh 4 mục */
+@media not all and (min-width:1000px) and (hover:hover){
+  .txnbar{position:fixed;z-index:39;left:50%;transform:translateX(-50%);bottom:calc(68px + env(safe-area-inset-bottom));width:calc(100% - 28px);max-width:524px;padding:8px;border-radius:18px;background:color-mix(in srgb,var(--card) 82%,transparent);-webkit-backdrop-filter:blur(22px) saturate(1.6);backdrop-filter:blur(22px) saturate(1.6);box-shadow:0 8px 28px rgba(0,0,0,.14),inset 0 0 0 .5px var(--line)}
+  .txnbar .toprow{margin:0 0 8px}
+  .txnbar .filters{margin:0}
+  #v-txn{padding-bottom:120px}
+  body:has(#v-txn:not([hidden])) .fab-add{bottom:calc(196px + env(safe-area-inset-bottom))}
+}
