@@ -654,7 +654,6 @@ header{background:color-mix(in srgb,var(--bg) 78%,transparent)}
   #tabs::before{top:3px;bottom:3px;left:3px;width:calc((100% - 6px)/var(--n,4));border-radius:15px}
   #tabs button{padding:13px 2px;font-size:12.5px}
   .fab-scan{bottom:calc(84px + env(safe-area-inset-bottom))}
-  .fab-add{bottom:calc(92px + env(safe-area-inset-bottom))}
   main{padding-bottom:calc(190px + env(safe-area-inset-bottom))}
 }
 
@@ -664,7 +663,6 @@ header{background:color-mix(in srgb,var(--bg) 78%,transparent)}
   .txnbar .toprow{margin:0 0 8px}
   .txnbar .filters{margin:0}
   #v-txn{padding-bottom:120px}
-  body:has(#v-txn:not([hidden])) .fab-add{bottom:calc(196px + env(safe-area-inset-bottom))}
 }
 
 @media not all and (min-width:1000px) and (hover:hover){
@@ -673,5 +671,14 @@ header{background:color-mix(in srgb,var(--bg) 78%,transparent)}
   body.away .txnbar,body.away #tabs{transform:translate(-50%,calc(100% + 90px));opacity:0;pointer-events:none}
   .fab-scan,.fab-add{transition:bottom .3s var(--ease),transform .35s cubic-bezier(.34,1.56,.64,1)}
   body.away .fab-scan{bottom:calc(22px + env(safe-area-inset-bottom))}
-  body.away .fab-add{bottom:calc(34px + env(safe-area-inset-bottom))}
+}
+
+/* v2.45.1: vị trí nút + và menu Thu nhập/Chi tiêu tính từ một biến, menu luôn nằm phía trên nút +, không đè lên nút quét QR */
+@media not all and (min-width:1000px) and (hover:hover){
+  body{--addb:calc(96px + env(safe-area-inset-bottom))}
+  body:has(#v-txn:not([hidden])){--addb:calc(200px + env(safe-area-inset-bottom))}
+  body.away,body.away:has(#v-txn:not([hidden])){--addb:calc(34px + env(safe-area-inset-bottom))}
+  .fab-add{bottom:var(--addb);right:16px;width:54px;height:54px}
+  .fab-scan{width:68px;height:68px}
+  #addMenu{right:16px;bottom:calc(var(--addb) + 66px);z-index:22;transition:bottom .3s var(--ease)}
 }
