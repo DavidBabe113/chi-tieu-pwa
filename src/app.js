@@ -516,6 +516,30 @@ async function restamp() {
   if (old.startsWith('blob:')) URL.revokeObjectURL(old);
 }
 $('#amount').addEventListener('change', restamp);
+// Camera ngay trong app: bấm chụp là sang thẳng màn nhập số tiền, không qua bước "Dùng ảnh / Chụp lại" của iOS (không mở được camera thì dùng camera hệ thống)
+async function openCam() {
+  let stream;
+  try { stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1440 } }, audio: false }); }
+  catch { $('#photoIn').click(); return; }
+  const ov = document.createElement('div'); ov.id = 'camEd';
+  ov.innerHTML = `<video playsinline muted autoplay></video><div class="pe-bar"><button id="camX" class="ghost">${tr('Cancel')}</button><button id="camShot" class="shutter" aria-label="Take a receipt photo"></button><span></span></div>`;
+  document.body.append(ov);
+  const v = ov.querySelector('video'); v.srcObject = stream; v.play().catch(() => {});
+  const end = () => { stream.getTracks().forEach(t => t.stop()); ov.remove(); };
+  $('#camX').onclick = end;
+  $('#camShot').onclick = async () => {
+    if (!v.videoWidth) return;
+    const k = Math.min(1, 1280 / Math.max(v.videoWidth, v.videoHeight)), cv = document.createElement('canvas');
+    cv.width = Math.round(v.videoWidth * k); cv.height = Math.round(v.videoHeight * k);
+    cv.getContext('2d').drawImage(v, 0, 0, cv.width, cv.height);
+    curRaw = await new Promise(r => cv.toBlob(r, 'image/jpeg', 0.85));
+    end(); await restamp(); $('#photoAmt').hidden = false; photoEditor();
+  };
+}
+document.querySelector('label.snap').addEventListener('click', e => {
+  if (e.target.id === 'photoIn' || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
+  e.preventDefault(); openCam();
+});
 // Màn hình ảnh toàn khung ngay sau khi chụp: gõ số tiền thẳng lên ảnh (hoặc bỏ qua và nhập ở ô số tiền phía ngoài)
 function photoEditor() {
   if (!curRaw) return;
