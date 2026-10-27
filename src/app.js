@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.38.1';
+const VERSION = '2.39.0';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -54,7 +54,7 @@ const VI = {
   'Face ID failed, enter your PIN': 'Face ID không thành công, hãy nhập mã PIN', 'Face ID could not be turned on on this device': 'Không bật được Face ID trên thiết bị này',
   'To reset a forgotten PIN, delete the app icon and add it again from Safari. Data on this phone that is not synced yet is lost.': 'Quên mã PIN thì xoá icon app rồi thêm lại từ Safari. Dữ liệu trên máy chưa đồng bộ sẽ mất.',
   'Data': 'Dữ liệu', '📊 Open Google Sheet': '📊 Mở Google Sheet', 'Google Sheet file link': 'Link file Google Sheet',
-  'Google Apps Script link (Web App)': 'Link Google Apps Script (Web App)', 'Reset app': 'Đặt lại app', 'Amount on photo': 'Số tiền trên ảnh', 'Skip': 'Bỏ qua', '₫ + Amount on photo': '₫ + Số tiền trên ảnh', '{0} on alert': '{0} hũ báo động', '{0} to watch': '{0} hũ cần chú ý',
+  'Google Apps Script link (Web App)': 'Link Google Apps Script (Web App)', 'Reset app': 'Đặt lại app', 'Photos': 'Ảnh', 'Photos in {0}': 'Ảnh trong {0}', 'No photos in this month.': 'Chưa có ảnh trong tháng này.', 'Amount on photo': 'Số tiền trên ảnh', 'Skip': 'Bỏ qua', '₫ + Amount on photo': '₫ + Số tiền trên ảnh', '{0} on alert': '{0} hũ báo động', '{0} to watch': '{0} hũ cần chú ý',
   'All good': 'Tất cả đều tốt', 'Good': 'Tốt', 'Moderate': 'Trung bình', 'Alert': 'Báo động', 'Choose an icon': 'Chọn biểu tượng', 'Less': 'Ít', 'More': 'Nhiều', 'Change': 'Đổi',
   'Goal reached': 'Đã đạt mục tiêu', 'Overdue': 'Quá hạn', 'Due today': 'Đến hạn hôm nay', '{0} days left': 'Còn {0} ngày', 'Completed': 'Hoàn thành', '{0} to go': 'Còn {0}',
   'Set your first goal': 'Đặt mục tiêu đầu tiên', 'Save for a trip, a laptop, a rainy day…': 'Tiết kiệm cho chuyến đi, laptop, quỹ dự phòng…', 'Move to Trash': 'Chuyển vào thùng rác',
@@ -801,16 +801,16 @@ async function renderHome() {
 }
 bindMonthNav($('#stats'), renderHome);
 
-// ---------- Giao dịch: ba mục Chi tiêu / Thu nhập / Bản đồ ----------
+// ---------- Giao dịch: ba mục Chi tiêu / Thu nhập / Ảnh ----------
 let txnType = 'out', txnCat = '', txnDay = '';
 async function renderTxn() {
   const all = await doneRecs();
   all.forEach(r => recById[r.id] = r);
   const totalInc = sum(all.filter(isInc)), totalExp = sum(all.filter(r => !isInc(r)));
-  const mapMode = txnType === 'map', inc = txnType === 'in';
+  const photoMode = txnType === 'photo', inc = txnType === 'in';
   // ô chọn hạng mục: danh mục đã cài + danh mục có trong dữ liệu của loại này
-  const ofType = mapMode ? all : all.filter(r => isInc(r) === inc);
-  const catOpts = [...new Set([...(mapMode ? [...cats(), ...icats()] : inc ? icats() : cats()), ...ofType.map(r => r.category)])].filter(Boolean);
+  const ofType = photoMode ? all.filter(r => r.photo) : all.filter(r => isInc(r) === inc);
+  const catOpts = [...new Set([...(photoMode ? [...cats(), ...icats()] : inc ? icats() : cats()), ...ofType.map(r => r.category)])].filter(Boolean);
   if (txnCat && !catOpts.includes(txnCat)) txnCat = '';
   $('#txnCat').innerHTML = `<option value="">${tr('All categories')}</option>` + catOpts.map(c => `<option value="${esc(c)}"${c === txnCat ? ' selected' : ''}>${esc(c)}</option>`).join('');
   if (txnDay && txnDay.slice(0, 7) !== viewYm) txnDay = '';
@@ -818,11 +818,9 @@ async function renderTxn() {
   const items = ofType.filter(r => ymOf(r.time) === viewYm && (!txnCat || r.category === txnCat) && (!txnDay || ymd(new Date(r.time)) === txnDay)).sort((a, b) => b.time.localeCompare(a.time));
   const tot = sum(items);
   document.querySelectorAll('#segTxn button').forEach(b => b.classList.toggle('on', b.dataset.v === txnType));
-  $('#txnList').hidden = mapMode; $('#txnMapBox').hidden = !mapMode;
-  if (mapMode) {
-    const n = items.filter(r => r.loc).length;
-    $('#txnHead').innerHTML = monthNav('', true) + `<div class="hl" data-info="places">${tr(txnDay ? 'Places on {0}' : 'Places in {0}', txnDay ? new Date(txnDay + 'T00:00').toLocaleDateString(DLOC(), { day: 'numeric', month: 'short' }) : monthLabel(viewYm))}</div><b class="total" data-info="places">${n}</b>`;
-    renderMap(items); return;
+  if (photoMode) {
+    $('#txnHead').innerHTML = monthNav('', true) + `<div class="hl">${tr('Photos in {0}', monthLabel(viewYm))}</div><b class="total">${items.length}</b>`;
+    await fillPhotos($('#txnList'), items); return;
   }
   $('#txnHead').innerHTML = monthNav('', true) +
     `<div class="hl">${tr(inc ? 'Income in {0}' : 'Spent in {0}', monthLabel(viewYm))}</div><b class="total" data-key="txn-sum" data-count="${tot}">${fmt(tot)}</b>` +
@@ -855,44 +853,26 @@ $('#txnDayClear').onclick = () => { txnDay = ''; renderTxn(); };
 $('#txnList').onclick = e => { const it = e.target.closest('.item'); if (it && recById[it.dataset.id]) openSheet(recById[it.dataset.id]); };
 $('#txnToday').onclick = () => { viewYm = nowYm(); txnDay = ymd(new Date()); renderTxn(); window.scrollTo({ top: 0, behavior: 'smooth' }); };   // Today: lọc đúng hôm nay
 document.querySelectorAll('#segTxn button').forEach(b => b.onclick = () => { txnType = b.dataset.v; renderTxn(); });
-// ---------- bản đồ các nơi đã thanh toán (Leaflet + OpenStreetMap; vị trí chỉ đọc từ dữ liệu trong máy) ----------
-let leaf = null, leafLayer = null;
-const hasEmoji = t => /^\p{Extended_Pictographic}/u.test(t);
-function pinHtml(r, k = 0) {   // nhãn nhỏ: biểu tượng hạng mục + tên + số tiền + ghi chú ngắn; k = thứ tự khi nhiều giao dịch cùng một chỗ (xếp chồng lên trên)
-  const inc = isInc(r), em = hasEmoji(r.category) ? r.category.split(' ')[0] : '📍', name = (hasEmoji(r.category) ? r.category.split(' ').slice(1).join(' ') : r.category) || r.category;
-  const note = r.note ? ' · ' + (r.note.length > 18 ? r.note.slice(0, 17) + '…' : r.note) : '';
-  return `<div class="pin ${inc ? 'in' : 'out'}" style="margin-top:${-k * 30}px"><i>${esc(em)}</i><span>${esc(name)} ${inc ? '+' : '−'}${short(Number(r.amount))}${esc(note)}</span></div>`;
-}
-const locKeyOf = r => r.loc.lat.toFixed(4) + ',' + r.loc.lng.toFixed(4), locKey = locKeyOf;
-async function renderMap(items) {
-  const pts = [], withLoc = items.filter(r => r.loc && isFinite(r.loc.lat) && isFinite(r.loc.lng));
-  $('#mapNote').textContent = withLoc.length ? '' : tr('No locations yet');
-  if (typeof L === 'undefined') {
-    try {
-      const css = document.querySelector('link[href$="leaflet.css"]') ? null : new Promise(res => { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = 'vendor/leaflet.css'; l.onload = l.onerror = res; document.head.append(l); });
-      await Promise.all([css, loadJS('vendor/leaflet.js')]);   // phải có CSS trước khi dựng bản đồ, nếu không ô bản đồ xếp sai chỗ và chỉ thấy nền xám
+// ---------- ảnh theo ngày: lưới ảnh biên lai (số tiền đã in trên ảnh), chạm để mở giao dịch ----------
+async function fillPhotos(box, items) {
+  box.innerHTML = '';
+  const days = {};
+  items.forEach(r => (days[ymd(new Date(r.time))] ||= []).push(r));
+  for (const k of Object.keys(days).sort().reverse()) {
+    const list = days[k], head = document.createElement('div'); head.className = 'dayh';
+    head.innerHTML = `<span>${dayLabel(new Date(k + 'T00:00'))}</span><b>${fmt(sum(list))}</b>`;
+    const grid = document.createElement('div'); grid.className = 'pgrid';
+    for (const r of list) {
+      const b = await getPhoto(r.id); if (!b) continue;
+      const f = document.createElement('button'); f.className = 'pcell'; f.dataset.id = r.id;
+      f.innerHTML = `<img alt="" decoding="async" loading="lazy" src="${URL.createObjectURL(b)}"><small>${esc(r.category)}</small>`;
+      grid.append(f);
     }
-    catch { $('#mapNote').textContent = tr('The map could not load. Check your connection.'); return; }
+    box.append(head, grid);
   }
-  if (!leaf) {
-    leaf = L.map('map', { zoomControl: true, attributionControl: true }).setView([16.05, 108.2], 5);
-    const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' });
-    let bad = 0;   // CARTO là nguồn chính; lỗi nhiều ô liên tiếp thì chuyển sang OpenStreetMap
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { maxZoom: 19, subdomains: 'abcd', attribution: '© OpenStreetMap © CARTO' })
-      .on('tileerror', function () { if (++bad === 3) { leaf.removeLayer(this); osm.addTo(leaf); } }).addTo(leaf);
-    leafLayer = L.layerGroup().addTo(leaf);
-  }
-  leafLayer.clearLayers();
-  const seen = {};   // các giao dịch cùng một chỗ (làm tròn ~10 m) được xếp chồng lên nhau để không che nhau
-  withLoc.forEach(r => {
-    const p = [r.loc.lat, r.loc.lng], key = r.loc.lat.toFixed(4) + ',' + r.loc.lng.toFixed(4), k = seen[key] = (seen[key] ?? -1) + 1; pts.push(p);
-    L.marker(p, { icon: L.divIcon({ className: 'pinwrap', html: pinHtml(r, k), iconSize: [0, 0] }) }).on('click', () => showInfo('place', key)).addTo(leafLayer);
-  });
-  setTimeout(() => {
-    leaf.invalidateSize();
-    if (pts.length === 1) leaf.setView(pts[0], 16); else if (pts.length) leaf.fitBounds(pts, { padding: [50, 50], maxZoom: 16 });
-  }, 60);
+  if (!box.children.length) box.innerHTML = `<p class="hint">${tr('No photos in this month.')}</p>`;
 }
+$('#txnList').addEventListener('click', e => { const p = e.target.closest('.pcell'); if (p && recById[p.dataset.id]) openSheet(recById[p.dataset.id]); });
 $('#dash').onclick = e => { const it = e.target.closest('.item'); if (it && recById[it.dataset.id]) openSheet(recById[it.dataset.id]); };
 
 // ---------- mục tiêu tiết kiệm: tên, số tiền cần đạt, hạn chót; nạp thêm tiền để theo dõi tiến độ ----------
@@ -1142,18 +1122,6 @@ async function showInfo(kind, arg, ymArg) {
     html = head(new Date(arg + 'T00:00').toLocaleDateString(DLOC(), { weekday: 'long', day: 'numeric', month: 'long' }), fmt(sum(items))) +
       `<h3 class="ih">${items.length} ${tr(items.length > 1 ? 'transactions' : 'transaction')}</h3>` +
       items.map(r => infoRow(r.category, fmt(r.amount), esc(new Date(r.time).toLocaleTimeString(DLOC(), { hour: '2-digit', minute: '2-digit' }) + (r.bank ? ' · ' + r.bank.replace(/^.*\((.+)\)$/, '$1') : '') + (r.note ? ' · ' + r.note : '')), 'neg', r.id)).join('');
-  } else if (kind === 'places') {   // danh sách các giao dịch có vị trí (cùng bộ lọc với bản đồ)
-    const items = all.filter(r => r.loc && ymOf(r.time) === viewYm && (!txnCat || r.category === txnCat) && (!txnDay || ymd(new Date(r.time)) === txnDay)).sort((a, b) => b.time.localeCompare(a.time));
-    html = head(tr('Payment places'), items.length) +
-      (items.map(r => infoRow(r.category, (isInc(r) ? '+' : '') + fmt(r.amount),
-        esc(new Date(r.time).toLocaleDateString(DLOC(), { day: 'numeric', month: 'short' }) + ' ' + new Date(r.time).toLocaleTimeString(DLOC(), { hour: '2-digit', minute: '2-digit' }) + (r.bank ? ' · ' + r.bank.replace(/^.*\((.+)\)$/, '$1') : '') + (r.note ? ' · ' + r.note : '')), isInc(r) ? 'pos' : 'neg', r.id)).join('') || `<p class="hint">${tr('No data yet')}</p>`);
-  } else if (kind === 'place') {
-    const items = all.filter(r => r.loc && locKeyOf(r) === arg && ymOf(r.time) === viewYm && (!txnCat || r.category === txnCat) && (!txnDay || ymd(new Date(r.time)) === txnDay)).sort((a, b) => b.time.localeCompare(a.time));
-    const [la, ln] = arg.split(',');
-    html = head(tr('Payment places'), fmt(sum(items))) +
-      `<a class="ghost linkbtn" href="https://www.google.com/maps/search/?api=1&query=${la},${ln}" target="_blank" rel="noopener">📍 ${tr('Open in Google Maps')}</a>` +
-      items.map(r => infoRow(r.category, (isInc(r) ? '+' : '') + fmt(r.amount),
-        esc(new Date(r.time).toLocaleDateString(DLOC(), { day: 'numeric', month: 'short' }) + ' ' + new Date(r.time).toLocaleTimeString(DLOC(), { hour: '2-digit', minute: '2-digit' }) + (r.note ? ' · ' + r.note : '')), isInc(r) ? 'pos' : 'neg', r.id)).join('');
   } else if (kind === 'bank' || kind === 'wallet') {
     const key = r => kind === 'bank' ? (r.bank || tr('Cash / no bank')) : (r.wallet || tr('No wallet'));
     const items = inM(viewYm, r => !isInc(r) && key(r) === arg).sort((a, b) => b.time.localeCompare(a.time));
