@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.41.0';
+const VERSION = '2.42.0';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -877,26 +877,35 @@ $('#txnDayClear').onclick = () => { txnDay = ''; renderTxn(); };
 $('#txnList').onclick = e => { const it = e.target.closest('.item'); if (it && recById[it.dataset.id]) openSheet(recById[it.dataset.id]); };
 $('#txnToday').onclick = () => { viewYm = nowYm(); txnDay = ymd(new Date()); renderTxn(); window.scrollTo({ top: 0, behavior: 'smooth' }); };   // Today: lọc đúng hôm nay
 document.querySelectorAll('#segTxn button').forEach(b => b.onclick = () => { txnType = b.dataset.v; renderTxn(); });
-// ---------- ảnh theo ngày: lưới ảnh biên lai (số tiền đã in trên ảnh), chạm để mở giao dịch ----------
+// ---------- ảnh: lịch tháng, ngày có ảnh hiện ảnh thu nhỏ; chạm vào ngày để xem danh sách thanh toán của ngày đó ----------
+let photoDays = {};
 async function fillPhotos(box, items) {
-  box.innerHTML = '';
-  const days = {};
-  items.forEach(r => (days[ymd(new Date(r.time))] ||= []).push(r));
-  for (const k of Object.keys(days).sort().reverse()) {
-    const list = days[k], head = document.createElement('div'); head.className = 'dayh';
-    head.innerHTML = `<span>${dayLabel(new Date(k + 'T00:00'))}</span><b>${fmt(sum(list))}</b>`;
-    const grid = document.createElement('div'); grid.className = 'pgrid';
-    for (const r of list) {
-      const b = await getPhoto(r.id); if (!b) continue;
-      const f = document.createElement('button'); f.className = 'pcell'; f.dataset.id = r.id;
-      f.innerHTML = `<img alt="" decoding="async" loading="lazy" src="${URL.createObjectURL(b)}"><small>${esc(r.category)}</small>`;
-      grid.append(f);
-    }
-    box.append(head, grid);
+  photoDays = {};
+  items.forEach(r => (photoDays[ymd(new Date(r.time))] ||= []).push(r));
+  const [y, mo] = viewYm.split('-').map(Number), lead = (new Date(y, mo - 1, 1).getDay() + 6) % 7, dim = new Date(y, mo, 0).getDate(), today = ymd(new Date());
+  const wdh = Array.from({ length: 7 }, (_, i) => `<span>${new Date(2024, 0, 1 + i).toLocaleDateString(LOC(), { weekday: 'narrow' })}</span>`).join('');
+  const cells = Array(lead).fill('<i></i>').concat(Array.from({ length: dim }, (_, i) => {
+    const d = `${viewYm}-${String(i + 1).padStart(2, '0')}`, n = (photoDays[d] || []).length;
+    return `<div class="hc pc ${n ? 'has' : ''} ${d === today ? 'now' : ''}" data-pday="${d}"><b>${i + 1}</b>${n ? `<em>${n}</em>` : ''}</div>`;
+  })).join('');
+  box.innerHTML = `<div class="card"><div class="hwd">${wdh}</div><div class="hmap">${cells}</div></div>`;
+  if (!items.length) box.insertAdjacentHTML('beforeend', `<p class="hint">${tr('No photos in this month.')}</p>`);
+  // ảnh thu nhỏ làm nền ô ngày (lấy ảnh đầu tiên của ngày)
+  for (const [d, list] of Object.entries(photoDays)) {
+    const cell = box.querySelector(`[data-pday="${d}"]`), blob = cell && await getPhoto(list[0].id);
+    if (blob) cell.style.backgroundImage = `linear-gradient(rgba(0,0,0,.18),rgba(0,0,0,.18)),url(${URL.createObjectURL(blob)})`;
   }
-  if (!box.children.length) box.innerHTML = `<p class="hint">${tr('No photos in this month.')}</p>`;
 }
-$('#txnList').addEventListener('click', e => { const p = e.target.closest('.pcell'); if (p && recById[p.dataset.id]) openSheet(recById[p.dataset.id]); });
+$('#txnList').addEventListener('click', async e => {
+  const cell = e.target.closest('[data-pday]'); if (!cell) return;
+  const list = (photoDays[cell.dataset.pday] || []).slice().sort((a, b) => a.time.localeCompare(b.time)); if (!list.length) return;
+  openPanel(`<h3 class="ih">${new Date(cell.dataset.pday + 'T00:00').toLocaleDateString(DLOC(), { weekday: 'long', day: 'numeric', month: 'long' })} · ${fmt(sum(list))}</h3><div id="pdList"></div>`);
+  for (const r of list) {
+    const b = await getPhoto(r.id), row = document.createElement('div'); row.className = 'irow tap pdrow'; row.dataset.id = r.id; recById[r.id] = r;
+    row.innerHTML = `${b ? `<img alt="" src="${URL.createObjectURL(b)}">` : ''}<div class="il">${esc(r.category)}<small>${new Date(r.time).toLocaleTimeString(DLOC(), { hour: '2-digit', minute: '2-digit' })}${r.note ? ' · ' + esc(r.note) : ''}</small></div><b class="${isInc(r) ? 'pos' : 'neg'}">${isInc(r) ? '+' : ''}${fmt(r.amount)}</b>`;
+    $('#pdList')?.append(row);
+  }
+});
 $('#dash').onclick = e => { const it = e.target.closest('.item'); if (it && recById[it.dataset.id]) openSheet(recById[it.dataset.id]); };
 
 // ---------- mục tiêu tiết kiệm: tên, số tiền cần đạt, hạn chót; nạp thêm tiền để theo dõi tiến độ ----------
