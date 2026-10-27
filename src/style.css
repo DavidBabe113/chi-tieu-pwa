@@ -695,3 +695,8 @@ header{background:color-mix(in srgb,var(--bg) 78%,transparent)}
 }
 
 .fab-scan{display:none!important}
+
+@media not all and (min-width:1000px) and (hover:hover){
+  .fab-save{right:16px;bottom:calc(var(--bar,70px) + 24px);transition:bottom .3s var(--ease),transform .35s cubic-bezier(.34,1.56,.64,1)}
+  body.away .fab-save{bottom:calc(30px + env(safe-area-inset-bottom))}
+}
