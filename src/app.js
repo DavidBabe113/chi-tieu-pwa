@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.38.0';
+const VERSION = '2.38.1';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -54,7 +54,7 @@ const VI = {
   'Face ID failed, enter your PIN': 'Face ID không thành công, hãy nhập mã PIN', 'Face ID could not be turned on on this device': 'Không bật được Face ID trên thiết bị này',
   'To reset a forgotten PIN, delete the app icon and add it again from Safari. Data on this phone that is not synced yet is lost.': 'Quên mã PIN thì xoá icon app rồi thêm lại từ Safari. Dữ liệu trên máy chưa đồng bộ sẽ mất.',
   'Data': 'Dữ liệu', '📊 Open Google Sheet': '📊 Mở Google Sheet', 'Google Sheet file link': 'Link file Google Sheet',
-  'Google Apps Script link (Web App)': 'Link Google Apps Script (Web App)', 'Reset app': 'Đặt lại app', 'Amount on photo': 'Số tiền trên ảnh', '₫ + Amount on photo': '₫ + Số tiền trên ảnh', '{0} on alert': '{0} hũ báo động', '{0} to watch': '{0} hũ cần chú ý',
+  'Google Apps Script link (Web App)': 'Link Google Apps Script (Web App)', 'Reset app': 'Đặt lại app', 'Amount on photo': 'Số tiền trên ảnh', 'Skip': 'Bỏ qua', '₫ + Amount on photo': '₫ + Số tiền trên ảnh', '{0} on alert': '{0} hũ báo động', '{0} to watch': '{0} hũ cần chú ý',
   'All good': 'Tất cả đều tốt', 'Good': 'Tốt', 'Moderate': 'Trung bình', 'Alert': 'Báo động', 'Choose an icon': 'Chọn biểu tượng', 'Less': 'Ít', 'More': 'Nhiều', 'Change': 'Đổi',
   'Goal reached': 'Đã đạt mục tiêu', 'Overdue': 'Quá hạn', 'Due today': 'Đến hạn hôm nay', '{0} days left': 'Còn {0} ngày', 'Completed': 'Hoàn thành', '{0} to go': 'Còn {0}',
   'Set your first goal': 'Đặt mục tiêu đầu tiên', 'Save for a trip, a laptop, a rainy day…': 'Tiết kiệm cho chuyến đi, laptop, quỹ dự phòng…', 'Move to Trash': 'Chuyển vào thùng rác',
@@ -492,6 +492,7 @@ $('#photoIn').onchange = async e => {
   curRaw = await shrink(f);
   await restamp();
   $('#photoAmt').hidden = false;
+  photoEditor();
   e.target.value = '';   // ảnh chỉ lưu trong app; không tự lưu ra album nữa
 };
 // Số tiền ghi thẳng lên ảnh (dải đen phía dưới). Nhập ở ô số tiền hoặc chạm ảnh để nhập — một trong hai; luôn là cùng một số liệu của giao dịch (đi tiếp lên Google Sheet)
@@ -515,15 +516,23 @@ async function restamp() {
   if (old.startsWith('blob:')) URL.revokeObjectURL(old);
 }
 $('#amount').addEventListener('change', restamp);
-$('#photoAmt').onclick = $('#preview').onclick = () => {
+// Màn hình ảnh toàn khung ngay sau khi chụp: gõ số tiền thẳng lên ảnh (hoặc bỏ qua và nhập ở ô số tiền phía ngoài)
+function photoEditor() {
   if (!curRaw) return;
-  openPanel(`<h3 class="ih">${tr('Amount on photo')} (₫)</h3><input id="paAmt" inputmode="numeric" placeholder="0" value="${commas($('#amount').value)}"><button id="paOk" class="big">${tr('Done')}</button>`);
-  setTimeout(() => $('#paAmt').focus(), 120);
-};
-document.addEventListener('click', async e => {
-  if (!e.target.closest('#paOk')) return;
-  $('#amount').value = commas($('#paAmt').value); closeSheet(); await restamp();
-});
+  const ed = document.createElement('div'); ed.id = 'photoEd';
+  const url = URL.createObjectURL(curRaw);
+  ed.innerHTML = `<div class="pe-img"><img src="${url}" alt=""><div class="pe-tag"><input id="peAmt" inputmode="numeric" placeholder="0" value="${commas($('#amount').value)}"><span>₫</span></div></div>` +
+    `<div class="pe-bar"><button id="peSkip" class="ghost">${tr('Skip')}</button><button id="peOk" class="big">${tr('Done')}</button></div>`;
+  document.body.append(ed);
+  const close = async ok => {
+    if (ok) $('#amount').value = commas($('#peAmt').value);
+    ed.remove(); URL.revokeObjectURL(url); await restamp();
+  };
+  $('#peOk').onclick = () => close(true);
+  $('#peSkip').onclick = () => close(false);
+  setTimeout(() => $('#peAmt').focus(), 150);
+}
+$('#photoAmt').onclick = $('#preview').onclick = photoEditor;
 // Lưu thủ công khi cần: chạm vào ảnh trong chi tiết giao dịch → bảng chia sẻ của iOS → "Lưu hình ảnh"
 async function savePhoto(blob, name) {
   const f = new File([blob], name, { type: 'image/jpeg' });
