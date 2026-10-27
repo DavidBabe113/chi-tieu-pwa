@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.43.0';
+const VERSION = '2.43.1';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -1492,7 +1492,8 @@ $('#locSw').onchange = e => cfg.set('locOn', e.target.checked ? '1' : '0');
 $('#saveAdv').onclick = () => {
   cfg.set('sheetFile', $('#sheetFile').value.trim() || SHEET_FILE);
   cfg.set('sheetUrl', $('#sheetUrl').value.trim());
-  markAllJars().then(sync); goTop('home');
+  // bấm Lưu ở đây là gửi lại toàn bộ giao dịch lên Sheet (Sheet ghi đè theo mã giao dịch nên không bị trùng dòng)
+  (async () => { for (const r of (await rawDone())) if (r.synced) { r.synced = false; await tx('records', 'readwrite', st => st.put(r)); } await markAllJars(); sync(); })(); goTop('home');
 };
 $('#clearData').onclick = async () => {   // đưa app về mặc định: xoá giao dịch, ảnh và mọi cài đặt; chỉ giữ link Google Sheet
   if (!confirm(tr('Reset the app? All transactions, photos and settings on this phone are deleted. Your Google Sheet is not touched.'))) return;
