@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.44.0';
+const VERSION = '2.44.1';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -1615,3 +1615,12 @@ if ('serviceWorker' in navigator) {
 }
 translateDom();
 initAccount();
+
+// Thanh lọc ở trang Giao dịch: kéo nội dung lên (vuốt lên) thì ẩn, vuốt xuống thì hiện lại; ở đầu trang luôn hiện
+{ let ly = 0;
+  window.addEventListener('scroll', () => {
+    const y = window.scrollY, bar = document.querySelector('.txnbar');
+    if (y < 40) bar.classList.remove('away'); else if (y > ly + 8) bar.classList.add('away'); else if (y < ly - 8) bar.classList.remove('away');
+    ly = y;
+  }, { passive: true });
+}

@@ -666,3 +666,9 @@ header{background:color-mix(in srgb,var(--bg) 78%,transparent)}
   #v-txn{padding-bottom:120px}
   body:has(#v-txn:not([hidden])) .fab-add{bottom:calc(196px + env(safe-area-inset-bottom))}
 }
+
+@media not all and (min-width:1000px) and (hover:hover){
+  .txnbar{transition:transform .3s var(--ease),opacity .25s}
+  .txnbar.away{transform:translate(-50%,calc(100% + 90px));opacity:0;pointer-events:none}
+  body:has(#v-txn:not([hidden]) .txnbar.away) .fab-add{bottom:calc(92px + env(safe-area-inset-bottom))}
+}
