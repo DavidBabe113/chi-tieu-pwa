@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.47.1';
+const VERSION = '2.47.2';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -23,9 +23,9 @@ const VI = {
   'Not in any jar: <b>{0}</b>': 'Chưa thuộc hũ nào: <b>{0}</b>', 'No locations yet': 'Chưa có vị trí nào', 'Highest': 'Cao nhất', 'Payment places': 'Các nơi thanh toán',
   'Banks': 'Ngân hàng', 'Nothing found': 'Không tìm thấy', 'Search': 'Tìm kiếm', 'Settings': 'Cài đặt', 'Back': 'Quay lại', 'Close': 'Đóng', 'Add manually': 'Nhập tay',
   'Dashboard': 'Bảng tổng hợp', 'Monthly summary': 'Tổng hợp theo tháng', 'Places in {0}': 'Số nơi thanh toán trong {0}', 'Places on {0}': 'Số nơi thanh toán ngày {0}', 'Map': 'Bản đồ',
-  'Wallet': 'Ví', 'Wallets': 'Ví', 'No wallet': 'Chưa chọn ví', 'Savings rate': 'Tỷ lệ tiết kiệm', 'Projected remaining': 'Dự kiến còn lại', 'Total income': 'Tổng thu nhập',
+  'Wallet': 'Ví', 'Wallets': 'Ví', 'No wallet': 'Chưa chọn ví', 'Savings rate': 'Tỷ lệ tiết kiệm', 'Projected month-end balance': 'Dự kiến còn lại cuối tháng', 'Total income': 'Tổng thu nhập',
   'Total spending': 'Tổng chi tiêu tháng', 'Average per day': 'Trung bình mỗi ngày', 'or': 'hoặc', 'Account': 'Tài khoản', 'Member': 'Thành viên', 'Admin': 'Quản trị viên', 'You': 'Bạn',
-  'Transactions': 'Giao dịch', 'Remaining': 'Còn lại', 'The map could not load. Check your connection.': 'Không tải được bản đồ. Kiểm tra kết nối mạng.',
+  'Transactions': 'Giao dịch', 'Balance': 'Tổng còn lại', 'The map could not load. Check your connection.': 'Không tải được bản đồ. Kiểm tra kết nối mạng.',
   'All categories': 'Tất cả hạng mục', 'Location': 'Vị trí', 'Open in Google Maps': 'Mở Google Maps', 'Save payment location': 'Lưu vị trí khi thanh toán', 'Privacy': 'Quyền riêng tư',
   'Financial Tracking': 'Theo dõi tài chính', 'By month': 'Theo tháng', 'Balance': 'Số dư', 'Days elapsed': 'Số ngày đã qua', 'Category': 'Hạng mục', 'Edit': 'Sửa',
   'Save changes': 'Lưu thay đổi', 'Time': 'Giờ', 'Enter an amount': 'Nhập số tiền', 'Active days': 'Ngày có chi', 'transactions': 'giao dịch', 'transaction': 'giao dịch',
@@ -807,7 +807,7 @@ async function renderHome() {
   renderJarWatch(all);
   // Tổng số tiền (tất cả thu nhập) và số tiền còn lại: tính trên toàn bộ dữ liệu, không theo tháng
   const totalInc = sum(all.filter(isInc)), totalExp = sum(all.filter(r => !isInc(r))), remain = totalInc - totalExp;
-  $('#balance').innerHTML = `<div class="hl">${tr('Remaining')}</div><b class="total ${remain < 0 ? 'neg' : ''}" data-key="home-remain" data-count="${remain}">${fmt(remain)}</b>` +
+  $('#balance').innerHTML = `<div class="hl">${tr('Balance')}</div><b class="total ${remain < 0 ? 'neg' : ''}" data-key="home-remain" data-count="${remain}">${fmt(remain)}</b>` +
     `<div class="duo"><div><span>${tr('Total money')}</span><b class="pos" data-key="home-total" data-count="${totalInc}">${fmt(totalInc)}</b></div><div><span>${tr('Total spent')}</span><b data-key="home-all" data-count="${totalExp}">${fmt(totalExp)}</b></div></div>`;
   // Phần dưới chỉ của tháng đang xem
   const exp = all.filter(r => !isInc(r) && ymOf(r.time) === viewYm);
@@ -847,7 +847,7 @@ async function renderTxn() {
   }
   $('#txnHead').innerHTML = monthNav('', true) +
     `<div class="hl">${tr(inc ? 'Income in {0}' : 'Spent in {0}', monthLabel(viewYm))}</div><b class="total" data-key="txn-sum" data-count="${tot}">${fmt(tot)}</b>` +
-    `<div class="duo w"><div><span>${tr('Remaining')}</span><b>${fmt(totalInc - totalExp)}</b></div><div><span>${tr(inc ? 'Income' : 'Expense')}</span><b>${items.length}</b></div></div>`;
+    `<div class="duo w"><div><span>${tr('Balance')}</span><b>${fmt(totalInc - totalExp)}</b></div><div><span>${tr(inc ? 'Income' : 'Expense')}</span><b>${items.length}</b></div></div>`;
   runCounts($('#txnHead'));
   await fillDays($('#txnList'), items);
   if (!items.length) $('#txnList').innerHTML = `<p class="hint">${tr('No transactions in this month.')}</p>`;
@@ -1118,7 +1118,7 @@ async function showInfo(kind, arg, ymArg) {
       ([...months].reverse().map(ym => infoRow(monthLabel(ym), fmt(f(ym)), '', kind === 'income' ? 'pos' : 'neg')).join('') || `<p class="hint">${tr('No data yet')}</p>`);
   } else if (kind === 'remain') {
     let cum = 0; const rows = months.map(ym => { const n = incOf(ym) - expOf(ym); cum += n; return infoRow(monthLabel(ym), (n >= 0 ? '+' : '') + fmt(n), `${tr('Balance')} ${fmt(cum)}`, n < 0 ? 'neg' : 'pos'); }).reverse();
-    html = head(tr('Remaining'), fmt(cum)) + `<h3 class="ih">${tr('By month')}</h3>` + (rows.join('') || `<p class="hint">${tr('No data yet')}</p>`);
+    html = head(tr('Balance'), fmt(cum)) + `<h3 class="ih">${tr('By month')}</h3>` + (rows.join('') || `<p class="hint">${tr('No data yet')}</p>`);
   } else if (kind === 'month') {
     const exp = inM(viewYm, r => !isInc(r)), tot = sum(exp), by = Object.entries(sumBy(exp, r => r.category)).sort((a, b) => b[1] - a[1]);
     html = head(tr('Spent in {0}', monthLabel(viewYm)), fmt(tot)) + `<h3 class="ih">${tr('By category')}</h3>` +
@@ -1141,7 +1141,7 @@ async function showInfo(kind, arg, ymArg) {
     const el = viewYm === nowYm() ? new Date().getDate() : dim, avg = tot / Math.max(1, el);
     if (kind === 'est') {
       const inc = incOf(viewYm), left = inc - avg * dim;
-      html = inc ? head(tr('Projected remaining'), fmt(left), left < 0 ? 'neg' : 'in') + infoRow(tr('Total income'), fmt(inc), '', 'pos') + infoRow(tr('Total spent'), fmt(tot), '', 'neg') + infoRow(tr('Days elapsed'), el + '/' + dim) + infoRow(tr('Average per day'), fmt(avg)) + infoRow(tr('Month-end estimate'), fmt(avg * dim), '', 'neg')
+      html = inc ? head(tr('Projected month-end balance'), fmt(left), left < 0 ? 'neg' : 'in') + infoRow(tr('Total income'), fmt(inc), '', 'pos') + infoRow(tr('Total spent'), fmt(tot), '', 'neg') + infoRow(tr('Days elapsed'), el + '/' + dim) + infoRow(tr('Average per day'), fmt(avg)) + infoRow(tr('Month-end estimate'), fmt(avg * dim), '', 'neg')
         : head(tr('Month-end estimate'), fmt(avg * dim)) + infoRow(tr('Total spent'), fmt(tot)) + infoRow(tr('Days elapsed'), el + '/' + dim) + infoRow(tr('Average per day'), fmt(avg));
     }
     else {
@@ -1214,7 +1214,7 @@ function renderDash(all) {
     <div class="kpi" data-info="avg"><div class="l">${tr('Average per day')}</div><div class="v sm">${fmt(avgDay)}</div></div>
     ${incNow ? `<div class="kpi" data-info="rate"><div class="l">${tr('Savings rate')}</div><div class="v sm">${Math.round(net / incNow * 100)}%</div></div>` : ''}
     ${isCur && elapsed < dim ? (incNow
-      ? `<div class="kpi" data-info="est"><div class="l">${tr('Projected remaining')}</div><div class="v sm ${incNow - avgDay * dim < 0 ? 'neg' : 'pos'}">${fmt(incNow - avgDay * dim)}</div></div>`
+      ? `<div class="kpi" data-info="est"><div class="l">${tr('Projected month-end balance')}</div><div class="v sm ${incNow - avgDay * dim < 0 ? 'neg' : 'pos'}">${fmt(incNow - avgDay * dim)}</div></div>`
       : `<div class="kpi" data-info="est"><div class="l">${tr('Month-end estimate')}</div><div class="v sm">${fmt(avgDay * dim)}</div></div>`) : ''}
   </div>`;
 
