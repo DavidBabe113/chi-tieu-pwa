@@ -669,6 +669,9 @@ header{background:color-mix(in srgb,var(--bg) 78%,transparent)}
 
 @media not all and (min-width:1000px) and (hover:hover){
   .txnbar{transition:transform .3s var(--ease),opacity .25s}
-  .txnbar.away{transform:translate(-50%,calc(100% + 90px));opacity:0;pointer-events:none}
-  body:has(#v-txn:not([hidden]) .txnbar.away) .fab-add{bottom:calc(92px + env(safe-area-inset-bottom))}
+  #tabs{transition:transform .3s var(--ease),opacity .25s}
+  body.away .txnbar,body.away #tabs{transform:translate(-50%,calc(100% + 90px));opacity:0;pointer-events:none}
+  .fab-scan,.fab-add{transition:bottom .3s var(--ease),transform .35s cubic-bezier(.34,1.56,.64,1)}
+  body.away .fab-scan{bottom:calc(22px + env(safe-area-inset-bottom))}
+  body.away .fab-add{bottom:calc(34px + env(safe-area-inset-bottom))}
 }

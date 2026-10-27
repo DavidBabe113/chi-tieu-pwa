@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.44.1';
+const VERSION = '2.45.0';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -1616,11 +1616,11 @@ if ('serviceWorker' in navigator) {
 translateDom();
 initAccount();
 
-// Thanh lọc ở trang Giao dịch: kéo nội dung lên (vuốt lên) thì ẩn, vuốt xuống thì hiện lại; ở đầu trang luôn hiện
+// Thanh 4 mục và thanh lọc: vuốt lên (cuộn nội dung xuống) thì ẩn, vuốt xuống thì hiện lại; ở đầu trang luôn hiện
 { let ly = 0;
   window.addEventListener('scroll', () => {
-    const y = window.scrollY, bar = document.querySelector('.txnbar');
-    if (y < 40) bar.classList.remove('away'); else if (y > ly + 8) bar.classList.add('away'); else if (y < ly - 8) bar.classList.remove('away');
+    const y = window.scrollY, b = document.body.classList;
+    if (y < 40) b.remove('away'); else if (y > ly + 8) b.add('away'); else if (y < ly - 8) b.remove('away');
     ly = y;
   }, { passive: true });
 }
