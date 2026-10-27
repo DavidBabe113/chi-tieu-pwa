@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.45.3';
+const VERSION = '2.46.0';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -302,7 +302,6 @@ addEventListener('touchend', e => {
 }, { passive: true });
 
 // ---------- quét QR ----------
-$('#btnScan').onclick = startScan;
 // Nút +: hiện nhỏ hai lựa chọn Income / Expense, chọn xong mới hiện hạng mục
 function addMenu() {
   const m = $('#addMenu');

@@ -693,3 +693,5 @@ header{background:color-mix(in srgb,var(--bg) 78%,transparent)}
   body:has(#v-txn:not([hidden])) .fab-scan{bottom:calc(var(--tb,170px) + 18px)}
   body.away:has(#v-txn:not([hidden])) .fab-scan{bottom:calc(22px + env(safe-area-inset-bottom))}
 }
+
+.fab-scan{display:none!important}
