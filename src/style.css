@@ -700,3 +700,7 @@ header{background:color-mix(in srgb,var(--bg) 78%,transparent)}
   .fab-save{right:16px;bottom:calc(var(--bar,70px) + 24px);transition:bottom .3s var(--ease),transform .35s cubic-bezier(.34,1.56,.64,1)}
   body.away .fab-save{bottom:calc(30px + env(safe-area-inset-bottom))}
 }
+
+.sheet-card::before{content:"";display:block;width:38px;height:5px;border-radius:3px;background:var(--line);margin:-16px auto 14px}
+.sheet.center .sheet-card::before{display:none}
+.sheet-card{overscroll-behavior:contain}

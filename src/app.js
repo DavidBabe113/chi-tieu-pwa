@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.47.3';
+const VERSION = '2.48.0';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -527,6 +527,7 @@ async function openCam() {
   const v = ov.querySelector('video'); v.srcObject = stream; v.play().catch(() => {});
   const end = () => { stream.getTracks().forEach(t => t.stop()); ov.remove(); };
   $('#camX').onclick = end;
+  swipeDismiss(v, end);
   $('#camShot').onclick = async () => {
     if (!v.videoWidth) return;
     const k = Math.min(1, 1280 / Math.max(v.videoWidth, v.videoHeight)), cv = document.createElement('canvas');
@@ -554,6 +555,7 @@ function photoEditor() {
   };
   $('#peOk').onclick = () => close(true);
   $('#peSkip').onclick = () => close(false);
+  swipeDismiss(ed.querySelector('.pe-img'), () => $('#peSkip').click(), e => e.target.id !== 'peAmt');
   setTimeout(() => $('#peAmt').focus(), 150);
 }
 $('#photoAmt').onclick = $('#preview').onclick = photoEditor;
@@ -1435,6 +1437,36 @@ function editTx(r) {
 }
 function hideSheet() { $('#sheet').hidden = true; $('#sheet').classList.remove('center'); document.body.classList.remove('noscroll'); }
 const closeSheet = () => { if (!$('#sheet').hidden) history.back(); };
+// Vuốt xuống để tắt: dùng cho mọi bảng hiện lên (chi tiết giao dịch, lịch, tổng hợp, hạng mục…), camera và màn ảnh nhập số tiền
+function swipeDismiss(el, close, canStart = () => true) {
+  let y0 = 0, x0 = 0, dy = 0, on = false, decided = false, t0 = 0;
+  el.addEventListener('touchstart', e => {
+    on = e.touches.length === 1 && el.scrollTop <= 0 && canStart(e);
+    if (!on) return;
+    y0 = e.touches[0].clientY; x0 = e.touches[0].clientX; dy = 0; decided = false; t0 = Date.now(); el.style.transition = 'none';
+  }, { passive: true });
+  el.addEventListener('touchmove', e => {
+    if (!on) return;
+    const t = e.touches[0], ddy = t.clientY - y0, ddx = t.clientX - x0;
+    if (!decided) {
+      if (Math.abs(ddy) < 6 && Math.abs(ddx) < 6) return;
+      decided = true;
+      if (ddy <= 0 || Math.abs(ddx) > ddy) { on = false; el.style.transition = ''; return; }   // vuốt lên/ngang: để app xử lý như thường
+    }
+    dy = Math.max(0, ddy); el.style.transform = `translateY(${dy}px)`; e.preventDefault();
+  }, { passive: false });
+  const end = () => {
+    if (!on) return; on = false;
+    if (!dy) { el.style.transition = ''; return; }
+    el.style.transition = 'transform .22s ease';
+    if (dy > 110 || (dy > 40 && dy / (Date.now() - t0) > .5)) {
+      el.style.transform = 'translateY(110%)';
+      setTimeout(() => { close(); el.style.transform = ''; el.style.transition = ''; }, 190);
+    } else { el.style.transform = ''; setTimeout(() => { el.style.transition = ''; }, 230); }
+  };
+  el.addEventListener('touchend', end); el.addEventListener('touchcancel', end);
+}
+swipeDismiss(document.querySelector('#sheet .sheet-card'), closeSheet);
 // Chạm vào tháng/năm trên thanh chuyển tháng → bảng lịch chọn tháng khác
 let pickYear = 0;
 function monthPicker() {
