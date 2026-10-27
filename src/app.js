@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.39.0';
+const VERSION = '2.39.1';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -479,11 +479,6 @@ function openDetail() {
   const inc = cur.type === 'income';   // khoản thu: không ảnh, không ngân hàng
   $('.photo').hidden = false; $('#payBox').hidden = inc; payPick = null; payTab = 'bank'; $('#bankQ').value = ''; $('#bankQ').hidden = true; $('#bankQ').placeholder = tr('Search'); renderBanks(); $('#toBank').hidden = inc; $('#saveOnly').hidden = inc; $('#saveIncome').hidden = !inc;
   show('detail');
-  // Ghi lại vị trí lúc nhập số tiền (cần bạn cho phép định vị; tắt được trong Cài đặt)
-  const rec = cur; rec.loc = null;
-  if (cfg.get('locOn', '1') !== '0' && navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(p => { rec.loc = { lat: +p.coords.latitude.toFixed(5), lng: +p.coords.longitude.toFixed(5), acc: Math.round(p.coords.accuracy) }; }, () => {}, { enableHighAccuracy: true, timeout: 10000, maximumAge: 120000 });
-  }
 }
 const commas = v => { const d = String(v).replace(/\D/g, ''); return d ? Number(d).toLocaleString('en-US') : ''; };
 document.addEventListener('input', e => { if (e.target.matches('input[inputmode="numeric"]')) e.target.value = commas(e.target.value); });
@@ -1002,11 +997,10 @@ document.addEventListener('click', async e => {
   const t = e.target.closest('#xType button');
   if (t) { exp.type = t.dataset.v; paintExport(); return; }
   if (!e.target.closest('#xGo')) return;
-  const items = expItems(), rows = [['Date', 'Time', 'Type', 'Category', 'Amount (VND)', 'Note', 'Payee', 'Payment method', 'Location']];
+  const items = expItems(), rows = [['Date', 'Time', 'Type', 'Category', 'Amount (VND)', 'Note', 'Payee', 'Payment method']];
   items.forEach(r => {
     const d = new Date(r.time);
-    rows.push([ymd(d), d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }), isInc(r) ? 'Income' : 'Expense', r.category || '', Number(r.amount) || 0, r.note || '', r.payee || '', r.bank || '',
-      r.loc ? `https://www.google.com/maps/search/?api=1&query=${r.loc.lat},${r.loc.lng}` : '']);
+    rows.push([ymd(d), d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }), isInc(r) ? 'Income' : 'Expense', r.category || '', Number(r.amount) || 0, r.note || '', r.payee || '', r.bank || '']);
   });
   const name = `FinancialTracking_${exp.ym || 'all'}${exp.cat ? '_' + exp.cat.replace(/[^\w\p{L}]+/gu, '') : ''}.xlsx`, blob = xlsxBlob(rows);
   try {
@@ -1355,7 +1349,6 @@ async function openSheet(r) {
     `<div class="d-cat">${esc(r.category)}</div><div class="d-amt ${isInc(r) ? 'in' : ''}">${isInc(r) ? '+' : ''}${fmt(r.amount)}</div>` +
     row('Category', r.category) + row('Type', isInc(r) ? tr('Income') : tr('Expense')) + row('Date', new Date(r.time).toLocaleDateString(DLOC())) + row('Time', new Date(r.time).toLocaleTimeString(DLOC(), { hour: '2-digit', minute: '2-digit' })) + row('Bank', r.bank) + row('Payee', r.payee) +
     row('Note', r.note) +
-    (r.loc ? `<div class="drow"><span>${tr('Location')}</span><b><a href="https://www.google.com/maps/search/?api=1&query=${r.loc.lat},${r.loc.lng}" target="_blank" rel="noopener">${tr('Open in Google Maps')}</a></b></div>` : '') +
     '<div id="sheetPhoto"></div>' +
     (r.status === 'done' ? `<button id="editTx" class="ghost">${tr('Edit')}</button><button id="delTx" class="ghost danger">${tr('Move to Trash')}</button>` : '');
   const et = $('#editTx'); if (et) et.onclick = () => editTx(r);
@@ -1445,7 +1438,6 @@ function renderSettings() {
     $('#faceOnBtn').hidden = faceOn(); $('#faceOffBtn').hidden = !faceOn();
   });
   $('#sheetUrl').value = cfg.get('sheetUrl', '');
-  $('#locSw').checked = cfg.get('locOn', '1') !== '0';
   document.querySelectorAll('#segLang button').forEach(b => b.classList.toggle('on', b.dataset.v === lang));
   document.querySelectorAll('#segTheme button').forEach(b => b.classList.toggle('on', b.dataset.v === cfg.get('theme', 'auto')));
 }
@@ -1455,7 +1447,6 @@ document.querySelectorAll('#segLang button').forEach(b => b.onclick = () => {
 document.querySelectorAll('#segTheme button').forEach(b => b.onclick = () => {
   cfg.set('theme', b.dataset.v); applyTheme(); renderSettings();
 });
-$('#locSw').onchange = e => cfg.set('locOn', e.target.checked ? '1' : '0');
 $('#saveAdv').onclick = () => {
   cfg.set('sheetFile', $('#sheetFile').value.trim() || SHEET_FILE);
   cfg.set('sheetUrl', $('#sheetUrl').value.trim());
