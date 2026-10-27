@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.36.0';
+const VERSION = '2.36.1';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -827,7 +827,10 @@ async function renderMap(items) {
   const pts = [], withLoc = items.filter(r => r.loc && isFinite(r.loc.lat) && isFinite(r.loc.lng));
   $('#mapNote').textContent = withLoc.length ? '' : tr('No locations yet');
   if (typeof L === 'undefined') {
-    try { if (!document.querySelector('link[href$="leaflet.css"]')) document.head.insertAdjacentHTML('beforeend', '<link rel="stylesheet" href="vendor/leaflet.css">'); await loadJS('vendor/leaflet.js'); }
+    try {
+      const css = document.querySelector('link[href$="leaflet.css"]') ? null : new Promise(res => { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = 'vendor/leaflet.css'; l.onload = l.onerror = res; document.head.append(l); });
+      await Promise.all([css, loadJS('vendor/leaflet.js')]);   // phải có CSS trước khi dựng bản đồ, nếu không ô bản đồ xếp sai chỗ và chỉ thấy nền xám
+    }
     catch { $('#mapNote').textContent = tr('The map could not load. Check your connection.'); return; }
   }
   if (!leaf) {
