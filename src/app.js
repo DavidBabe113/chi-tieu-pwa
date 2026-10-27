@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.37.0';
+const VERSION = '2.38.0';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -54,7 +54,7 @@ const VI = {
   'Face ID failed, enter your PIN': 'Face ID không thành công, hãy nhập mã PIN', 'Face ID could not be turned on on this device': 'Không bật được Face ID trên thiết bị này',
   'To reset a forgotten PIN, delete the app icon and add it again from Safari. Data on this phone that is not synced yet is lost.': 'Quên mã PIN thì xoá icon app rồi thêm lại từ Safari. Dữ liệu trên máy chưa đồng bộ sẽ mất.',
   'Data': 'Dữ liệu', '📊 Open Google Sheet': '📊 Mở Google Sheet', 'Google Sheet file link': 'Link file Google Sheet',
-  'Google Apps Script link (Web App)': 'Link Google Apps Script (Web App)', 'Reset app': 'Đặt lại app', '{0} on alert': '{0} hũ báo động', '{0} to watch': '{0} hũ cần chú ý',
+  'Google Apps Script link (Web App)': 'Link Google Apps Script (Web App)', 'Reset app': 'Đặt lại app', 'Amount on photo': 'Số tiền trên ảnh', '₫ + Amount on photo': '₫ + Số tiền trên ảnh', '{0} on alert': '{0} hũ báo động', '{0} to watch': '{0} hũ cần chú ý',
   'All good': 'Tất cả đều tốt', 'Good': 'Tốt', 'Moderate': 'Trung bình', 'Alert': 'Báo động', 'Choose an icon': 'Chọn biểu tượng', 'Less': 'Ít', 'More': 'Nhiều', 'Change': 'Đổi',
   'Goal reached': 'Đã đạt mục tiêu', 'Overdue': 'Quá hạn', 'Due today': 'Đến hạn hôm nay', '{0} days left': 'Còn {0} ngày', 'Completed': 'Hoàn thành', '{0} to go': 'Còn {0}',
   'Set your first goal': 'Đặt mục tiêu đầu tiên', 'Save for a trip, a laptop, a rainy day…': 'Tiết kiệm cho chuyến đi, laptop, quỹ dự phòng…', 'Move to Trash': 'Chuyển vào thùng rác',
@@ -475,7 +475,7 @@ const ymd = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0
 function openDetail() {
   $('#amount').value = commas(cur.amount || '');
   $('#note').value = cur.note;
-  $('#preview').hidden = true; curPhoto = null;
+  $('#preview').hidden = true; $('#photoAmt').hidden = true; curPhoto = curRaw = null;
   const inc = cur.type === 'income';   // khoản thu: không ảnh, không ngân hàng
   $('.photo').hidden = false; $('#payBox').hidden = inc; payPick = null; payTab = 'bank'; $('#bankQ').value = ''; $('#bankQ').hidden = true; $('#bankQ').placeholder = tr('Search'); renderBanks(); $('#toBank').hidden = inc; $('#saveOnly').hidden = inc; $('#saveIncome').hidden = !inc;
   show('detail');
@@ -489,10 +489,41 @@ const commas = v => { const d = String(v).replace(/\D/g, ''); return d ? Number(
 document.addEventListener('input', e => { if (e.target.matches('input[inputmode="numeric"]')) e.target.value = commas(e.target.value); });
 $('#photoIn').onchange = async e => {
   const f = e.target.files[0]; if (!f) return;
-  curPhoto = await shrink(f);
-  $('#preview').src = URL.createObjectURL(curPhoto); $('#preview').hidden = false;
+  curRaw = await shrink(f);
+  await restamp();
+  $('#photoAmt').hidden = false;
   e.target.value = '';   // ảnh chỉ lưu trong app; không tự lưu ra album nữa
 };
+// Số tiền ghi thẳng lên ảnh (dải đen phía dưới). Nhập ở ô số tiền hoặc chạm ảnh để nhập — một trong hai; luôn là cùng một số liệu của giao dịch (đi tiếp lên Google Sheet)
+let curRaw = null;
+async function stampAmount(blob, amount) {
+  const bmp = await createImageBitmap(blob), c = document.createElement('canvas'); c.width = bmp.width; c.height = bmp.height;
+  const g = c.getContext('2d'); g.drawImage(bmp, 0, 0);
+  if (amount) {
+    const txt = Number(amount).toLocaleString('en-US') + ' ₫', fs = Math.round(Math.max(28, c.width / 12)), pad = Math.round(fs * .45);
+    g.font = `800 ${fs}px ui-rounded, -apple-system, system-ui, sans-serif`;
+    const w = g.measureText(txt).width + pad * 2, h = fs + pad;
+    g.fillStyle = 'rgba(0,0,0,.62)'; g.beginPath(); g.roundRect(c.width - w - pad, c.height - h - pad, w, h, h / 2.6); g.fill();
+    g.fillStyle = '#ffc83d'; g.textBaseline = 'middle'; g.fillText(txt, c.width - w, c.height - h / 2 - pad + 1);
+  }
+  return new Promise(res => c.toBlob(res, 'image/jpeg', 0.82));
+}
+async function restamp() {
+  if (!curRaw) return;
+  curPhoto = await stampAmount(curRaw, $('#amount').value.replace(/\D/g, ''));
+  const old = $('#preview').src; $('#preview').src = URL.createObjectURL(curPhoto); $('#preview').hidden = false;
+  if (old.startsWith('blob:')) URL.revokeObjectURL(old);
+}
+$('#amount').addEventListener('change', restamp);
+$('#photoAmt').onclick = $('#preview').onclick = () => {
+  if (!curRaw) return;
+  openPanel(`<h3 class="ih">${tr('Amount on photo')} (₫)</h3><input id="paAmt" inputmode="numeric" placeholder="0" value="${commas($('#amount').value)}"><button id="paOk" class="big">${tr('Done')}</button>`);
+  setTimeout(() => $('#paAmt').focus(), 120);
+};
+document.addEventListener('click', async e => {
+  if (!e.target.closest('#paOk')) return;
+  $('#amount').value = commas($('#paAmt').value); closeSheet(); await restamp();
+});
 // Lưu thủ công khi cần: chạm vào ảnh trong chi tiết giao dịch → bảng chia sẻ của iOS → "Lưu hình ảnh"
 async function savePhoto(blob, name) {
   const f = new File([blob], name, { type: 'image/jpeg' });
@@ -521,6 +552,7 @@ function collectDetail() {
   return true;
 }
 async function stash() {
+  if (curRaw) curPhoto = await stampAmount(curRaw, cur.amount);   // ảnh lưu luôn mang đúng số tiền cuối cùng
   if (curPhoto) {
     cur.photo = `${cur.time.slice(0, 10).replace(/-/g, '')}_${cur.id}.jpg`;
     await putPhoto(cur.id, curPhoto);
