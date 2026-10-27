@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.47.2';
+const VERSION = '2.47.3';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -25,7 +25,7 @@ const VI = {
   'Dashboard': 'Bảng tổng hợp', 'Monthly summary': 'Tổng hợp theo tháng', 'Places in {0}': 'Số nơi thanh toán trong {0}', 'Places on {0}': 'Số nơi thanh toán ngày {0}', 'Map': 'Bản đồ',
   'Wallet': 'Ví', 'Wallets': 'Ví', 'No wallet': 'Chưa chọn ví', 'Savings rate': 'Tỷ lệ tiết kiệm', 'Projected month-end balance': 'Dự kiến còn lại cuối tháng', 'Total income': 'Tổng thu nhập',
   'Total spending': 'Tổng chi tiêu tháng', 'Average per day': 'Trung bình mỗi ngày', 'or': 'hoặc', 'Account': 'Tài khoản', 'Member': 'Thành viên', 'Admin': 'Quản trị viên', 'You': 'Bạn',
-  'Transactions': 'Giao dịch', 'Balance': 'Tổng còn lại', 'The map could not load. Check your connection.': 'Không tải được bản đồ. Kiểm tra kết nối mạng.',
+  'Transactions': 'Giao dịch', 'Total balance': 'Tổng còn lại', 'The map could not load. Check your connection.': 'Không tải được bản đồ. Kiểm tra kết nối mạng.',
   'All categories': 'Tất cả hạng mục', 'Location': 'Vị trí', 'Open in Google Maps': 'Mở Google Maps', 'Save payment location': 'Lưu vị trí khi thanh toán', 'Privacy': 'Quyền riêng tư',
   'Financial Tracking': 'Theo dõi tài chính', 'By month': 'Theo tháng', 'Balance': 'Số dư', 'Days elapsed': 'Số ngày đã qua', 'Category': 'Hạng mục', 'Edit': 'Sửa',
   'Save changes': 'Lưu thay đổi', 'Time': 'Giờ', 'Enter an amount': 'Nhập số tiền', 'Active days': 'Ngày có chi', 'transactions': 'giao dịch', 'transaction': 'giao dịch',
@@ -807,7 +807,7 @@ async function renderHome() {
   renderJarWatch(all);
   // Tổng số tiền (tất cả thu nhập) và số tiền còn lại: tính trên toàn bộ dữ liệu, không theo tháng
   const totalInc = sum(all.filter(isInc)), totalExp = sum(all.filter(r => !isInc(r))), remain = totalInc - totalExp;
-  $('#balance').innerHTML = `<div class="hl">${tr('Balance')}</div><b class="total ${remain < 0 ? 'neg' : ''}" data-key="home-remain" data-count="${remain}">${fmt(remain)}</b>` +
+  $('#balance').innerHTML = `<div class="hl">${tr('Total balance')}</div><b class="total ${remain < 0 ? 'neg' : ''}" data-key="home-remain" data-count="${remain}">${fmt(remain)}</b>` +
     `<div class="duo"><div><span>${tr('Total money')}</span><b class="pos" data-key="home-total" data-count="${totalInc}">${fmt(totalInc)}</b></div><div><span>${tr('Total spent')}</span><b data-key="home-all" data-count="${totalExp}">${fmt(totalExp)}</b></div></div>`;
   // Phần dưới chỉ của tháng đang xem
   const exp = all.filter(r => !isInc(r) && ymOf(r.time) === viewYm);
@@ -847,7 +847,7 @@ async function renderTxn() {
   }
   $('#txnHead').innerHTML = monthNav('', true) +
     `<div class="hl">${tr(inc ? 'Income in {0}' : 'Spent in {0}', monthLabel(viewYm))}</div><b class="total" data-key="txn-sum" data-count="${tot}">${fmt(tot)}</b>` +
-    `<div class="duo w"><div><span>${tr('Balance')}</span><b>${fmt(totalInc - totalExp)}</b></div><div><span>${tr(inc ? 'Income' : 'Expense')}</span><b>${items.length}</b></div></div>`;
+    `<div class="duo w"><div><span>${tr('Total balance')}</span><b>${fmt(totalInc - totalExp)}</b></div><div><span>${tr(inc ? 'Income' : 'Expense')}</span><b>${items.length}</b></div></div>`;
   runCounts($('#txnHead'));
   await fillDays($('#txnList'), items);
   if (!items.length) $('#txnList').innerHTML = `<p class="hint">${tr('No transactions in this month.')}</p>`;
@@ -1118,7 +1118,7 @@ async function showInfo(kind, arg, ymArg) {
       ([...months].reverse().map(ym => infoRow(monthLabel(ym), fmt(f(ym)), '', kind === 'income' ? 'pos' : 'neg')).join('') || `<p class="hint">${tr('No data yet')}</p>`);
   } else if (kind === 'remain') {
     let cum = 0; const rows = months.map(ym => { const n = incOf(ym) - expOf(ym); cum += n; return infoRow(monthLabel(ym), (n >= 0 ? '+' : '') + fmt(n), `${tr('Balance')} ${fmt(cum)}`, n < 0 ? 'neg' : 'pos'); }).reverse();
-    html = head(tr('Balance'), fmt(cum)) + `<h3 class="ih">${tr('By month')}</h3>` + (rows.join('') || `<p class="hint">${tr('No data yet')}</p>`);
+    html = head(tr('Total balance'), fmt(cum)) + `<h3 class="ih">${tr('By month')}</h3>` + (rows.join('') || `<p class="hint">${tr('No data yet')}</p>`);
   } else if (kind === 'month') {
     const exp = inM(viewYm, r => !isInc(r)), tot = sum(exp), by = Object.entries(sumBy(exp, r => r.category)).sort((a, b) => b[1] - a[1]);
     html = head(tr('Spent in {0}', monthLabel(viewYm)), fmt(tot)) + `<h3 class="ih">${tr('By category')}</h3>` +
