@@ -688,3 +688,8 @@ header{background:color-mix(in srgb,var(--bg) 78%,transparent)}
   body{--addb:calc(var(--bar,70px) + 24px)}
   body:has(#v-txn:not([hidden])){--addb:calc(var(--tb,170px) + 18px)}
 }
+
+@media not all and (min-width:1000px) and (hover:hover){
+  body:has(#v-txn:not([hidden])) .fab-scan{bottom:calc(var(--tb,170px) + 18px)}
+  body.away:has(#v-txn:not([hidden])) .fab-scan{bottom:calc(22px + env(safe-area-inset-bottom))}
+}
