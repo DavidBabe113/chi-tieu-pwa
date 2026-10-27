@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.36.1';
+const VERSION = '2.37.0';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -835,7 +835,10 @@ async function renderMap(items) {
   }
   if (!leaf) {
     leaf = L.map('map', { zoomControl: true, attributionControl: true }).setView([16.05, 108.2], 5);
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(leaf);
+    const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' });
+    let bad = 0;   // CARTO là nguồn chính; lỗi nhiều ô liên tiếp thì chuyển sang OpenStreetMap
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { maxZoom: 19, subdomains: 'abcd', attribution: '© OpenStreetMap © CARTO' })
+      .on('tileerror', function () { if (++bad === 3) { leaf.removeLayer(this); osm.addTo(leaf); } }).addTo(leaf);
     leafLayer = L.layerGroup().addTo(leaf);
   }
   leafLayer.clearLayers();
