@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.46.1';
+const VERSION = '2.47.0';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -29,7 +29,7 @@ const VI = {
   'All categories': 'Tất cả hạng mục', 'Location': 'Vị trí', 'Open in Google Maps': 'Mở Google Maps', 'Save payment location': 'Lưu vị trí khi thanh toán', 'Privacy': 'Quyền riêng tư',
   'Financial Tracking': 'Theo dõi tài chính', 'By month': 'Theo tháng', 'Balance': 'Số dư', 'Days elapsed': 'Số ngày đã qua', 'Category': 'Hạng mục', 'Edit': 'Sửa',
   'Save changes': 'Lưu thay đổi', 'Time': 'Giờ', 'Enter an amount': 'Nhập số tiền', 'Active days': 'Ngày có chi', 'transactions': 'giao dịch', 'transaction': 'giao dịch',
-  'Total money': 'Tổng số tiền', 'Spent so far': 'Đã chi tổng cộng', 'Spent in {0}': 'Đã chi trong {0}', 'Income in {0}': 'Thu nhập trong {0}', 'Spending chart': 'Biểu đồ chi tiêu',
+  'Total money': 'Tổng số tiền', 'Total spent': 'Tổng đã chi', 'Spent in {0}': 'Đã chi trong {0}', 'Income in {0}': 'Thu nhập trong {0}', 'Spending chart': 'Biểu đồ chi tiêu',
   'Peak day': 'Ngày chi nhiều nhất', 'Remove': 'Xoá', 'No data yet': 'Chưa có dữ liệu', 'Previous month': 'Tháng trước', 'Next month': 'Tháng sau', 'Today': 'Hôm nay',
   'Yesterday': 'Hôm qua', 'No transactions in this month.': 'Chưa có giao dịch trong tháng này.', 'Did the transfer go through?': 'Giao dịch đã thành công?', 'Cancel': 'Huỷ',
   'Done': 'Xong',
@@ -808,18 +808,17 @@ async function renderHome() {
   // Tổng số tiền (tất cả thu nhập) và số tiền còn lại: tính trên toàn bộ dữ liệu, không theo tháng
   const totalInc = sum(all.filter(isInc)), totalExp = sum(all.filter(r => !isInc(r))), remain = totalInc - totalExp;
   $('#balance').innerHTML = `<div class="hl">${tr('Remaining')}</div><b class="total ${remain < 0 ? 'neg' : ''}" data-key="home-remain" data-count="${remain}">${fmt(remain)}</b>` +
-    `<div class="duo"><div><span>${tr('Total money')}</span><b class="pos" data-key="home-total" data-count="${totalInc}">${fmt(totalInc)}</b></div><div><span>${tr('Spent so far')}</span><b data-key="home-all" data-count="${totalExp}">${fmt(totalExp)}</b></div></div>`;
+    `<div class="duo"><div><span>${tr('Total money')}</span><b class="pos" data-key="home-total" data-count="${totalInc}">${fmt(totalInc)}</b></div><div><span>${tr('Total spent')}</span><b data-key="home-all" data-count="${totalExp}">${fmt(totalExp)}</b></div></div>`;
   // Phần dưới chỉ của tháng đang xem
   const exp = all.filter(r => !isInc(r) && ymOf(r.time) === viewYm);
-  const spent = sum(exp);
+  const spent = sum(exp), incM = sum(all.filter(r => isInc(r) && ymOf(r.time) === viewYm));
   const by = Object.entries(sumBy(exp, r => r.category)).sort((a, b) => b[1] - a[1]);
   $('#stats').innerHTML = monthNav('') +
-    `<div class="hl">${tr('Spent in {0}', monthLabel(viewYm))}</div><b class="total" data-key="home-spent" data-count="${spent}">${fmt(spent)}</b>` +
+    `<div class="duo mduo"><div data-info="month"><span>${tr('Income')}</span><b class="pos" data-key="home-minc" data-count="${incM}">${fmt(incM)}</b></div><div data-info="month"><span>${tr('Spending')}</span><b data-key="home-spent" data-count="${spent}">${fmt(spent)}</b></div></div>` +
     (by.length ? `<div class="chart hchart">${donut(by, spent)}<div class="legend">${by.map(([k, v], i) =>
       `<div class="lg2" data-info="cat" data-arg="${esc(k)}"><i style="background:${PAL[i % PAL.length]}"></i><span>${esc(k)}</span><div class="pc"><b>${Math.round(v / spent * 100)}%</b><small>${fmt(v)}</small></div></div>`).join('')}</div></div>` : '');
   const bd = $('#balance'); bd.querySelectorAll('.hl,.total').forEach(e => e.dataset.info = 'remain');
   const duo = bd.querySelector('.duo').children; duo[0].dataset.info = 'income'; duo[1].dataset.info = 'spent';
-  $('#stats').querySelectorAll('.hl,.total').forEach(e => e.dataset.info = 'month');
   runCounts($('#balance')); runCounts($('#stats'));
   renderDash(all);
 }
@@ -1142,8 +1141,8 @@ async function showInfo(kind, arg, ymArg) {
     const el = viewYm === nowYm() ? new Date().getDate() : dim, avg = tot / Math.max(1, el);
     if (kind === 'est') {
       const inc = incOf(viewYm), left = inc - avg * dim;
-      html = inc ? head(tr('Projected remaining'), fmt(left), left < 0 ? 'neg' : 'in') + infoRow(tr('Total income'), fmt(inc), '', 'pos') + infoRow(tr('Spent so far'), fmt(tot), '', 'neg') + infoRow(tr('Days elapsed'), el + '/' + dim) + infoRow(tr('Average per day'), fmt(avg)) + infoRow(tr('Month-end estimate'), fmt(avg * dim), '', 'neg')
-        : head(tr('Month-end estimate'), fmt(avg * dim)) + infoRow(tr('Spent so far'), fmt(tot)) + infoRow(tr('Days elapsed'), el + '/' + dim) + infoRow(tr('Average per day'), fmt(avg));
+      html = inc ? head(tr('Projected remaining'), fmt(left), left < 0 ? 'neg' : 'in') + infoRow(tr('Total income'), fmt(inc), '', 'pos') + infoRow(tr('Total spent'), fmt(tot), '', 'neg') + infoRow(tr('Days elapsed'), el + '/' + dim) + infoRow(tr('Average per day'), fmt(avg)) + infoRow(tr('Month-end estimate'), fmt(avg * dim), '', 'neg')
+        : head(tr('Month-end estimate'), fmt(avg * dim)) + infoRow(tr('Total spent'), fmt(tot)) + infoRow(tr('Days elapsed'), el + '/' + dim) + infoRow(tr('Average per day'), fmt(avg));
     }
     else {
       const byDay = {}; exp.forEach(r => { const k = new Date(r.time).getDate(); byDay[k] = (byDay[k] || 0) + Number(r.amount); });
