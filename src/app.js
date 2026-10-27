@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.45.1';
+const VERSION = '2.45.2';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -226,6 +226,7 @@ function show(v, mode = true) {
   if (!inner) $('#tabs').style.setProperty('--i', Math.max(0, TABKEYS.indexOf(v)));
   document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === v));
   window.scrollTo(0, 0);
+  placeFabs();
   if (v === 'home') renderHome();
   if (v === 'txn') renderTxn();
   if (v === 'jars') renderJars();
@@ -1624,3 +1625,15 @@ initAccount();
     ly = y;
   }, { passive: true });
 }
+
+// Nút quét QR / nút + / menu luôn nằm phía trên thanh dưới, tính theo chiều cao thật của thanh (không đoán số cố định)
+function placeFabs() {
+  const top = el => { const cs = getComputedStyle(el); return el.offsetHeight ? el.offsetHeight + (parseFloat(cs.bottom) || 0) : 0; };
+  requestAnimationFrame(() => {
+    const st = document.body.style;
+    st.setProperty('--bar', top($('#tabs')) + 'px');
+    st.setProperty('--tb', (top(document.querySelector('.txnbar')) || top($('#tabs'))) + 'px');
+  });
+}
+addEventListener('resize', placeFabs);
+placeFabs();

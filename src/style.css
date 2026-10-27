@@ -682,3 +682,9 @@ header{background:color-mix(in srgb,var(--bg) 78%,transparent)}
   .fab-scan{width:68px;height:68px}
   #addMenu{right:16px;bottom:calc(var(--addb) + 66px);z-index:22;transition:bottom .3s var(--ease)}
 }
+
+@media not all and (min-width:1000px) and (hover:hover){
+  .fab-scan{bottom:calc(var(--bar,70px) + 18px)}
+  body{--addb:calc(var(--bar,70px) + 24px)}
+  body:has(#v-txn:not([hidden])){--addb:calc(var(--tb,170px) + 18px)}
+}
