@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.48.1';
+const VERSION = '2.48.2';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -54,7 +54,7 @@ const VI = {
   'Face ID failed, enter your PIN': 'Face ID không thành công, hãy nhập mã PIN', 'Face ID could not be turned on on this device': 'Không bật được Face ID trên thiết bị này',
   'To reset a forgotten PIN, delete the app icon and add it again from Safari. Data on this phone that is not synced yet is lost.': 'Quên mã PIN thì xoá icon app rồi thêm lại từ Safari. Dữ liệu trên máy chưa đồng bộ sẽ mất.',
   'Data': 'Dữ liệu', '📊 Open Google Sheet': '📊 Mở Google Sheet', 'Google Sheet file link': 'Link file Google Sheet',
-  'Google Apps Script link (Web App)': 'Link Google Apps Script (Web App)', 'Reset app': 'Đặt lại app', 'Photos': 'Ảnh', 'Photos in {0}': 'Ảnh trong {0}', 'No photos in this month.': 'Chưa có ảnh trong tháng này.', 'Amount on photo': 'Số tiền trên ảnh', 'Skip': 'Bỏ qua', '₫ + Amount on photo': '₫ + Số tiền trên ảnh', '{0} on alert': '{0} hũ báo động', '{0} to watch': '{0} hũ cần chú ý',
+  'Google Apps Script link (Web App)': 'Link Google Apps Script (Web App)', 'Reset app': 'Đặt lại app', 'Not available': 'Không có', 'Photos': 'Ảnh', 'Photos in {0}': 'Ảnh trong {0}', 'No photos in this month.': 'Chưa có ảnh trong tháng này.', 'Amount on photo': 'Số tiền trên ảnh', 'Skip': 'Bỏ qua', '₫ + Amount on photo': '₫ + Số tiền trên ảnh', '{0} on alert': '{0} hũ báo động', '{0} to watch': '{0} hũ cần chú ý',
   'All good': 'Tất cả đều tốt', 'Good': 'Tốt', 'Moderate': 'Trung bình', 'Alert': 'Báo động', 'Choose an icon': 'Chọn biểu tượng', 'Less': 'Ít', 'More': 'Nhiều', 'Change': 'Đổi',
   'Goal reached': 'Đã đạt mục tiêu', 'Overdue': 'Quá hạn', 'Due today': 'Đến hạn hôm nay', '{0} days left': 'Còn {0} ngày', 'Completed': 'Hoàn thành', '{0} to go': 'Còn {0}',
   'Set your first goal': 'Đặt mục tiêu đầu tiên', 'Save for a trip, a laptop, a rainy day…': 'Tiết kiệm cho chuyến đi, laptop, quỹ dự phòng…', 'Move to Trash': 'Chuyển vào thùng rác',
@@ -472,6 +472,13 @@ function renderCats() {
   });
 }
 const ymd = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+// Lấy vị trí: thử chính xác cao 8 giây, không được thì thử lại mức thường (trong nhà vẫn lấy được); lưu giao dịch sẽ chờ tối đa vài giây để kịp có vị trí
+let curLocP = null;
+function locate(rec) {
+  if (cfg.get('locOn', '1') === '0' || !navigator.geolocation) return Promise.resolve();
+  const ask = opt => new Promise(res => navigator.geolocation.getCurrentPosition(p => { rec.loc = { lat: +p.coords.latitude.toFixed(5), lng: +p.coords.longitude.toFixed(5), acc: Math.round(p.coords.accuracy) }; res(true); }, () => res(false), opt));
+  return ask({ enableHighAccuracy: true, timeout: 8000, maximumAge: 300000 }).then(ok => ok || ask({ enableHighAccuracy: false, timeout: 8000, maximumAge: 1800000 }));
+}
 function openDetail() {
   $('#amount').value = commas(cur.amount || '');
   $('#note').value = cur.note;
@@ -480,10 +487,7 @@ function openDetail() {
   $('.photo').hidden = false; $('#payBox').hidden = inc; payPick = null; payTab = 'bank'; $('#bankQ').value = ''; $('#bankQ').hidden = true; $('#bankQ').placeholder = tr('Search'); renderBanks(); $('#toBank').hidden = inc; $('#saveOnly').hidden = inc; $('#saveIncome').hidden = !inc;
   show('detail');
   // Ghi lại vị trí lúc nhập số tiền (cần bạn cho phép định vị; tắt được trong Cài đặt)
-  const rec = cur; rec.loc = null;
-  if (cfg.get('locOn', '1') !== '0' && navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(p => { rec.loc = { lat: +p.coords.latitude.toFixed(5), lng: +p.coords.longitude.toFixed(5), acc: Math.round(p.coords.accuracy) }; }, () => {}, { enableHighAccuracy: true, timeout: 10000, maximumAge: 120000 });
-  }
+  const rec = cur; rec.loc = null; curLocP = locate(rec);
 }
 const commas = v => { const d = String(v).replace(/\D/g, ''); return d ? Number(d).toLocaleString('en-US') : ''; };
 document.addEventListener('input', e => { if (e.target.matches('input[inputmode="numeric"]')) e.target.value = commas(e.target.value); });
@@ -587,6 +591,8 @@ function collectDetail() {
   return true;
 }
 async function stash() {
+  if (!cur.loc && curLocP) await Promise.race([curLocP, new Promise(r => setTimeout(r, 4000))]);   // chờ vị trí tối đa 4 giây
+
   if (curRaw) curPhoto = await stampAmount(curRaw, cur.amount);   // ảnh lưu luôn mang đúng số tiền cuối cùng
   if (curPhoto) {
     cur.photo = `${cur.time.slice(0, 10).replace(/-/g, '')}_${cur.id}.jpg`;
@@ -1389,7 +1395,7 @@ async function openSheet(r) {
     `<div class="d-cat">${esc(r.category)}</div><div class="d-amt ${isInc(r) ? 'in' : ''}">${isInc(r) ? '+' : ''}${fmt(r.amount)}</div>` +
     row('Category', r.category) + row('Type', isInc(r) ? tr('Income') : tr('Expense')) + row('Date', new Date(r.time).toLocaleDateString(DLOC())) + row('Time', new Date(r.time).toLocaleTimeString(DLOC(), { hour: '2-digit', minute: '2-digit' })) + row('Bank', r.bank) + row('Payee', r.payee) +
     row('Note', r.note) +
-    (r.loc ? `<div class="drow"><span>${tr('Location')}</span><b><a href="https://www.google.com/maps/search/?api=1&query=${r.loc.lat},${r.loc.lng}" target="_blank" rel="noopener">${tr('Open in Google Maps')}</a></b></div>` : '') +
+    (!r.loc ? `<div class="drow"><span>${tr('Location')}</span><b class="muted">${tr('Not available')}</b></div>` : `<div class="drow"><span>${tr('Location')}</span><b><a href="https://www.google.com/maps/search/?api=1&query=${r.loc.lat},${r.loc.lng}" target="_blank" rel="noopener">${tr('Open in Google Maps')}</a></b></div>`) +
     '<div id="sheetPhoto"></div>' +
     (r.status === 'done' ? `<button id="editTx" class="ghost">${tr('Edit')}</button><button id="delTx" class="ghost danger">${tr('Move to Trash')}</button>` : '');
   const et = $('#editTx'); if (et) et.onclick = () => editTx(r);

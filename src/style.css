@@ -705,3 +705,4 @@ header{background:color-mix(in srgb,var(--bg) 78%,transparent)}
 .sheet.center .sheet-card::before{display:none}
 .sheet-card{overscroll-behavior:contain}
 .sheet-x{display:none!important}
+.muted{color:var(--muted)}
