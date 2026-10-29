@@ -6,7 +6,7 @@
  * Cài đặt: Tiện ích mở rộng > Apps Script > dán file này > chạy hàm setup > Triển khai > Ứng dụng web
  *          (Thực thi bằng: Tôi, Ai có quyền truy cập: Bất kỳ ai) > sao chép link /exec dán vào app.
  * Sửa code sau này: Triển khai > Quản lý bản triển khai > bút chì > Phiên bản mới (link /exec giữ nguyên).
- * setup() tạo sẵn 2 tài khoản admin và annguyen (member) với mật khẩu NGẪU NHIÊN, gửi qua email cho chủ script (và ghi ở Xem > Nhật ký thực thi).
+ * Không cần tạo sẵn tài khoản: người đầu tiên tạo tài khoản trong app là admin (dùng ngay), những người sau ở trạng thái chờ và admin bấm Activate.
  */
 var VERSION = 8;
 // Email nhận thông báo khi có người tạo tài khoản mới. Để trống = gửi tới chính chủ Google đang chạy script.
@@ -73,15 +73,6 @@ function addUser_(name, hash, role, status) {
   var U = users_(), rowNum = Math.max(U.t.sh.getLastRow(), 1) + 1;
   put_(U.t, rowNum, { 'Tài khoản': name, 'Mật khẩu (hash)': hash, 'Vai trò': role, 'Trạng thái': status || 'active', 'Khoá phiên': key_(), 'Tạo lúc': new Date().toISOString() });
 }
-// Tạo admin + member với mật khẩu ngẫu nhiên (chỉ khi chưa có ai); gửi mật khẩu cho chủ script
-function ensureUsers_() {
-  if (users_().list.length) return;
-  var pw = function () { return key_().slice(0, 10); }, pa = pw(), pm = pw();
-  addUser_('admin', hash_('admin', pa), 'admin');
-  addUser_('annguyen', hash_('annguyen', pm), 'member');
-  Logger.log('admin / ' + pa + '   annguyen / ' + pm);
-  notify_('Tài khoản ban đầu', 'Tài khoản admin: ' + pa + ' | Tài khoản annguyen: ' + pm + ' | Đổi mật khẩu ngay sau khi đăng nhập (Cài đặt > Account > Change password).');
-}
 // Hợp lệ khi tài khoản còn hoạt động và khoá phiên khớp (đổi mật khẩu / khoá tài khoản thì khoá phiên đổi → thiết bị cũ phải đăng nhập lại)
 function auth_(r, needAdmin) {
   var u = find_(users_().list, r.u);
@@ -103,7 +94,9 @@ function action_(r) {
     if (!/^[A-Za-z0-9_.-]{3,20}$/.test(String(r.u || ''))) return { ok: false, error: 'name' };
     if (find_(U.list, r.u)) return { ok: false, error: 'exists' };
     if (!r.h) return { ok: false, error: 'bad' };
-    addUser_(r.u, r.h, 'member', 'pending');   // chờ admin kích hoạt mới đăng nhập được
+    var first = !U.list.length;   // người đầu tiên tạo tài khoản là admin và dùng được ngay
+    addUser_(r.u, r.h, first ? 'admin' : 'member', first ? 'active' : 'pending');   // người sau chờ admin kích hoạt
+    if (first) { u = find_(users_().list, r.u); return { ok: true, user: u.name, role: u.role, token: u.key }; }
     notify_('Tài khoản mới chờ kích hoạt: ' + r.u, 'Người dùng "' + r.u + '" vừa tự tạo tài khoản trên app Financial Tracking lúc ' + new Date().toLocaleString('vi-VN') + '. Vào app > Cài đặt > Users > Activate để cho phép sử dụng, hoặc Delete nếu không nhận ra.');
     return { ok: true, pending: true };
   }
@@ -233,12 +226,11 @@ function saveJars_(r) {
   });
 }
 
-/** Chạy 1 lần: tạo đủ các tab, 2 tài khoản mặc định và tab ThongKe tổng hợp theo tháng (cũng xin quyền gửi email). */
+/** Chạy 1 lần (tuỳ chọn): tạo đủ các tab và tab ThongKe tổng hợp theo tháng; cũng xin quyền gửi email. */
 function setup() {
   MailApp.getRemainingDailyQuota();
   var ct = tab_('ChiTieu'), tn = tab_('ThuNhap');
   tab_('6Hu');
-  ensureUsers_();
   var ss = SpreadsheetApp.getActive(), st = ss.getSheetByName('ThongKe') || ss.insertSheet('ThongKe');
   var L = function (t, h) { return t.sh.getRange(1, t.col[h]).getA1Notation().replace('1', ''); };
   st.clear();
