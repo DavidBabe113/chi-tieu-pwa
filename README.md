@@ -1,6 +1,6 @@
 # Financial Tracking (PWA)
 
-Ứng dụng chi tiêu cá nhân cho iPhone (chạy được cả trên laptop): quét QR chuyển khoản, ghi chi tiêu / thu nhập, 6 hũ, mục tiêu tiết kiệm, bản đồ nơi thanh toán, xuất Excel. Không cần cài từ App Store: mở bằng Safari rồi **Chia sẻ > Thêm vào Màn hình chính**.
+Ứng dụng chi tiêu cá nhân cho iPhone: quét QR chuyển khoản, ghi chi tiêu / thu nhập, 6 hũ, mục tiêu tiết kiệm, bản đồ nơi thanh toán, xuất Excel. Không cần cài từ App Store: mở bằng Safari rồi **Chia sẻ > Thêm vào Màn hình chính**.
 
 - App: https://davidbabe113.github.io/chi-tieu-pwa/
 - Dữ liệu giao dịch lưu trong máy (IndexedDB); số tiền, hạng mục, ngân hàng được đồng bộ lên **Google Sheet riêng** qua Apps Script. Ảnh hoá đơn chỉ ở trong máy.
@@ -21,7 +21,6 @@
 | `vendor/` | jsQR, Leaflet (chỉ nạp khi cần quét ảnh / mở bản đồ) |
 | `apps-script/Code.gs` | Mã Google Apps Script nhận giao dịch và ghi vào Sheet (ChiTieu, ThuNhap, 6Hu, ThongKe) |
 | `build.mjs` | Dựng bản nén: `node build.mjs` |
-| `serve.mjs`, `start-pc.bat` | Chạy trên máy tính: bấm đúp `start-pc.bat` (cần Node.js) rồi mở http://localhost:8080 |
 
 ## Phát hành
 1. Sửa trong `src/`.
