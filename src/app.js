@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.50.0';
+const VERSION = '2.51.0';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -58,6 +58,15 @@ const VI = {
   'All good': 'Tất cả đều tốt', 'Good': 'Tốt', 'Moderate': 'Trung bình', 'Alert': 'Báo động', 'Choose an icon': 'Chọn biểu tượng', 'Less': 'Ít', 'More': 'Nhiều', 'Change': 'Đổi',
   'Goal reached': 'Đã đạt mục tiêu', 'Overdue': 'Quá hạn', 'Due today': 'Đến hạn hôm nay', '{0} days left': 'Còn {0} ngày', 'Completed': 'Hoàn thành', '{0} to go': 'Còn {0}',
   'Set your first goal': 'Đặt mục tiêu đầu tiên', 'Save for a trip, a laptop, a rainy day…': 'Tiết kiệm cho chuyến đi, laptop, quỹ dự phòng…', 'Move to Trash': 'Chuyển vào thùng rác',
+  'Sign in': 'Đăng nhập', 'Create account': 'Tạo tài khoản', 'I already have an account': 'Tôi đã có tài khoản', 'Keep me signed in': 'Giữ đăng nhập mãi', 'Sign out': 'Đăng xuất', 'Sign out?': 'Đăng xuất?',
+  'Username': 'Tên đăng nhập', 'Password': 'Mật khẩu', 'Repeat password': 'Nhập lại mật khẩu', 'Current password': 'Mật khẩu hiện tại', 'New password': 'Mật khẩu mới', 'Change password': 'Đổi mật khẩu', 'Password changed': 'Đã đổi mật khẩu',
+  'Passwords do not match': 'Hai mật khẩu không khớp', 'Your session ended. Sign in again.': 'Phiên đăng nhập đã hết. Hãy đăng nhập lại.', 'Account created. Wait for the admin to activate it, then sign in.': 'Đã tạo tài khoản. Chờ admin kích hoạt rồi đăng nhập.',
+  'Wrong username or password': 'Sai tên đăng nhập hoặc mật khẩu', 'This account is blocked': 'Tài khoản này đã bị khoá', 'Waiting for the admin to activate this account': 'Đang chờ admin kích hoạt tài khoản này', 'That username is taken': 'Tên đăng nhập đã tồn tại',
+  'Username: 3-20 letters, numbers, . _ -': 'Tên đăng nhập: 3-20 ký tự gồm chữ, số, . _ -', 'No connection': 'Không có kết nối', 'Enter the Google Apps Script link': 'Nhập link Google Apps Script', 'Password needs at least 6 characters': 'Mật khẩu cần ít nhất 6 ký tự',
+  'User not found': 'Không tìm thấy người dùng', 'You cannot do this to your own account': 'Không thể làm việc này với chính tài khoản của bạn', 'At least one admin is required': 'Phải còn ít nhất một admin', 'Something went wrong': 'Có lỗi xảy ra',
+  'Manage users': 'Quản lý người dùng', 'Add user': 'Thêm người dùng', 'Active': 'Đang hoạt động', 'Blocked': 'Đã khoá', 'Block': 'Khoá', 'Unblock': 'Mở khoá', 'Activate': 'Kích hoạt', 'Reset password': 'Cấp lại mật khẩu',
+  'Make admin': 'Cấp quyền admin', 'Make member': 'Hạ xuống member', 'Delete': 'Xoá', 'Delete user {0}?': 'Xoá người dùng {0}?', 'New password for {0} (at least 6 characters)': 'Mật khẩu mới cho {0} (ít nhất 6 ký tự)', "All users' data": 'Dữ liệu của mọi người dùng',
+  "Collect all users' data": 'Gom dữ liệu mọi người dùng',
   'Trash': 'Thùng rác', 'Restore': 'Khôi phục', 'Delete forever': 'Xoá vĩnh viễn', 'Deleted': 'Đã xoá', 'Goal': 'Mục tiêu', 'Empty Trash': 'Dọn sạch thùng rác',
   'Trash is empty': 'Thùng rác trống', 'Delete everything in the Trash forever?': 'Xoá vĩnh viễn mọi thứ trong thùng rác?',
   'Delete forever? This cannot be undone.': 'Xoá vĩnh viễn? Không thể hoàn tác.', 'Deadline (from today)': 'Hạn chót (tính từ hôm nay)', 'Years': 'Năm', 'Months': 'Tháng', 'Days': 'Ngày',
@@ -325,7 +334,7 @@ $('#addMenu').onclick = e => {
 document.addEventListener('click', e => { if (!$('#addMenu').hidden && !e.target.closest('#addMenu,#btnManual')) $('#addMenu').hidden = true; });
 
 function newRec() {
-  return { type: 'expense', by: 'local', fromQr: false, acc: '', bin: '', id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), time: new Date().toISOString(), category: '', amount: '', note: '', payee: '', bank: '', photo: '', status: 'draft', synced: false };
+  return { type: 'expense', by: sess ? sess.u : '', fromQr: false, acc: '', bin: '', id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), time: new Date().toISOString(), category: '', amount: '', note: '', payee: '', bank: '', photo: '', status: 'draft', synced: false };
 }
 
 const scanCv = document.createElement('canvas'), scanCx = scanCv.getContext('2d', { willReadFrequently: true });
@@ -675,15 +684,16 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden && cu
 // ---------- đồng bộ ----------
 async function post(r) {
   const url = cfg.get('sheetUrl', '');
-  if (!url) return false;
+  if (!url || !sess) return false;
   try {
     let body = r;
     if (r.time && r.type !== 'jars') {   // ngày và giờ thành hai cột riêng trong Sheet
       const d = new Date(r.time);
       body = { ...r, date: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`, clock: `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` };
     }
-    await fetch(url, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(body) });
-    return true;
+    const j = await (await fetch(url, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ ...body, u: sess.u, t: sess.t }) })).json();
+    if (j.auth) signOut(true);
+    return !!j.ok;
   } catch { return false; }
 }
 function markJars(ym) {
@@ -701,14 +711,14 @@ function jarSnapshot(ym, recs) {
 }
 async function flushJars() {
   const dirty = getJSON('jarsDirty', []);
-  if (!dirty.length || !cfg.get('sheetUrl', '')) return;
+  if (!dirty.length || !cfg.get('sheetUrl', '') || !sess) return;
   const recs = await rawDone(), left = [];
   for (const ym of dirty) { if (!(await post(jarSnapshot(ym, recs)))) left.push(ym); }
   cfg.set('jarsDirty', JSON.stringify(left));
 }
 let syncing = false;
 async function sync() {
-  if (!cfg.get('sheetUrl', '') || syncing) return;
+  if (!cfg.get('sheetUrl', '') || !sess || syncing) return;
   syncing = true;
   try {
     for (const r of (await allRecs()).filter(x => x.status === 'done' && !x.synced)) {
@@ -1027,6 +1037,13 @@ function xlsxBlob(rows) {   // rows[0] = tiêu đề; số là ô số, còn l�
 }
 let exp = { type: 'all', ym: '', cat: '', all: [] };
 const expItems = () => exp.all.filter(r => (exp.type === 'all' || (exp.type === 'in') === isInc(r)) && (!exp.ym || ymOf(r.time) === exp.ym) && (!exp.cat || r.category === exp.cat)).sort((a, b) => a.time.localeCompare(b.time));
+async function saveFile(blob, name) {   // iPhone: mở bảng chia sẻ (Lưu vào Tệp); máy tính: tải xuống
+  try {
+    const f = new File([blob], name, { type: blob.type });
+    if (navigator.canShare && navigator.canShare({ files: [f] })) { await navigator.share({ files: [f] }); return; }
+  } catch (err) { if (err && err.name === 'AbortError') return; }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
 function paintExport() {
   const base = exp.all.filter(r => exp.type === 'all' || (exp.type === 'in') === isInc(r));
   const months = [...new Set(base.map(r => ymOf(r.time)))].sort().reverse(), catsL = [...new Set(base.map(r => r.category))].filter(Boolean).sort();
@@ -1049,12 +1066,7 @@ document.addEventListener('click', async e => {
     rows.push([ymd(d), d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }), isInc(r) ? 'Income' : 'Expense', r.category || '', Number(r.amount) || 0, r.note || '', r.payee || '', r.bank || '',
       r.loc ? `https://www.google.com/maps/search/?api=1&query=${r.loc.lat},${r.loc.lng}` : '']);
   });
-  const name = `FinancialTracking_${exp.ym || 'all'}${exp.cat ? '_' + exp.cat.replace(/[^\w\p{L}]+/gu, '') : ''}.xlsx`, blob = xlsxBlob(rows);
-  try {
-    const f = new File([blob], name, { type: blob.type });
-    if (navigator.canShare && navigator.canShare({ files: [f] })) { await navigator.share({ files: [f] }); return; }
-  } catch (err) { if (err && err.name === 'AbortError') return; }
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  saveFile(xlsxBlob(rows), `FinancialTracking_${exp.ym || 'all'}${exp.cat ? '_' + exp.cat.replace(/[^\w\p{L}]+/gu, '') : ''}.xlsx`);
 });
 document.addEventListener('change', e => {
   if (e.target.id === 'xMonth') { exp.ym = e.target.value; paintExport(); }
@@ -1504,6 +1516,7 @@ $('#sheet').onclick = e => { if (e.target.id === 'sheet') closeSheet(); };
 // ---------- cài đặt: ngôn ngữ, giao diện, bảo mật, dữ liệu, phiên bản (+ nâng cao thu gọn) ----------
 function renderSettings() {
   $('#verText').textContent = VERSION;
+  paintAccount();
   $('#openSheetLink').href = cfg.get('sheetFile', SHEET_FILE);
   $('#sheetFile').value = cfg.get('sheetFile', SHEET_FILE);
   $('#pinState').textContent = tr(hasPin() ? 'On' : 'Off');
@@ -1636,6 +1649,151 @@ document.addEventListener('visibilitychange', () => {
 const TABKEYS = ['home', 'txn', 'jars', 'cats'];
 $('#tabs').style.setProperty('--n', TABKEYS.length);
 
+// ---------- tài khoản: đăng nhập một lần, admin quản lý người dùng qua Apps Script ----------
+const SESS_KEY = 'sess';
+const sessGet = () => { try { return JSON.parse(localStorage.getItem(SESS_KEY) || sessionStorage.getItem(SESS_KEY) || 'null'); } catch { return null; } };
+const sessClear = () => { try { localStorage.removeItem(SESS_KEY); sessionStorage.removeItem(SESS_KEY); } catch {} };
+const sessSave = () => { sessClear(); try { (sess.keep ? localStorage : sessionStorage).setItem(SESS_KEY, JSON.stringify(sess)); } catch {} };
+let sess = sessGet();   // {u, t, role, keep}: keep = lưu mãi, không thì chỉ giữ tới khi đóng app
+const isAdmin = () => !!sess && sess.role === 'admin';
+const pwHash = async (u, p) => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode('ft:' + u.toLowerCase() + ':' + p)))].map(b => b.toString(16).padStart(2, '0')).join('');
+async function api(a, extra = {}) {
+  const url = cfg.get('sheetUrl', '');
+  if (!url) return { ok: false, error: 'nourl' };
+  try {
+    const j = await (await fetch(url, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ a, u: sess && sess.u, t: sess && sess.t, ...extra }) })).json();
+    if (j.auth && sess) signOut(true);
+    return j;
+  } catch { return { ok: false, error: 'net' }; }
+}
+const AUTH_ERR = { bad: 'Wrong username or password', blocked: 'This account is blocked', pending: 'Waiting for the admin to activate this account', exists: 'That username is taken',
+  name: 'Username: 3-20 letters, numbers, . _ -', net: 'No connection', nourl: 'Enter the Google Apps Script link', short: 'Password needs at least 6 characters', none: 'User not found', self: 'You cannot do this to your own account', lastAdmin: 'At least one admin is required' };
+const errText = j => tr(AUTH_ERR[j.error] || 'Something went wrong');
+let authMode = 'in';
+function paintAuth() {
+  const reg = authMode === 'reg';
+  $('#authTitle').textContent = tr(reg ? 'Create account' : 'Sign in');
+  $('#auPass2').hidden = !reg; $('#auUrl').hidden = !!cfg.get('sheetUrl', '');
+  $('#auGo').textContent = tr(reg ? 'Create account' : 'Sign in');
+  $('#auSwitch').textContent = tr(reg ? 'I already have an account' : 'Create account');
+  $('#auPass').autocomplete = reg ? 'new-password' : 'current-password';
+}
+function showAuth(msg) {
+  authMode = 'in'; paintAuth(); $('#auMsg').textContent = msg || ''; $('#auPass').value = $('#auPass2').value = '';
+  $('#auth').hidden = false; $('#sheet').hidden = true; document.body.classList.remove('noscroll');
+}
+function signOut(forced) { sessClear(); sess = null; showAuth(forced ? tr('Your session ended. Sign in again.') : ''); }
+$('#auSwitch').onclick = () => { authMode = authMode === 'in' ? 'reg' : 'in'; $('#auMsg').textContent = ''; paintAuth(); };
+$('#auGo').onclick = async () => {
+  const msg = t => { $('#auMsg').textContent = tr(t); }, reg = authMode === 'reg', u = $('#auUser').value.trim(), p = $('#auPass').value;
+  if (!$('#auUrl').hidden) {
+    const v = $('#auUrl').value.trim();
+    if (!/^https:\/\/script\.google\.com\//.test(v)) { msg(AUTH_ERR.nourl); return; }
+    cfg.set('sheetUrl', v);
+  }
+  if (!/^[A-Za-z0-9_.-]{3,20}$/.test(u)) { msg(AUTH_ERR.name); return; }
+  if (p.length < 6) { msg(AUTH_ERR.short); return; }
+  if (reg && p !== $('#auPass2').value) { msg('Passwords do not match'); return; }
+  const btn = $('#auGo'); btn.disabled = true; msg('…');
+  const j = await api(reg ? 'register' : 'login', { u, h: await pwHash(u, p) });
+  btn.disabled = false;
+  if (j.ok && j.pending) { authMode = 'in'; paintAuth(); $('#auPass').value = $('#auPass2').value = ''; $('#auMsg').textContent = tr('Account created. Wait for the admin to activate it, then sign in.'); return; }
+  if (!j.ok) { $('#auMsg').textContent = errText(j); return; }
+  sess = { u: j.user, t: j.token, role: j.role, keep: $('#auKeep').checked }; sessSave();
+  $('#auth').hidden = true; $('#auPass').value = ''; show('home', false); sync();
+};
+['auUser', 'auPass', 'auPass2'].forEach(id => $('#' + id).addEventListener('keydown', e => { if (e.key === 'Enter') $('#auGo').click(); }));
+async function verifySession() {   // đổi mật khẩu / bị khoá ở máy khác thì máy này bị đăng xuất; mất mạng thì giữ nguyên
+  const j = await api('me');
+  if (j.ok && j.role !== sess.role) { sess.role = j.role; sessSave(); renderSettings(); }
+}
+
+// Cài đặt: khối tài khoản
+function paintAccount() {
+  $('#acName').textContent = sess ? sess.u : ''; $('#acRole').textContent = sess ? tr(isAdmin() ? 'Admin' : 'Member') : '';
+  $('#acKeep').checked = !!(sess && sess.keep);
+  $('#acUsers').hidden = $('#acCollect').hidden = !isAdmin();
+}
+$('#acKeep').onchange = e => { if (sess) { sess.keep = e.target.checked; sessSave(); } };
+$('#acOut').onclick = () => { if (confirm(tr('Sign out?'))) signOut(false); };
+$('#acPass').onclick = () => openPanel(`<h3 class="ih">${tr('Change password')}</h3><input id="cpOld" type="password" placeholder="${tr('Current password')}" autocomplete="current-password">` +
+  `<input id="cpNew" type="password" placeholder="${tr('New password')}" autocomplete="new-password"><input id="cpNew2" type="password" placeholder="${tr('Repeat password')}" autocomplete="new-password"><button class="big" id="cpGo">${tr('Save')}</button>`);
+async function changePass() {
+  const o = $('#cpOld').value, n = $('#cpNew').value;
+  if (n.length < 6) { toast(tr(AUTH_ERR.short)); return; }
+  if (n !== $('#cpNew2').value) { toast(tr('Passwords do not match')); return; }
+  const j = await api('changePass', { oh: await pwHash(sess.u, o), nh: await pwHash(sess.u, n) });
+  if (!j.ok) { toast(errText(j)); return; }
+  sess.t = j.token; sessSave(); closeSheet(); toast(tr('Password changed'));
+}
+
+// Admin: quản lý người dùng
+async function paintUsers() {
+  openPanel(`<h3 class="ih">${tr('Manage users')}</h3><p class="hint">…</p>`);
+  const j = await api('users');
+  if (!j.ok) { $('#sheetBody').innerHTML = `<h3 class="ih">${tr('Manage users')}</h3><p class="hint">${errText(j)}</p>`; return; }
+  const st = { active: 'Active', pending: 'Pending', blocked: 'Blocked' };
+  $('#sheetBody').innerHTML = `<h3 class="ih">${tr('Manage users')}</h3>` + j.users.map(x => {
+    const me = x.name.toLowerCase() === sess.u.toLowerCase(), n = esc(x.name);
+    return `<div class="urow"><b>${n}</b><span class="ubadge ${x.status}">${tr(st[x.status] || x.status)}</span><span class="ubadge">${tr(x.role === 'admin' ? 'Admin' : 'Member')}</span>` +
+      (me ? '' : `<div class="uact"><button class="mini" data-ua="${x.status === 'active' ? 'block' : 'activate'}" data-n="${n}">${tr(x.status === 'active' ? 'Block' : x.status === 'pending' ? 'Activate' : 'Unblock')}</button>` +
+        `<button class="mini" data-ua="reset" data-n="${n}">${tr('Reset password')}</button><button class="mini" data-ua="role" data-n="${n}" data-r="${x.role === 'admin' ? 'member' : 'admin'}">${tr(x.role === 'admin' ? 'Make member' : 'Make admin')}</button>` +
+        `<button class="mini red" data-ua="del" data-n="${n}">${tr('Delete')}</button></div>`) + `</div>`;
+  }).join('') + `<h3 class="ih">${tr('Add user')}</h3><input id="nuName" placeholder="${tr('Username')}" autocapitalize="off"><input id="nuPass" type="password" placeholder="${tr('Password')}" autocomplete="new-password">` +
+    `<select id="nuRole" class="jsel wide"><option value="member">${tr('Member')}</option><option value="admin">${tr('Admin')}</option></select><button class="big" id="nuGo">${tr('Add')}</button>`;
+}
+async function userAction(btn) {
+  const a = btn.dataset.ua, n = btn.dataset.n;
+  let j;
+  if (a === 'block' || a === 'activate') j = await api('block', { nu: n, blocked: a === 'block' });
+  else if (a === 'role') j = await api('setRole', { nu: n, role: btn.dataset.r });
+  else if (a === 'del') { if (!confirm(tr('Delete user {0}?', n))) return; j = await api('delUser', { nu: n }); }
+  else if (a === 'reset') {
+    const p = prompt(tr('New password for {0} (at least 6 characters)', n)); if (p === null) return;
+    if (p.length < 6) { toast(tr(AUTH_ERR.short)); return; }
+    j = await api('resetPass', { nu: n, nh: await pwHash(n, p) });
+  }
+  if (!j.ok) { toast(errText(j)); return; }
+  toast(tr('Done')); paintUsers();
+}
+async function addUser() {
+  const n = $('#nuName').value.trim(), p = $('#nuPass').value;
+  if (!/^[A-Za-z0-9_.-]{3,20}$/.test(n)) { toast(tr(AUTH_ERR.name)); return; }
+  if (p.length < 6) { toast(tr(AUTH_ERR.short)); return; }
+  const j = await api('addUser', { nu: n, nh: await pwHash(n, p), role: $('#nuRole').value });
+  if (!j.ok) { toast(errText(j)); return; }
+  toast(tr('Done')); paintUsers();
+}
+$('#acUsers').onclick = paintUsers;
+
+// Admin: gom dữ liệu của mọi người dùng
+let collected = null;
+async function collectAll() {
+  openPanel(`<h3 class="ih">${tr("All users' data")}</h3><p class="hint">…</p>`);
+  const j = await api('collect');
+  if (!j.ok) { $('#sheetBody').innerHTML = `<h3 class="ih">${tr("All users' data")}</h3><p class="hint">${errText(j)}</p>`; return; }
+  const rows = [['User', 'Type', 'Date', 'Time', 'Category', 'Amount (VND)', 'Note', 'Payee', 'Payment method', 'Wallet', 'Location', 'ID']], by = {};
+  [['ChiTieu', 'Expense'], ['ThuNhap', 'Income']].forEach(([tab, type]) => {
+    const [head = [], ...body] = j.data[tab] || [], ix = h => head.indexOf(h), g = (r, h) => ix(h) < 0 ? '' : r[ix(h)];
+    body.forEach(r => {
+      const u = g(r, 'Người nhập') || '—', amt = Number(String(g(r, 'Số tiền')).replace(/[^\d.-]/g, '')) || 0, o = by[u] ||= { out: 0, inc: 0, n: 0 };
+      o[type === 'Income' ? 'inc' : 'out'] += amt; o.n++;
+      rows.push([u, type, g(r, 'Ngày'), g(r, 'Giờ'), g(r, 'Hạng mục'), amt, g(r, 'Ghi chú'), g(r, 'Người nhận'), g(r, 'Ngân hàng'), g(r, 'Ví'), g(r, 'Vị trí'), g(r, 'ID')]);
+    });
+  });
+  collected = rows;
+  const names = Object.keys(by).sort();
+  $('#sheetBody').innerHTML = `<h3 class="ih">${tr("All users' data")}</h3>` + (names.length ? names.map(u => `<div class="urow"><b>${esc(u)}</b><span class="ubadge">${by[u].n} ${tr(by[u].n === 1 ? 'transaction' : 'transactions')}</span>` +
+    `<div class="uact"><span class="pos">+${fmt(by[u].inc)}</span><span class="neg">−${fmt(by[u].out)}</span></div></div>`).join('') +
+    `<button class="big" id="colGo">${tr('Export')}</button>` : `<p class="hint">${tr('No data yet')}</p>`);
+}
+$('#acCollect').onclick = collectAll;
+document.addEventListener('click', e => {
+  const id = e.target.id, ua = e.target.closest('[data-ua]');
+  if (id === 'cpGo') changePass(); else if (id === 'nuGo') addUser(); else if (ua) userAction(ua);
+  else if (id === 'colGo' && collected) saveFile(xlsxBlob(collected), `FinancialTracking_AllUsers_${ymd(new Date())}.xlsx`);
+});
+
 // ---------- khởi động ----------
 if (hasPin()) openLock('verify');
 if ('serviceWorker' in navigator) {
@@ -1645,7 +1803,7 @@ if ('serviceWorker' in navigator) {
 }
 translateDom();
 show('home', false);
-sync();
+if (sess) { sync(); verifySession(); } else showAuth();
 
 // Thanh 4 mục và thanh lọc: vuốt lên (cuộn nội dung xuống) thì ẩn, vuốt xuống thì hiện lại; ở đầu trang luôn hiện
 { let ly = 0;

@@ -708,3 +708,18 @@ header{background:color-mix(in srgb,var(--bg) 78%,transparent)}
 .muted{color:var(--muted)}
 
 .hc.sel{box-shadow:inset 0 0 0 3px var(--accent),0 0 14px 2px var(--accent);z-index:1}
+
+.auth{z-index:59;overflow:auto}
+.auth input{margin-top:10px;text-align:left}
+.auth .sw{margin-top:14px;border:0;color:#fff;padding:6px 0}
+.auth .big{background:#fff;color:#15803d;margin:8px 0 0}
+.auth .padmsg{min-height:22px;margin:10px 0 0}
+.urow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:12px 0;border-bottom:.5px solid var(--line)}
+.urow>b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.ubadge{padding:3px 10px;border-radius:980px;background:var(--fill);font:600 12px var(--font)}
+.ubadge.active{background:color-mix(in srgb,var(--ok) 20%,transparent);color:var(--ok)}
+.ubadge.pending{background:color-mix(in srgb,#f5b800 22%,transparent);color:#b88a00}
+.ubadge.blocked{background:color-mix(in srgb,var(--danger) 16%,transparent);color:var(--danger)}
+.uact{flex-basis:100%;display:flex;flex-wrap:wrap;gap:8px;font:600 14px var(--font)}
+.mini{padding:7px 12px;border:0;border-radius:980px;background:var(--fill);color:var(--fg);font:600 13px var(--font)}
+.mini.red{color:var(--danger)}

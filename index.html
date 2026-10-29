@@ -102,6 +102,13 @@
     <div class="card"><label class="sw"><span>Save payment location</span><input id="locSw" type="checkbox"><i></i></label></div>
 
     <div id="adminTop">
+      <h2>Account</h2>
+      <div class="card verrow"><span id="acName"></span><b id="acRole"></b></div>
+      <div class="card"><label class="sw"><span>Keep me signed in</span><input id="acKeep" type="checkbox"><i></i></label></div>
+      <button id="acPass" class="ghost">Change password</button>
+      <button id="acUsers" class="ghost" hidden>👥 Manage users</button>
+      <button id="acCollect" class="ghost" hidden>📦 Collect all users' data</button>
+      <button id="acOut" class="ghost">Sign out</button>
       <h2>Security</h2>
       <div class="card verrow"><span>PIN lock</span><b id="pinState"></b></div>
       <button id="pinSet" class="ghost">Set PIN</button>
@@ -146,6 +153,21 @@
   <div class="sheet-card" role="dialog" aria-modal="true">
     <button id="sheetClose" class="icon sheet-x" aria-label="Close">×</button>
     <div id="sheetBody"></div>
+  </div>
+</div>
+
+<div id="auth" class="lock auth" hidden>
+  <div class="lock-card">
+    <div class="lock-ic">💰</div>
+    <h2 id="authTitle">Sign in</h2>
+    <input id="auUrl" placeholder="Google Apps Script link" autocapitalize="off" autocorrect="off" hidden>
+    <input id="auUser" placeholder="Username" autocapitalize="off" autocorrect="off" autocomplete="username">
+    <input id="auPass" type="password" placeholder="Password" autocomplete="current-password">
+    <input id="auPass2" type="password" placeholder="Repeat password" autocomplete="new-password" hidden>
+    <label class="sw akeep"><span>Keep me signed in</span><input id="auKeep" type="checkbox" checked><i></i></label>
+    <p id="auMsg" class="padmsg"></p>
+    <button id="auGo" class="big">Sign in</button>
+    <button id="auSwitch" class="link">Create account</button>
   </div>
 </div>
 
