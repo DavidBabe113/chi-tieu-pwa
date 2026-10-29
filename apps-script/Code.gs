@@ -6,7 +6,7 @@
  * Cài đặt: Tiện ích mở rộng > Apps Script > dán file này > chạy hàm setup > Triển khai > Ứng dụng web
  *          (Thực thi bằng: Tôi, Ai có quyền truy cập: Bất kỳ ai) > sao chép link /exec dán vào app.
  * Sửa code sau này: Triển khai > Quản lý bản triển khai > bút chì > Phiên bản mới (link /exec giữ nguyên).
- * setup() tạo sẵn 2 tài khoản admin và member với mật khẩu NGẪU NHIÊN, gửi qua email cho chủ script (và ghi ở Xem > Nhật ký thực thi).
+ * setup() tạo sẵn 2 tài khoản admin và annguyen (member) với mật khẩu NGẪU NHIÊN, gửi qua email cho chủ script (và ghi ở Xem > Nhật ký thực thi).
  */
 var VERSION = 8;
 // Email nhận thông báo khi có người tạo tài khoản mới. Để trống = gửi tới chính chủ Google đang chạy script.
@@ -78,9 +78,9 @@ function ensureUsers_() {
   if (users_().list.length) return;
   var pw = function () { return key_().slice(0, 10); }, pa = pw(), pm = pw();
   addUser_('admin', hash_('admin', pa), 'admin');
-  addUser_('member', hash_('member', pm), 'member');
-  Logger.log('admin / ' + pa + '   member / ' + pm);
-  notify_('Tài khoản ban đầu', 'Tài khoản admin: ' + pa + ' | Tài khoản member: ' + pm + ' | Đổi mật khẩu ngay sau khi đăng nhập (Cài đặt > Account > Change password).');
+  addUser_('annguyen', hash_('annguyen', pm), 'member');
+  Logger.log('admin / ' + pa + '   annguyen / ' + pm);
+  notify_('Tài khoản ban đầu', 'Tài khoản admin: ' + pa + ' | Tài khoản annguyen: ' + pm + ' | Đổi mật khẩu ngay sau khi đăng nhập (Cài đặt > Account > Change password).');
 }
 // Hợp lệ khi tài khoản còn hoạt động và khoá phiên khớp (đổi mật khẩu / khoá tài khoản thì khoá phiên đổi → thiết bị cũ phải đăng nhập lại)
 function auth_(r, needAdmin) {
