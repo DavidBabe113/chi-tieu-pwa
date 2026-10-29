@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.49.2';
+const VERSION = '2.50.0';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -174,7 +174,7 @@ const putPhoto = (id, blob) => tx('photos', 'readwrite', s => s.put({ id, blob }
 const getPhoto = id => tx('photos', 'readonly', s => s.get(id)).then(x => x && x.blob);
 const delPhoto = id => tx('photos', 'readwrite', s => s.delete(id));
 const rawDone = async () => (await allRecs()).filter(r => r.status === 'done');   // toàn bộ (dùng cho đồng bộ)
-const doneRecs = async () => { const a = await rawDone(); return can('seeAll') ? a : a.filter(mine); };   // theo quyền người xem
+const doneRecs = rawDone;
 
 // ---------- trạng thái ----------
 let cur = null;          // bản ghi đang soạn
@@ -305,7 +305,7 @@ addEventListener('touchend', e => {
 // Nút +: hiện nhỏ hai lựa chọn Income / Expense, chọn xong mới hiện hạng mục
 function addMenu() {
   const m = $('#addMenu');
-  m.querySelectorAll('button').forEach(b => { b.textContent = tr(b.dataset.t === 'income' ? 'Income' : 'Expense'); b.hidden = !can(b.dataset.t === 'income' ? 'addIncome' : 'addExpense'); });
+  m.querySelectorAll('button').forEach(b => { b.textContent = tr(b.dataset.t === 'income' ? 'Income' : 'Expense'); });
   m.hidden = !m.hidden;
 }
 $('#btnManual').onclick = addMenu;
@@ -325,7 +325,7 @@ $('#addMenu').onclick = e => {
 document.addEventListener('click', e => { if (!$('#addMenu').hidden && !e.target.closest('#addMenu,#btnManual')) $('#addMenu').hidden = true; });
 
 function newRec() {
-  return { type: 'expense', by: me ? me.id : '', fromQr: false, acc: '', bin: '', id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), time: new Date().toISOString(), category: '', amount: '', note: '', payee: '', bank: '', photo: '', status: 'draft', synced: false };
+  return { type: 'expense', by: 'local', fromQr: false, acc: '', bin: '', id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), time: new Date().toISOString(), category: '', amount: '', note: '', payee: '', bank: '', photo: '', status: 'draft', synced: false };
 }
 
 const scanCv = document.createElement('canvas'), scanCx = scanCv.getContext('2d', { willReadFrequently: true });
@@ -458,7 +458,7 @@ function onQr(raw, mode = 'replace') {
 document.querySelectorAll('#segType button').forEach(b => b.onclick = () => { cur.type = b.dataset.v; renderCats(); });
 function renderCats() {
   if (!cur.payee) $('#qrInfo').hidden = true;
-  const types = ['expense', 'income'].filter(k => can(k === 'expense' ? 'addExpense' : 'addIncome'));
+  const types = ['expense', 'income'];
   if (!types.includes(cur.type)) cur.type = types[0] || 'expense';
   $('#segType').hidden = cur.fromQr || types.length < 2;   // quét QR chuyển khoản luôn là chi tiêu
   document.querySelectorAll('#segType button').forEach(b => { b.hidden = !types.includes(b.dataset.v); b.classList.toggle('on', b.dataset.v === cur.type); });
@@ -601,14 +601,14 @@ async function stash() {
 }
 
 // "Save only" = chi tiền mặt, không qua ngân hàng → lưu luôn, không báo gì
-$('#saveOnly').onclick = () => { if (can('addExpense')) finishPay(false); };
+$('#saveOnly').onclick = () => { finishPay(false); };
 $('#saveIncome').onclick = async () => {
-  if (!can('addIncome') || !collectDetail()) return;
+  if (!collectDetail()) return;
   await stash();
   cur.type = 'income'; cur.status = 'done'; await putRec(cur); sync();
   goTop('home');
 };
-$('#toBank').onclick = () => { if (can('addExpense')) finishPay(true); };
+$('#toBank').onclick = () => { finishPay(true); };
 
 // ---------- chọn ngân hàng ----------
 // Chọn ngân hàng: tên viết tắt (thương hiệu) ở trên, tên đầy đủ ở dưới; có ô tìm nhanh
@@ -1279,7 +1279,7 @@ async function renderJars() {
     `</div><h2>${tr('Jars')}</h2>`;
   JAR_KEYS.forEach((k, i) => {
     h += `<div class="card jar" data-i="${i}"><div class="jtop"><span class="jic">${JAR_ICONS[i]}</span><div class="jn">${esc(jarName(i))}<small data-alloc></small><span class="jst" data-st></span></div>` +
-      `<div class="pct">${can('editJars') ? `<button class="stp" data-step="-5" data-i="${i}" aria-label="-5%">−</button>` : ''}<b data-pctv="${i}">${draftPct[i]}%</b>${can('editJars') ? `<button class="stp" data-step="5" data-i="${i}" aria-label="+5%">+</button>` : ''}</div></div>` +
+      `<div class="pct"><button class="stp" data-step="-5" data-i="${i}" aria-label="-5%">−</button><b data-pctv="${i}">${draftPct[i]}%</b><button class="stp" data-step="5" data-i="${i}" aria-label="+5%">+</button></div></div>` +
       `<div class="jbar"><i data-bar></i></div><div class="jsub"><span data-spent></span><b data-left></b></div></div>`;
   });
   h += `<div id="jarNote"></div>`;
@@ -1310,7 +1310,7 @@ function paintJars() {
   const btn = $('#saveMonth');
   btn.className = 'fab-save ' + (!ok ? 'bad' : isSame ? 'done' : '');   // nút tròn dấu tích: đỏ = tổng chưa đủ 100%, xanh lá = đã lưu
   btn.title = !ok ? tr('Percentages must add up to 100') : isSame ? tr('Saved for {0}', monthLabel(viewYm)) : tr('Save {0}', monthLabel(viewYm));
-  btn.disabled = !ok || isSame; btn.hidden = !(can('editJars') && curView === 'jars');
+  btn.disabled = !ok || isSame; btn.hidden = curView !== 'jars';
   $('#jarNote').innerHTML = c.unassigned > 0 ? `<div class="card jsub">${tr('Not in any jar: <b>{0}</b>', fmt(c.unassigned))}</div>` : '';
 }
 $('#jarsBody').addEventListener('click', e => {
@@ -1323,7 +1323,7 @@ $('#jarsBody').addEventListener('click', e => {
   if (monthClick(e)) renderJars();
 });
 $('#saveMonth').onclick = () => {
-  if (!can('editJars') || $('#saveMonth').disabled) return;
+  if ($('#saveMonth').disabled) return;
   const s = pctSaved(); s[viewYm] = draftPct.slice(); cfg.set('jarpct', JSON.stringify(s));
   markJars(viewYm); sync(); paintJars();
 };
@@ -1632,17 +1632,9 @@ document.addEventListener('visibilitychange', () => {
   else if (!$('#lock').hidden && lockMode === 'verify' && faceOn()) tryFace(true);   // quay lại thì thử Face ID
 });
 
-// ---------- người dùng: app chạy mặc định với vai trò member (không đăng nhập); admin/member quản lý ở phần mềm khác ----------
-let TABKEYS = ['home', 'txn', 'jars', 'cats'];
-const legacyAdmin = () => (getJSON('users', []).find(u => u.role === 'admin') || {}).id;   // dữ liệu cũ gắn với tài khoản admin trước đây
-const me = { id: legacyAdmin() || 'local', name: 'Member', role: 'member' };
-const can = () => true;
-const mine = () => true;
-function applyPermissions() {
-  document.querySelectorAll('#tabs button').forEach(b => b.hidden = false);
-  $('#tabs').style.setProperty('--n', TABKEYS.length);
-}
-function initAccount() { applyPermissions(); show('home', false); sync(); }
+// ---------- thanh 4 mục ----------
+const TABKEYS = ['home', 'txn', 'jars', 'cats'];
+$('#tabs').style.setProperty('--n', TABKEYS.length);
 
 // ---------- khởi động ----------
 if (hasPin()) openLock('verify');
@@ -1652,7 +1644,8 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.addEventListener('controllerchange', () => { if (!reloaded) { reloaded = true; location.reload(); } });
 }
 translateDom();
-initAccount();
+show('home', false);
+sync();
 
 // Thanh 4 mục và thanh lọc: vuốt lên (cuộn nội dung xuống) thì ẩn, vuốt xuống thì hiện lại; ở đầu trang luôn hiện
 { let ly = 0;

@@ -7,7 +7,7 @@
 - App không gắn với ngân hàng nào: chọn ngân hàng / ví chỉ để mở app tương ứng, bạn tự xác thực ở đó.
 
 ## Cài đặt
-1. Tạo Google Sheet, mở Tiện ích mở rộng > Apps Script, dán mã web app, triển khai (Tôi / Bất kỳ ai), lấy link `/exec`.
+1. Tạo Google Sheet, mở Tiện ích mở rộng > Apps Script, dán toàn bộ `apps-script/Code.gs`, chạy hàm `setup` một lần (cấp quyền), rồi Triển khai > Ứng dụng web (Tôi / Bất kỳ ai), lấy link `/exec`. Mở link `/exec` trên trình duyệt thấy `{"ok":true,...}` là chạy.
 2. Mở app > ⚙ > Advanced > dán link `/exec` và link file Sheet. Link `/exec` chỉ lưu trên thiết bị, không nằm trong repo.
 3. Dùng chung dữ liệu giữa điện thoại và laptop: dán cùng link `/exec` trên cả hai.
 
@@ -19,6 +19,7 @@
 | `index.html`, `manifest.webmanifest`, `sw.js` | Giao diện, khai báo PWA, service worker (cache trước, chạy offline) |
 | `scan-worker.js` | Giải mã QR trong Web Worker |
 | `vendor/` | jsQR, Leaflet (chỉ nạp khi cần quét ảnh / mở bản đồ) |
+| `apps-script/Code.gs` | Mã Google Apps Script nhận giao dịch và ghi vào Sheet (ChiTieu, ThuNhap, 6Hu, ThongKe) |
 | `build.mjs` | Dựng bản nén: `node build.mjs` |
 | `serve.mjs`, `start-pc.bat` | Chạy trên máy tính: bấm đúp `start-pc.bat` (cần Node.js) rồi mở http://localhost:8080 |
 
