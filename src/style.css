@@ -706,3 +706,16 @@ header{background:color-mix(in srgb,var(--bg) 78%,transparent)}
 .sheet-card{overscroll-behavior:contain}
 .sheet-x{display:none!important}
 .muted{color:var(--muted)}
+
+.crow.wrapb{flex-wrap:wrap}
+.bgt{flex-basis:100%;display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:2px}
+.bgt label{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);flex:1;min-width:150px}
+.binp{width:110px;margin:0;padding:8px 10px;border-radius:10px;background:var(--fill);box-shadow:none;font-size:14px;text-align:right}
+.bbar{height:8px;border-radius:99px;background:var(--fill);overflow:hidden;flex:1;min-width:60px}
+.bbar i{display:block;height:100%;border-radius:99px;background:var(--ok,#34c759)}
+.bbar.mid i{background:#f5b800}.bbar.bad i{background:var(--danger)}
+.bgt small.bad,.brow b.bad{color:var(--danger)}.bgt small.mid,.brow b.mid{color:#b88a00}
+.bwatch{margin-top:12px}
+.brow{display:flex;align-items:center;gap:10px;margin-top:10px;font-size:14px}
+.brow span{width:38%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.brow b{width:44px;text-align:right;font-size:13px}

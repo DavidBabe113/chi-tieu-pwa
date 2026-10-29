@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.48.2';
+const VERSION = '2.49.0';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -57,7 +57,7 @@ const VI = {
   'Google Apps Script link (Web App)': 'Link Google Apps Script (Web App)', 'Reset app': 'Đặt lại app', 'Not available': 'Không có', 'Photos': 'Ảnh', 'Photos in {0}': 'Ảnh trong {0}', 'No photos in this month.': 'Chưa có ảnh trong tháng này.', 'Amount on photo': 'Số tiền trên ảnh', 'Skip': 'Bỏ qua', '₫ + Amount on photo': '₫ + Số tiền trên ảnh', '{0} on alert': '{0} hũ báo động', '{0} to watch': '{0} hũ cần chú ý',
   'All good': 'Tất cả đều tốt', 'Good': 'Tốt', 'Moderate': 'Trung bình', 'Alert': 'Báo động', 'Choose an icon': 'Chọn biểu tượng', 'Less': 'Ít', 'More': 'Nhiều', 'Change': 'Đổi',
   'Goal reached': 'Đã đạt mục tiêu', 'Overdue': 'Quá hạn', 'Due today': 'Đến hạn hôm nay', '{0} days left': 'Còn {0} ngày', 'Completed': 'Hoàn thành', '{0} to go': 'Còn {0}',
-  'Set your first goal': 'Đặt mục tiêu đầu tiên', 'Save for a trip, a laptop, a rainy day…': 'Tiết kiệm cho chuyến đi, laptop, quỹ dự phòng…', 'Move to Trash': 'Chuyển vào thùng rác',
+  'Set your first goal': 'Đặt mục tiêu đầu tiên', 'Save for a trip, a laptop, a rainy day…': 'Tiết kiệm cho chuyến đi, laptop, quỹ dự phòng…', 'Move to Trash': 'Chuyển vào thùng rác', 'Monthly budget': 'Ngân sách tháng', 'Budgets': 'Ngân sách',
   'Trash': 'Thùng rác', 'Restore': 'Khôi phục', 'Delete forever': 'Xoá vĩnh viễn', 'Deleted': 'Đã xoá', 'Goal': 'Mục tiêu', 'Empty Trash': 'Dọn sạch thùng rác',
   'Trash is empty': 'Thùng rác trống', 'Delete everything in the Trash forever?': 'Xoá vĩnh viễn mọi thứ trong thùng rác?',
   'Delete forever? This cannot be undone.': 'Xoá vĩnh viễn? Không thể hoàn tác.', 'Deadline (from today)': 'Hạn chót (tính từ hôm nay)', 'Years': 'Năm', 'Months': 'Tháng', 'Days': 'Ngày',
@@ -184,6 +184,8 @@ let stream = null, scanning = false, curView = 'home';
 const cats = () => cfg.get('cats', DEF_CATS).split('\n').map(s => s.trim()).filter(Boolean);
 const icats = () => cfg.get('icats', DEF_ICATS).split('\n').map(s => s.trim()).filter(Boolean);
 const DEF_WALLETS = '💵 Cash\n🟣 MoMo\n🔵 ZaloPay';
+const budgets = () => getJSON('budgets', {});
+const budLv = r => r > 100 ? 'bad' : r >= 80 ? 'mid' : 'good';
 const wallets = () => cfg.get('wallets', DEF_WALLETS).split('\n').map(s => s.trim()).filter(Boolean);
 const isInc = r => r.type === 'income';       // bản ghi cũ không có type = chi tiêu
 const banks = () => cfg.get('banks', DEF_BANKS).split('\n').map(l => l.split('|').map(s => s.trim()))
@@ -807,12 +809,22 @@ function renderJarWatch(all) {
     (bad.length ? `<div class="jwa">${bad.map(j => `${esc(jarName(JAR_KEYS.indexOf(j.key)))}: ${j.remaining < 0 ? tr('Over by {0}', fmt(-j.remaining)) : tr('{0} left', fmt(j.remaining))}`).join(' · ')}</div>` : '') + `</div>`;
 }
 $('#jarWatch').onclick = e => { if (e.target.closest('[data-go="jars"]')) goTop('jars'); };
+function renderBudgetWatch(all) {
+  const b = budgets(), box = $('#budWatch'); if (!box) return;
+  const sp = sumBy(all.filter(r => !isInc(r) && ymOf(r.time) === viewYm), r => catName(r.category));
+  const rows = Object.entries(b).map(([k, v]) => [k, v, sp[k] || 0, (sp[k] || 0) / v * 100]).sort((x, y) => y[3] - x[3]);
+  if (!rows.length) { box.innerHTML = ''; return; }
+  const name = k => { const c = cats().find(c => catName(c) === k); return c || k; };
+  box.innerHTML = `<div class="card bwatch"><div class="jwh"><b>${tr('Budgets')}</b><small>${fmt(rows.reduce((a, r) => a + r[2], 0))} / ${fmt(rows.reduce((a, r) => a + r[1], 0))}</small></div>` +
+    rows.map(([k, v, s, r]) => `<div class="brow"><span>${esc(name(k))}</span><div class="bbar ${budLv(r)}"><i style="width:${Math.min(100, r)}%"></i></div><b class="${budLv(r)}">${Math.round(r)}%</b></div>`).join('') + `</div>`;
+}
 async function renderHome() {
   renderGoals();
   await renderPending();
   const all = await doneRecs();
   all.forEach(r => recById[r.id] = r);
   renderJarWatch(all);
+  renderBudgetWatch(all);
   // Tổng số tiền (tất cả thu nhập) và số tiền còn lại: tính trên toàn bộ dữ liệu, không theo tháng
   const totalInc = sum(all.filter(isInc)), totalExp = sum(all.filter(r => !isInc(r))), remain = totalInc - totalExp;
   $('#balance').innerHTML = `<div class="hl">${tr('Total balance')}</div><b class="total ${remain < 0 ? 'neg' : ''}" data-key="home-remain" data-count="${remain}">${fmt(remain)}</b>` +
@@ -1337,8 +1349,11 @@ async function renderCategories() {
   cats().forEach((c, i) => {
     const [e, ...rest] = c.split(' '); const name = rest.join(' ') || e;
     const ji = Number.isInteger(map[name.toLowerCase()]) ? map[name.toLowerCase()] : -1;
-    h += `<div class="card crow"><span class="cic">${esc(e)}</span><div class="cn">${esc(name)}<small>${tr('{0} this month', fmt(spentBy[name.toLowerCase()] || 0))}</small></div>` +
-      `<select class="jsel" data-name="${esc(name)}" aria-label="Jar">${jarOptions(ji)}</select><button class="cdel" data-i="${i}" aria-label="${tr('Remove')}">✕</button></div>`;
+    const bud = Number(budgets()[name.toLowerCase()]) || 0, sp = spentBy[name.toLowerCase()] || 0, rt = bud ? sp / bud * 100 : 0;
+    h += `<div class="card crow wrapb"><span class="cic">${esc(e)}</span><div class="cn">${esc(name)}<small>${tr('{0} this month', fmt(sp))}</small></div>` +
+      `<select class="jsel" data-name="${esc(name)}" aria-label="Jar">${jarOptions(ji)}</select><button class="cdel" data-i="${i}" aria-label="${tr('Remove')}">✕</button>` +
+      `<div class="bgt"><label>${tr('Monthly budget')}<input class="binp" inputmode="numeric" data-bname="${esc(name)}" value="${bud || ''}" placeholder="0"></label>` +
+      (bud ? `<div class="bbar ${budLv(rt)}"><i style="width:${Math.min(100, rt)}%"></i></div><small class="${budLv(rt)}">${sp > bud ? tr('Over by {0}', fmt(sp - bud)) : tr('{0} left', fmt(bud - sp))}</small>` : '') + `</div></div>`;
   });
   h += `<h2>${tr('Add a category')}</h2><div class="card addcat"><div class="arow"><label class="ico">${tr('Icon')}<input id="newEmoji" value="🏷️" maxlength="4"></label>` +
     `<label class="nm">${tr('Name')}<input id="newName" placeholder="${tr('e.g. Pets')}"></label></div>` +
@@ -1385,6 +1400,11 @@ $('#catsBody').onclick = e => {
   }
 };
 $('#catsBody').onchange = e => {
+  if (e.target.classList.contains('binp')) {
+    const b = budgets(), k = e.target.dataset.bname.toLowerCase(), v = Math.round(Number(e.target.value.replace(/\D/g, '')));
+    if (v > 0) b[k] = v; else delete b[k];
+    cfg.set('budgets', JSON.stringify(b)); renderCategories(); return;
+  }
   if (e.target.classList.contains('jsel') && e.target.dataset.name) setJarFor(e.target.dataset.name, Number(e.target.value));
 };
 
