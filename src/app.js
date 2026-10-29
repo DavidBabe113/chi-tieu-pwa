@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.52.0';
+const VERSION = '2.53.0';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -58,15 +58,6 @@ const VI = {
   'All good': 'Tất cả đều tốt', 'Good': 'Tốt', 'Moderate': 'Trung bình', 'Alert': 'Báo động', 'Choose an icon': 'Chọn biểu tượng', 'Less': 'Ít', 'More': 'Nhiều', 'Change': 'Đổi',
   'Goal reached': 'Đã đạt mục tiêu', 'Overdue': 'Quá hạn', 'Due today': 'Đến hạn hôm nay', '{0} days left': 'Còn {0} ngày', 'Completed': 'Hoàn thành', '{0} to go': 'Còn {0}',
   'Set your first goal': 'Đặt mục tiêu đầu tiên', 'Save for a trip, a laptop, a rainy day…': 'Tiết kiệm cho chuyến đi, laptop, quỹ dự phòng…', 'Move to Trash': 'Chuyển vào thùng rác',
-  'Sign in': 'Đăng nhập', 'Create account': 'Tạo tài khoản', 'I already have an account': 'Tôi đã có tài khoản', 'Keep me signed in': 'Giữ đăng nhập mãi', 'Sign out': 'Đăng xuất', 'Sign out?': 'Đăng xuất?',
-  'Username': 'Tên đăng nhập', 'Password': 'Mật khẩu', 'Repeat password': 'Nhập lại mật khẩu', 'Current password': 'Mật khẩu hiện tại', 'New password': 'Mật khẩu mới', 'Change password': 'Đổi mật khẩu', 'Password changed': 'Đã đổi mật khẩu',
-  'Passwords do not match': 'Hai mật khẩu không khớp', 'Your session ended. Sign in again.': 'Phiên đăng nhập đã hết. Hãy đăng nhập lại.', 'Account created. Wait for the admin to activate it, then sign in.': 'Đã tạo tài khoản. Chờ admin kích hoạt rồi đăng nhập.',
-  'Wrong username or password': 'Sai tên đăng nhập hoặc mật khẩu', 'This account is blocked': 'Tài khoản này đã bị khoá', 'Waiting for the admin to activate this account': 'Đang chờ admin kích hoạt tài khoản này', 'That username is taken': 'Tên đăng nhập đã tồn tại',
-  'Username: 3-20 letters, numbers, . _ -': 'Tên đăng nhập: 3-20 ký tự gồm chữ, số, . _ -', 'No connection': 'Không có kết nối', 'Password needs at least 6 characters': 'Mật khẩu cần ít nhất 6 ký tự',
-  'User not found': 'Không tìm thấy người dùng', 'You cannot do this to your own account': 'Không thể làm việc này với chính tài khoản của bạn', 'At least one admin is required': 'Phải còn ít nhất một admin', 'Something went wrong': 'Có lỗi xảy ra',
-  'Manage users': 'Quản lý người dùng', 'Add user': 'Thêm người dùng', 'Active': 'Đang hoạt động', 'Blocked': 'Đã khoá', 'Block': 'Khoá', 'Unblock': 'Mở khoá', 'Activate': 'Kích hoạt', 'Reset password': 'Cấp lại mật khẩu',
-  'Make admin': 'Cấp quyền admin', 'Make member': 'Hạ xuống member', 'Delete': 'Xoá', 'Delete user {0}?': 'Xoá người dùng {0}?', 'New password for {0} (at least 6 characters)': 'Mật khẩu mới cho {0} (ít nhất 6 ký tự)', "All users' data": 'Dữ liệu của mọi người dùng',
-  "Collect all users' data": 'Gom dữ liệu mọi người dùng',
   'Trash': 'Thùng rác', 'Restore': 'Khôi phục', 'Delete forever': 'Xoá vĩnh viễn', 'Deleted': 'Đã xoá', 'Goal': 'Mục tiêu', 'Empty Trash': 'Dọn sạch thùng rác',
   'Trash is empty': 'Thùng rác trống', 'Delete everything in the Trash forever?': 'Xoá vĩnh viễn mọi thứ trong thùng rác?',
   'Delete forever? This cannot be undone.': 'Xoá vĩnh viễn? Không thể hoàn tác.', 'Deadline (from today)': 'Hạn chót (tính từ hôm nay)', 'Years': 'Năm', 'Months': 'Tháng', 'Days': 'Ngày',
@@ -334,7 +325,7 @@ $('#addMenu').onclick = e => {
 document.addEventListener('click', e => { if (!$('#addMenu').hidden && !e.target.closest('#addMenu,#btnManual')) $('#addMenu').hidden = true; });
 
 function newRec() {
-  return { type: 'expense', by: sess ? sess.u : '', fromQr: false, acc: '', bin: '', id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), time: new Date().toISOString(), category: '', amount: '', note: '', payee: '', bank: '', photo: '', status: 'draft', synced: false };
+  return { type: 'expense', by: '', fromQr: false, acc: '', bin: '', id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), time: new Date().toISOString(), category: '', amount: '', note: '', payee: '', bank: '', photo: '', status: 'draft', synced: false };
 }
 
 const scanCv = document.createElement('canvas'), scanCx = scanCv.getContext('2d', { willReadFrequently: true });
@@ -684,14 +675,14 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden && cu
 // ---------- đồng bộ ----------
 async function post(r) {
   const url = cfg.get('sheetUrl', '');
-  if (!url || !sess) return false;
+  if (!url) return false;
   try {
     let body = r;
     if (r.time && r.type !== 'jars') {   // ngày và giờ thành hai cột riêng trong Sheet
       const d = new Date(r.time);
       body = { ...r, date: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`, clock: `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` };
     }
-    await fetch(url, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ ...body, u: sess.u }) });
+    await fetch(url, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(body) });
     return true;
   } catch { return false; }
 }
@@ -710,14 +701,14 @@ function jarSnapshot(ym, recs) {
 }
 async function flushJars() {
   const dirty = getJSON('jarsDirty', []);
-  if (!dirty.length || !cfg.get('sheetUrl', '') || !sess) return;
+  if (!dirty.length || !cfg.get('sheetUrl', '')) return;
   const recs = await rawDone(), left = [];
   for (const ym of dirty) { if (!(await post(jarSnapshot(ym, recs)))) left.push(ym); }
   cfg.set('jarsDirty', JSON.stringify(left));
 }
 let syncing = false;
 async function sync() {
-  if (!cfg.get('sheetUrl', '') || !sess || syncing) return;
+  if (!cfg.get('sheetUrl', '') || syncing) return;
   syncing = true;
   try {
     for (const r of (await allRecs()).filter(x => x.status === 'done' && !x.synced)) {
@@ -1515,7 +1506,6 @@ $('#sheet').onclick = e => { if (e.target.id === 'sheet') closeSheet(); };
 // ---------- cài đặt: ngôn ngữ, giao diện, bảo mật, dữ liệu, phiên bản (+ nâng cao thu gọn) ----------
 function renderSettings() {
   $('#verText').textContent = VERSION;
-  paintAccount();
   $('#openSheetLink').href = cfg.get('sheetFile', SHEET_FILE);
   $('#sheetFile').value = cfg.get('sheetFile', SHEET_FILE);
   $('#pinState').textContent = tr(hasPin() ? 'On' : 'Off');
@@ -1546,10 +1536,10 @@ $('#saveAdv').onclick = () => {
   // bấm Lưu ở đây là gửi lại toàn bộ giao dịch lên Sheet (Sheet ghi đè theo mã giao dịch nên không bị trùng dòng)
   (async () => { for (const r of (await rawDone())) if (r.synced) { r.synced = false; await tx('records', 'readwrite', st => st.put(r)); } await markAllJars(); sync(); })(); goTop('home');
 };
-$('#clearData').onclick = async () => {   // đưa app về mặc định: xoá giao dịch, ảnh và mọi cài đặt; chỉ giữ link Google Sheet và tài khoản
+$('#clearData').onclick = async () => {   // đưa app về mặc định: xoá giao dịch, ảnh và mọi cài đặt; chỉ giữ link Google Sheet
   if (!confirm(tr('Reset the app? All transactions, photos and settings on this phone are deleted. Your Google Sheet is not touched.'))) return;
   await Promise.all([tx('records', 'readwrite', st => st.clear()), tx('photos', 'readwrite', st => st.clear())]);
-  try { const keep = ['sheetUrl', 'sheetFile', 'accts'].map(k => [k, localStorage.getItem(k)]); localStorage.clear(); keep.forEach(([k, v]) => v != null && localStorage.setItem(k, v)); } catch {}
+  try { const keep = ['sheetUrl', 'sheetFile'].map(k => [k, localStorage.getItem(k)]); localStorage.clear(); keep.forEach(([k, v]) => v != null && localStorage.setItem(k, v)); } catch {}
   location.reload();
 };
 $('#updateApp').onclick = async () => {   // xoá service worker + cache rồi tải lại để lấy bản mới nhất
@@ -1649,148 +1639,6 @@ document.addEventListener('visibilitychange', () => {
 const TABKEYS = ['home', 'txn', 'jars', 'cats'];
 $('#tabs').style.setProperty('--n', TABKEYS.length);
 
-// ---------- tài khoản: lưu ngay trên máy, không cần Google; Apps Script chỉ để đồng bộ Sheet (thêm sau trong Cài đặt) ----------
-const SESS_KEY = 'sess';
-const sessGet = () => { try { return JSON.parse(localStorage.getItem(SESS_KEY) || sessionStorage.getItem(SESS_KEY) || 'null'); } catch { return null; } };
-const sessClear = () => { try { localStorage.removeItem(SESS_KEY); sessionStorage.removeItem(SESS_KEY); } catch {} };
-const sessSave = () => { sessClear(); try { (sess.keep ? localStorage : sessionStorage).setItem(SESS_KEY, JSON.stringify(sess)); } catch {} };
-let sess = sessGet();   // {u, role, v, keep}: v = phiên bản tài khoản (đổi mật khẩu / khoá thì tăng → phiên cũ hết hiệu lực); keep = lưu mãi, không thì chỉ giữ tới khi đóng app
-const isAdmin = () => !!sess && sess.role === 'admin';
-const accts = () => getJSON('accts', []);   // [{n, h, role, st: active|pending|blocked, v}]
-const saveAccts = l => cfg.set('accts', JSON.stringify(l));
-const findAcct = (l, n) => l.find(a => a.n.toLowerCase() === String(n).toLowerCase());
-const pwHash = async (u, p) => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode('ft:' + u.toLowerCase() + ':' + p)))].map(b => b.toString(16).padStart(2, '0')).join('');
-const AUTH_ERR = { bad: 'Wrong username or password', blocked: 'This account is blocked', pending: 'Waiting for the admin to activate this account', exists: 'That username is taken',
-  name: 'Username: 3-20 letters, numbers, . _ -', short: 'Password needs at least 6 characters', none: 'User not found', self: 'You cannot do this to your own account', lastAdmin: 'At least one admin is required' };
-const NAME_OK = /^[A-Za-z0-9_.-]{3,20}$/;
-let authMode = 'in';
-function paintAuth() {
-  const reg = authMode === 'reg';
-  $('#authTitle').textContent = tr(reg ? 'Create account' : 'Sign in');
-  $('#auPass2').hidden = !reg;
-  $('#auGo').textContent = tr(reg ? 'Create account' : 'Sign in');
-  $('#auSwitch').textContent = tr(reg ? 'I already have an account' : 'Create account');
-  $('#auPass').autocomplete = reg ? 'new-password' : 'current-password';
-}
-function showAuth(msg) {
-  authMode = accts().length ? 'in' : 'reg'; paintAuth(); $('#auMsg').textContent = msg || ''; $('#auPass').value = $('#auPass2').value = '';
-  $('#auth').hidden = false; $('#sheet').hidden = true; document.body.classList.remove('noscroll');
-}
-function signOut(forced) { sessClear(); sess = null; showAuth(forced ? tr('Your session ended. Sign in again.') : ''); }
-$('#auSwitch').onclick = () => { authMode = authMode === 'in' ? 'reg' : 'in'; $('#auMsg').textContent = ''; paintAuth(); };
-function startSession(a) {
-  sess = { u: a.n, role: a.role, v: a.v || 0, keep: $('#auKeep').checked }; sessSave();
-  $('#auth').hidden = true; $('#auPass').value = ''; show('home', false); sync();
-}
-$('#auGo').onclick = async () => {
-  const msg = t => { $('#auMsg').textContent = tr(t); }, reg = authMode === 'reg', u = $('#auUser').value.trim(), p = $('#auPass').value;
-  if (!NAME_OK.test(u)) { msg(AUTH_ERR.name); return; }
-  if (p.length < 6) { msg(AUTH_ERR.short); return; }
-  if (reg && p !== $('#auPass2').value) { msg('Passwords do not match'); return; }
-  const l = accts(), h = await pwHash(u, p), a = findAcct(l, u);
-  if (reg) {
-    if (a) { msg(AUTH_ERR.exists); return; }
-    const first = !l.length;   // người đầu tiên tạo tài khoản là admin và dùng ngay; người sau chờ admin kích hoạt
-    const n = { n: u, h, role: first ? 'admin' : 'member', st: first ? 'active' : 'pending', v: 0 };
-    saveAccts([...l, n]);
-    if (first) { startSession(n); return; }
-    authMode = 'in'; paintAuth(); $('#auPass').value = $('#auPass2').value = ''; msg('Account created. Wait for the admin to activate it, then sign in.'); return;
-  }
-  if (!a || a.h !== h) { msg(AUTH_ERR.bad); return; }
-  if (a.st !== 'active') { msg(a.st === 'pending' ? AUTH_ERR.pending : AUTH_ERR.blocked); return; }
-  startSession(a);
-};
-['auUser', 'auPass', 'auPass2'].forEach(id => $('#' + id).addEventListener('keydown', e => { if (e.key === 'Enter') $('#auGo').click(); }));
-function verifySession() {   // tài khoản bị xoá / khoá / đổi mật khẩu thì phiên này hết hiệu lực; vai trò đổi thì cập nhật
-  const a = findAcct(accts(), sess.u);
-  if (!a || a.st !== 'active' || (a.v || 0) !== sess.v) { signOut(true); return; }
-  if (a.role !== sess.role) { sess.role = a.role; sessSave(); }
-}
-
-// Cài đặt: khối tài khoản
-function paintAccount() {
-  $('#acName').textContent = sess ? sess.u : ''; $('#acRole').textContent = sess ? tr(isAdmin() ? 'Admin' : 'Member') : '';
-  $('#acKeep').checked = !!(sess && sess.keep);
-  $('#acUsers').hidden = $('#acCollect').hidden = !isAdmin();
-}
-$('#acKeep').onchange = e => { if (sess) { sess.keep = e.target.checked; sessSave(); } };
-$('#acOut').onclick = () => { if (confirm(tr('Sign out?'))) signOut(false); };
-$('#acPass').onclick = () => openPanel(`<h3 class="ih">${tr('Change password')}</h3><input id="cpOld" type="password" placeholder="${tr('Current password')}" autocomplete="current-password">` +
-  `<input id="cpNew" type="password" placeholder="${tr('New password')}" autocomplete="new-password"><input id="cpNew2" type="password" placeholder="${tr('Repeat password')}" autocomplete="new-password"><button class="big" id="cpGo">${tr('Save')}</button>`);
-async function changePass() {
-  const n = $('#cpNew').value, l = accts(), a = findAcct(l, sess.u);
-  if (!a || a.h !== await pwHash(sess.u, $('#cpOld').value)) { toast(tr(AUTH_ERR.bad)); return; }
-  if (n.length < 6) { toast(tr(AUTH_ERR.short)); return; }
-  if (n !== $('#cpNew2').value) { toast(tr('Passwords do not match')); return; }
-  a.h = await pwHash(sess.u, n); a.v = (a.v || 0) + 1; saveAccts(l);
-  sess.v = a.v; sessSave(); closeSheet(); toast(tr('Password changed'));
-}
-
-// Admin: quản lý người dùng (danh sách tài khoản của app trên máy này)
-function paintUsers() {
-  const st = { active: 'Active', pending: 'Pending', blocked: 'Blocked' };
-  openPanel(`<h3 class="ih">${tr('Manage users')}</h3>` + accts().map(x => {
-    const me = x.n.toLowerCase() === sess.u.toLowerCase(), n = esc(x.n);
-    return `<div class="urow"><b>${n}</b><span class="ubadge ${x.st}">${tr(st[x.st])}</span><span class="ubadge">${tr(x.role === 'admin' ? 'Admin' : 'Member')}</span>` +
-      (me ? '' : `<div class="uact"><button class="mini" data-ua="${x.st === 'active' ? 'block' : 'activate'}" data-n="${n}">${tr(x.st === 'active' ? 'Block' : x.st === 'pending' ? 'Activate' : 'Unblock')}</button>` +
-        `<button class="mini" data-ua="reset" data-n="${n}">${tr('Reset password')}</button><button class="mini" data-ua="role" data-n="${n}">${tr(x.role === 'admin' ? 'Make member' : 'Make admin')}</button>` +
-        `<button class="mini red" data-ua="del" data-n="${n}">${tr('Delete')}</button></div>`) + `</div>`;
-  }).join('') + `<h3 class="ih">${tr('Add user')}</h3><input id="nuName" placeholder="${tr('Username')}" autocapitalize="off"><input id="nuPass" type="password" placeholder="${tr('Password')}" autocomplete="new-password">` +
-    `<select id="nuRole" class="jsel wide"><option value="member">${tr('Member')}</option><option value="admin">${tr('Admin')}</option></select><button class="big" id="nuGo">${tr('Add')}</button>`);
-}
-async function userAction(btn) {
-  const a = btn.dataset.ua, l = accts(), t = findAcct(l, btn.dataset.n);
-  if (!t) { toast(tr(AUTH_ERR.none)); return; }
-  const admins = l.filter(x => x.role === 'admin' && x.st === 'active').length;
-  if (a === 'block' || a === 'activate') { t.st = a === 'block' ? 'blocked' : 'active'; t.v = (t.v || 0) + 1; }
-  else if (a === 'role') {
-    if (t.role === 'admin' && admins < 2) { toast(tr(AUTH_ERR.lastAdmin)); return; }
-    t.role = t.role === 'admin' ? 'member' : 'admin';
-  } else if (a === 'del') {
-    if (!confirm(tr('Delete user {0}?', t.n))) return;
-    if (t.role === 'admin' && t.st === 'active' && admins < 2) { toast(tr(AUTH_ERR.lastAdmin)); return; }
-    l.splice(l.indexOf(t), 1);
-  } else if (a === 'reset') {
-    const p = prompt(tr('New password for {0} (at least 6 characters)', t.n)); if (p === null) return;
-    if (p.length < 6) { toast(tr(AUTH_ERR.short)); return; }
-    t.h = await pwHash(t.n, p); t.v = (t.v || 0) + 1;
-  }
-  saveAccts(l); toast(tr('Done')); paintUsers();
-}
-async function addUser() {
-  const n = $('#nuName').value.trim(), p = $('#nuPass').value, l = accts();
-  if (!NAME_OK.test(n)) { toast(tr(AUTH_ERR.name)); return; }
-  if (p.length < 6) { toast(tr(AUTH_ERR.short)); return; }
-  if (findAcct(l, n)) { toast(tr(AUTH_ERR.exists)); return; }
-  l.push({ n, h: await pwHash(n, p), role: $('#nuRole').value === 'admin' ? 'admin' : 'member', st: 'active', v: 0 });
-  saveAccts(l); toast(tr('Done')); paintUsers();
-}
-$('#acUsers').onclick = paintUsers;
-
-// Admin: gom dữ liệu của mọi người dùng (mỗi giao dịch ghi tên người nhập)
-let collected = null;
-async function collectAll() {
-  const recs = (await rawDone()).sort((a, b) => a.time.localeCompare(b.time)), by = {};
-  const rows = [['User', 'Type', 'Date', 'Time', 'Category', 'Amount (VND)', 'Note', 'Payee', 'Payment method', 'Wallet', 'Location']];
-  recs.forEach(r => {
-    const u = r.by && r.by !== 'local' ? r.by : '—', d = new Date(r.time), o = by[u] ||= { out: 0, inc: 0, n: 0 };
-    o[isInc(r) ? 'inc' : 'out'] += Number(r.amount) || 0; o.n++;
-    rows.push([u, isInc(r) ? 'Income' : 'Expense', ymd(d), d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }), r.category || '', Number(r.amount) || 0, r.note || '', r.payee || '', r.bank || '', r.wallet || '',
-      r.loc ? `https://www.google.com/maps/search/?api=1&query=${r.loc.lat},${r.loc.lng}` : '']);
-  });
-  collected = rows;
-  const names = Object.keys(by).sort();
-  openPanel(`<h3 class="ih">${tr("All users' data")}</h3>` + (names.length ? names.map(u => `<div class="urow"><b>${esc(u)}</b><span class="ubadge">${by[u].n} ${tr(by[u].n === 1 ? 'transaction' : 'transactions')}</span>` +
-    `<div class="uact"><span class="pos">+${fmt(by[u].inc)}</span><span class="neg">−${fmt(by[u].out)}</span></div></div>`).join('') +
-    `<button class="big" id="colGo">${tr('Export')}</button>` : `<p class="hint">${tr('No data yet')}</p>`));
-}
-$('#acCollect').onclick = collectAll;
-document.addEventListener('click', e => {
-  const id = e.target.id, ua = e.target.closest('[data-ua]');
-  if (id === 'cpGo') changePass(); else if (id === 'nuGo') addUser(); else if (ua) userAction(ua);
-  else if (id === 'colGo' && collected) saveFile(xlsxBlob(collected), `FinancialTracking_AllUsers_${ymd(new Date())}.xlsx`);
-});
-
 // ---------- khởi động ----------
 if (hasPin()) openLock('verify');
 if ('serviceWorker' in navigator) {
@@ -1800,7 +1648,7 @@ if ('serviceWorker' in navigator) {
 }
 translateDom();
 show('home', false);
-if (sess) { verifySession(); if (sess) sync(); } else showAuth();
+sync();
 
 // Thanh 4 mục và thanh lọc: vuốt lên (cuộn nội dung xuống) thì ẩn, vuốt xuống thì hiện lại; ở đầu trang luôn hiện
 { let ly = 0;
