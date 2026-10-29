@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2.49.0';
+const VERSION = '2.49.1';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((s, r) => s + Number(r.amount), 0);
@@ -862,8 +862,9 @@ async function renderTxn() {
   const tot = sum(items);
   document.querySelectorAll('#segTxn button').forEach(b => b.classList.toggle('on', b.dataset.v === txnType));
   if (photoMode) {
-    $('#txnHead').innerHTML = monthNav('', true) + `<div class="hl">${tr('Photos in {0}', monthLabel(viewYm))}</div><b class="total">${items.length}</b>`;
-    await fillPhotos($('#txnList'), items); return;
+    const mItems = ofType.filter(r => ymOf(r.time) === viewYm && (!txnCat || r.category === txnCat));
+    $('#txnHead').innerHTML = monthNav('', true) + `<div class="hl">${tr('Photos in {0}', monthLabel(viewYm))}</div><b class="total">${mItems.length}</b>`;
+    await fillPhotos($('#txnList'), mItems); return;   // lịch luôn hiện cả tháng; ngày đang chọn chỉ sáng viền
   }
   $('#txnHead').innerHTML = monthNav('', true) +
     `<div class="hl">${tr(inc ? 'Income in {0}' : 'Spent in {0}', monthLabel(viewYm))}</div><b class="total" data-key="txn-sum" data-count="${tot}">${fmt(tot)}</b>` +
@@ -905,7 +906,7 @@ async function fillPhotos(box, items) {
   const wdh = Array.from({ length: 7 }, (_, i) => `<span>${new Date(2024, 0, 1 + i).toLocaleDateString(LOC(), { weekday: 'narrow' })}</span>`).join('');
   const cells = Array(lead).fill('<i></i>').concat(Array.from({ length: dim }, (_, i) => {
     const d = `${viewYm}-${String(i + 1).padStart(2, '0')}`, n = (photoDays[d] || []).length;
-    return `<div class="hc pc ${n ? 'has' : ''} ${d === today ? 'now' : ''}" data-pday="${d}"><b>${i + 1}</b>${n ? `<em>${n}</em>` : ''}</div>`;
+    return `<div class="hc pc ${n ? 'has' : ''} ${d === today ? 'now' : ''} ${d === txnDay ? 'sel' : ''}" data-pday="${d}"><b>${i + 1}</b>${n ? `<em>${n}</em>` : ''}</div>`;
   })).join('');
   box.innerHTML = `<div class="card"><div class="hwd">${wdh}</div><div class="hmap">${cells}</div></div>`;
   if (!items.length) box.insertAdjacentHTML('beforeend', `<p class="hint">${tr('No photos in this month.')}</p>`);
